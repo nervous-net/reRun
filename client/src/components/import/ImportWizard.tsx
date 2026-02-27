@@ -278,7 +278,7 @@ const styles: Record<string, CSSProperties> = {
     justifyContent: 'center',
     color: 'var(--crt-green-dim)',
     fontSize: 'var(--font-size-sm)',
-    background: 'rgba(51, 255, 0, 0.05)',
+    background: 'rgba(85, 255, 255, 0.05)',
   },
   stepFuture: {
     width: '28px',

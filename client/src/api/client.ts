@@ -97,4 +97,8 @@ export const api = {
     match: (data: any) => post<any>('/api/import/match', data),
     commit: (data: any) => post<any>('/api/import/commit', data),
   },
+  settings: {
+    list: () => get<any>('/api/settings'),
+    update: (key: string, value: string) => put<any>(`/api/settings/${key}`, { value }),
+  },
 };

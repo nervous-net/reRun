@@ -1,28 +1,32 @@
 /* ABOUTME: CSS custom properties for the reRun CRT theme */
-/* ABOUTME: Defines colors, spacing, fonts, and glow effects */
+/* ABOUTME: DOS POS-inspired palette matching classic video rental system UI */
 
 :root {
-  /* CRT Phosphor Colors */
-  --crt-green: #33FF00;
-  --crt-green-dim: #1a8c00;
-  --crt-green-bright: #66FF33;
-  --crt-amber: #FFB000;
-  --crt-amber-dim: #996a00;
-  --crt-red: #FF3333;
-  --crt-cyan: #00FFFF;
+  /* Accent - Bright Cyan */
+  --crt-green: #55FFFF;
+  --crt-green-dim: #00AAAA;
+  --crt-green-bright: #88FFFF;
 
-  /* Backgrounds */
-  --bg-primary: #0a0a0a;
-  --bg-secondary: #111111;
-  --bg-panel: #0d1a0d;
-  --bg-input: #050a05;
+  /* Yellow - Headers and labels */
+  --crt-amber: #FFFF55;
+  --crt-amber-dim: #CCCC00;
 
-  /* Text */
-  --text-primary: #33FF00;
-  --text-secondary: #1a8c00;
-  --text-muted: #0d4600;
-  --text-warning: #FFB000;
-  --text-error: #FF3333;
+  /* Other colors */
+  --crt-red: #FF5555;
+  --crt-cyan: #55FFFF;
+
+  /* Backgrounds - Medium blue like classic DOS POS */
+  --bg-primary: #2244AA;
+  --bg-secondary: #2B50B8;
+  --bg-panel: #3060C0;
+  --bg-input: #1A3399;
+
+  /* Text - High contrast on medium blue */
+  --text-primary: #FFFFFF;
+  --text-secondary: #CCCCEE;
+  --text-muted: #8899CC;
+  --text-warning: #FFFF55;
+  --text-error: #FF5555;
 
   /* Spacing */
   --space-xs: 4px;
@@ -39,11 +43,11 @@
   --font-size-xl: 24px;
   --font-size-xxl: 32px;
 
-  /* Borders */
-  --border-color: #1a4d00;
+  /* Borders - Darker blue for sunken line effect */
+  --border-color: #1A2A88;
   --border-radius: 2px;
 
-  /* Glow */
-  --glow-green: 0 0 10px rgba(51, 255, 0, 0.3), 0 0 20px rgba(51, 255, 0, 0.1);
-  --glow-amber: 0 0 10px rgba(255, 176, 0, 0.3), 0 0 20px rgba(255, 176, 0, 0.1);
+  /* Glow - Subtle */
+  --glow-green: 0 0 8px rgba(85, 255, 255, 0.3), 0 0 16px rgba(85, 255, 255, 0.1);
+  --glow-amber: 0 0 8px rgba(255, 255, 85, 0.3), 0 0 16px rgba(255, 255, 85, 0.1);
 }

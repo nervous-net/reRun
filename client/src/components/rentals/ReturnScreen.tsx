@@ -324,7 +324,7 @@ export function ReturnScreen() {
                 key={item.copy.barcode}
                 style={{
                   ...styles.queueRow,
-                  backgroundColor: index % 2 === 1 ? 'rgba(51, 255, 0, 0.02)' : 'transparent',
+                  backgroundColor: index % 2 === 1 ? 'rgba(85, 255, 255, 0.02)' : 'transparent',
                 }}
               >
                 <div style={styles.queueRowMain}>
@@ -427,7 +427,7 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 'var(--font-size-xl)',
     textTransform: 'uppercase',
     letterSpacing: '2px',
-    textShadow: '0 0 10px rgba(51, 255, 0, 0.5)',
+    textShadow: '0 0 10px rgba(85, 255, 255, 0.5)',
     margin: 0,
   },
   scanBar: {

@@ -1,25 +1,25 @@
 // ABOUTME: Root React component with router setup
 // ABOUTME: Defines top-level routes for all reRun screens
 
+import { useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/common/Layout';
+import { LoadingScreen } from './components/common/LoadingScreen';
 import { Dashboard } from './components/dashboard/Dashboard';
 import { ImportWizard } from './components/import/ImportWizard';
 import { CustomerSearch } from './components/customers/CustomerSearch';
 import { InventoryBrowser } from './components/inventory/InventoryBrowser';
 import { POSScreen } from './components/pos/POSScreen';
 import { ReturnScreen } from './components/rentals/ReturnScreen';
-
-function PlaceholderPage({ name }: { name: string }) {
-  return (
-    <div style={{ padding: '16px' }}>
-      <h2 style={{ color: 'var(--crt-green)', textShadow: 'var(--glow-green)' }}>{name}</h2>
-      <p style={{ color: 'var(--text-secondary)' }}>Coming soon...</p>
-    </div>
-  );
-}
+import { SettingsPage } from './components/settings/SettingsPage';
 
 export function App() {
+  const [ready, setReady] = useState(false);
+
+  if (!ready) {
+    return <LoadingScreen onComplete={() => setReady(true)} />;
+  }
+
   return (
     <BrowserRouter>
       <Layout>
@@ -30,7 +30,7 @@ export function App() {
           <Route path="/returns" element={<ReturnScreen />} />
           <Route path="/inventory" element={<InventoryBrowser />} />
           <Route path="/import" element={<ImportWizard />} />
-          <Route path="/settings" element={<PlaceholderPage name="Settings" />} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       </Layout>
     </BrowserRouter>

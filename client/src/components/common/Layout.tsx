@@ -3,6 +3,7 @@
 
 import { type ReactNode, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { AsciiDisplay, LOGO_SMALL } from './AsciiArt';
 
 const NAV_ITEMS = [
   { key: 'F1', label: 'POS', path: '/pos' },
@@ -26,6 +27,18 @@ export function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const time = useCurrentTime();
+  const [storeName, setStoreName] = useState('reRun Video');
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => {
+        if (data.data?.store_name) {
+          setStoreName(data.data.store_name);
+        }
+      })
+      .catch(() => {}); // Silently fail - use default
+  }, []);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -57,7 +70,7 @@ export function Layout({ children }: { children: ReactNode }) {
     <div style={styles.container}>
       {/* Top Bar */}
       <div style={styles.topBar}>
-        <div style={styles.logo}>reRun</div>
+        <div style={styles.logo}>{storeName}</div>
         <div style={styles.clock}>{formattedTime}</div>
         <div style={styles.version}>v0.1.0</div>
       </div>
@@ -65,6 +78,9 @@ export function Layout({ children }: { children: ReactNode }) {
       {/* Body: Sidebar + Content */}
       <div style={styles.body}>
         <nav style={styles.sidebar}>
+          <div style={styles.sidebarLogo}>
+            <AsciiDisplay art={LOGO_SMALL} glow fontSize="11px" />
+          </div>
           {NAV_ITEMS.map((item) => {
             const isActive = location.pathname === item.path;
             return (
@@ -97,7 +113,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
       {/* Status Bar */}
       <div style={styles.statusBar}>
-        <span>reRun v0.1.0</span>
+        <span>Powered by reRun v0.1.0</span>
         <span>{formattedDate}</span>
       </div>
     </div>
@@ -154,6 +170,13 @@ const styles: Record<string, React.CSSProperties> = {
     borderRight: '1px solid var(--border-color)',
     background: 'var(--bg-secondary)',
     overflowY: 'auto',
+  },
+  sidebarLogo: {
+    padding: '4px 0 8px',
+    borderBottom: '1px solid var(--border-color)',
+    marginBottom: '4px',
+    display: 'flex',
+    justifyContent: 'center',
   },
   navLink: {
     display: 'block',

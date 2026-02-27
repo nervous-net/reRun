@@ -146,7 +146,7 @@ export function CustomerBar({ customer, onCustomerSelect, onClear }: CustomerBar
               style={styles.dropdownItem}
               onClick={() => handleSelect(c)}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(51, 255, 0, 0.1)';
+                e.currentTarget.style.backgroundColor = 'rgba(85, 255, 255, 0.1)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = 'transparent';
@@ -186,7 +186,7 @@ const styles: Record<string, CSSProperties> = {
   customerName: {
     color: 'var(--crt-green)',
     fontSize: 'var(--font-size-lg)',
-    textShadow: '0 0 8px rgba(51, 255, 0, 0.3)',
+    textShadow: '0 0 8px rgba(85, 255, 255, 0.3)',
     textTransform: 'uppercase',
     letterSpacing: '1px',
   },

@@ -57,7 +57,7 @@ export function TransactionPanel({ items, onRemoveItem, subtotal, tax, total }: 
             key={index}
             style={{
               ...styles.row,
-              backgroundColor: index % 2 === 1 ? 'rgba(51, 255, 0, 0.02)' : 'transparent',
+              backgroundColor: index % 2 === 1 ? 'rgba(85, 255, 255, 0.02)' : 'transparent',
             }}
           >
             <span style={{ ...styles.cell, width: '32px', color: 'var(--text-secondary)' }}>
@@ -175,12 +175,12 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 'var(--font-size-lg)',
     textTransform: 'uppercase',
     letterSpacing: '2px',
-    textShadow: '0 0 10px rgba(51, 255, 0, 0.5)',
+    textShadow: '0 0 10px rgba(85, 255, 255, 0.5)',
   },
   grandTotalValue: {
     color: 'var(--crt-green)',
     fontSize: 'var(--font-size-lg)',
-    textShadow: '0 0 10px rgba(51, 255, 0, 0.5)',
+    textShadow: '0 0 10px rgba(85, 255, 255, 0.5)',
     fontWeight: 'bold',
   },
   removeButton: {

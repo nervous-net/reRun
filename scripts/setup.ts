@@ -117,10 +117,10 @@ async function main() {
   if (existingSettings.count === 0) {
     const settings = [
       ['tax_rate', '800'],
-      ['store_name', 'reRun Video'],
+      ['store_name', 'Way Cool Video'],
       ['store_address', ''],
       ['store_phone', ''],
-      ['receipt_footer', 'Thank you for choosing reRun!'],
+      ['receipt_footer', 'Thank you for choosing Way Cool Video!'],
     ];
 
     const stmt = sqlite.prepare('INSERT INTO store_settings (key, value) VALUES (?, ?)');

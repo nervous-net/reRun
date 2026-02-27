@@ -57,7 +57,7 @@ const statRowStyle: CSSProperties = {
   justifyContent: 'space-between',
   alignItems: 'center',
   padding: '3px 0',
-  borderBottom: '1px solid rgba(51, 255, 0, 0.05)',
+  borderBottom: '1px solid rgba(85, 255, 255, 0.05)',
 };
 
 const statLabelStyle: CSSProperties = {
@@ -135,7 +135,7 @@ const reservationRowStyle: CSSProperties = {
   justifyContent: 'space-between',
   alignItems: 'center',
   padding: '4px 0',
-  borderBottom: '1px solid rgba(51, 255, 0, 0.05)',
+  borderBottom: '1px solid rgba(85, 255, 255, 0.05)',
   fontSize: 'var(--font-size-md)',
 };
 
@@ -394,7 +394,7 @@ export function Dashboard() {
                         <tr
                           key={rental.id ?? i}
                           style={{
-                            backgroundColor: i % 2 === 1 ? 'rgba(51, 255, 0, 0.02)' : 'transparent',
+                            backgroundColor: i % 2 === 1 ? 'rgba(85, 255, 255, 0.02)' : 'transparent',
                           }}
                         >
                           <td style={tdStyle}>{customerName}</td>
