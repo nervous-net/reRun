@@ -183,7 +183,17 @@ const SETTINGS_KEYS = [
   'tax_rate',
   'late_fee_grace_period',
   'tmdb_api_key',
+  'theme',
 ] as const;
+
+const THEME_OPTIONS = [
+  { value: 'a', label: 'A \u2014 Borland Turbo Vision' },
+  { value: 'b', label: 'B \u2014 Norton Commander' },
+  { value: 'c', label: 'C \u2014 WordPerfect 5.1' },
+  { value: 'd', label: 'D \u2014 Lotus 1-2-3' },
+  { value: 'e', label: 'E \u2014 Classic POS Terminal' },
+  { value: 'f', label: 'F \u2014 Hybrid CRT (Default)' },
+];
 
 type SettingsKey = typeof SETTINGS_KEYS[number];
 
@@ -231,6 +241,16 @@ export function SettingsPage() {
 
   function updateSetting(key: SettingsKey, value: string) {
     setSettings(prev => ({ ...prev, [key]: value }));
+  }
+
+  function handleThemeChange(value: string) {
+    updateSetting('theme', value);
+    // Live preview: apply theme class immediately
+    if (value && value !== 'f') {
+      document.documentElement.className = `theme-${value}`;
+    } else {
+      document.documentElement.className = '';
+    }
   }
 
   function handleTaxChange(value: string) {
@@ -288,6 +308,26 @@ export function SettingsPage() {
   return (
     <div style={styles.container}>
       <div style={styles.pageTitle}>SETTINGS</div>
+
+      {/* Appearance */}
+      <div style={styles.sectionHeader}>Appearance</div>
+
+      <div style={styles.fieldRow}>
+        <label style={styles.label}>Theme</label>
+        <select
+          style={styles.input}
+          value={settings.theme || 'f'}
+          onChange={e => handleThemeChange(e.target.value)}
+          data-testid="theme-select"
+        >
+          {THEME_OPTIONS.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+        <div style={styles.hint}>
+          Preview each theme at /option-a through /option-f
+        </div>
+      </div>
 
       {/* Store Information */}
       <div style={styles.sectionHeader}>Store Information</div>

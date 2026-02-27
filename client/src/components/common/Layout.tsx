@@ -36,8 +36,17 @@ export function Layout({ children }: { children: ReactNode }) {
         if (data.data?.store_name) {
           setStoreName(data.data.store_name);
         }
+        const theme = data.data?.theme;
+        if (theme && theme !== 'f') {
+          document.documentElement.className = `theme-${theme}`;
+        } else {
+          document.documentElement.className = '';
+        }
       })
       .catch(() => {}); // Silently fail - use default
+    return () => {
+      document.documentElement.className = '';
+    };
   }, []);
 
   useEffect(() => {

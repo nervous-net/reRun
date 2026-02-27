@@ -1,0 +1,152 @@
+/* ABOUTME: Theme class overrides for CGA color scheme comparison pages */
+/* ABOUTME: Each .theme-X class overrides semantic CSS variables with a distinct DOS palette */
+
+/* ─── Theme A: Borland Turbo Vision ─────────────────────── */
+/* Classic IDE: blue frame, grey panels, white/yellow text   */
+.theme-a {
+  --bg-primary: #0000AA;
+  --bg-secondary: #AAAAAA;
+  --bg-panel: #AAAAAA;
+  --bg-input: #0000AA;
+  --crt-green: #FFFFFF;
+  --crt-green-dim: #AAAAAA;
+  --crt-green-bright: #FFFFFF;
+  --crt-amber: #FFFF55;
+  --crt-amber-dim: #AA5500;
+  --text-primary: #FFFFFF;
+  --text-secondary: #AAAAAA;
+  --text-muted: #AAAAAA;
+  --border-color: #FFFFFF;
+  --glow-green: 0 0 8px rgba(255, 255, 255, 0.3), 0 0 16px rgba(255, 255, 255, 0.1);
+  --glow-amber: 0 0 8px rgba(255, 255, 85, 0.3), 0 0 16px rgba(255, 255, 85, 0.1);
+  --accent-02: rgba(255, 255, 255, 0.02);
+  --accent-05: rgba(255, 255, 255, 0.05);
+  --accent-08: rgba(255, 255, 255, 0.08);
+  --accent-10: rgba(255, 255, 255, 0.1);
+  --accent-30: rgba(255, 255, 255, 0.3);
+}
+
+/* ─── Theme B: Norton Commander ─────────────────────────── */
+/* File manager: blue panels, cyan highlights, high contrast */
+.theme-b {
+  --bg-primary: #0000AA;
+  --bg-secondary: #0000AA;
+  --bg-panel: #0000AA;
+  --bg-input: #0000AA;
+  --crt-green: #55FFFF;
+  --crt-green-dim: #00AAAA;
+  --crt-green-bright: #55FFFF;
+  --crt-amber: #FFFF55;
+  --crt-amber-dim: #AA5500;
+  --text-primary: #55FFFF;
+  --text-secondary: #FFFFFF;
+  --text-muted: #AAAAAA;
+  --border-color: #55FFFF;
+  --glow-green: 0 0 8px rgba(85, 255, 255, 0.3), 0 0 16px rgba(85, 255, 255, 0.1);
+  --glow-amber: 0 0 8px rgba(255, 255, 85, 0.3), 0 0 16px rgba(255, 255, 85, 0.1);
+  --accent-02: rgba(85, 255, 255, 0.02);
+  --accent-05: rgba(85, 255, 255, 0.05);
+  --accent-08: rgba(85, 255, 255, 0.08);
+  --accent-10: rgba(85, 255, 255, 0.1);
+  --accent-30: rgba(85, 255, 255, 0.3);
+}
+
+/* ─── Theme C: WordPerfect 5.1 ──────────────────────────── */
+/* Word processor: blue on blue, clean white text, no glow   */
+.theme-c {
+  --bg-primary: #0000AA;
+  --bg-secondary: #0000AA;
+  --bg-panel: #0000AA;
+  --bg-input: #0000AA;
+  --crt-green: #FFFFFF;
+  --crt-green-dim: #AAAAAA;
+  --crt-green-bright: #FFFFFF;
+  --crt-amber: #FFFFFF;
+  --crt-amber-dim: #AAAAAA;
+  --text-primary: #FFFFFF;
+  --text-secondary: #FFFFFF;
+  --text-muted: #AAAAAA;
+  --border-color: #0000AA;
+  --glow-green: none;
+  --glow-amber: none;
+  --accent-02: rgba(255, 255, 255, 0.02);
+  --accent-05: rgba(255, 255, 255, 0.05);
+  --accent-08: rgba(255, 255, 255, 0.08);
+  --accent-10: rgba(255, 255, 255, 0.1);
+  --accent-30: rgba(255, 255, 255, 0.3);
+}
+
+/* ─── Theme D: Lotus 1-2-3 ──────────────────────────────── */
+/* Spreadsheet: black screen, green phosphor, minimal chrome */
+.theme-d {
+  --bg-primary: #000000;
+  --bg-secondary: #000000;
+  --bg-panel: #000000;
+  --bg-input: #000000;
+  --crt-green: #55FF55;
+  --crt-green-dim: #00AA00;
+  --crt-green-bright: #55FF55;
+  --crt-amber: #FFFFFF;
+  --crt-amber-dim: #AAAAAA;
+  --text-primary: #55FF55;
+  --text-secondary: #FFFFFF;
+  --text-muted: #AAAAAA;
+  --border-color: #00AA00;
+  --glow-green: 0 0 8px rgba(85, 255, 85, 0.3), 0 0 16px rgba(85, 255, 85, 0.1);
+  --glow-amber: 0 0 8px rgba(255, 255, 255, 0.3), 0 0 16px rgba(255, 255, 255, 0.1);
+  --accent-02: rgba(85, 255, 85, 0.02);
+  --accent-05: rgba(85, 255, 85, 0.05);
+  --accent-08: rgba(85, 255, 85, 0.08);
+  --accent-10: rgba(85, 255, 85, 0.1);
+  --accent-30: rgba(85, 255, 85, 0.3);
+}
+
+/* ─── Theme E: Classic POS Terminal ─────────────────────── */
+/* Retail terminal: dark bg, green/cyan data, amber labels   */
+.theme-e {
+  --bg-primary: #000000;
+  --bg-secondary: #0000AA;
+  --bg-panel: #0000AA;
+  --bg-input: #000000;
+  --crt-green: #55FF55;
+  --crt-green-dim: #00AA00;
+  --crt-green-bright: #55FF55;
+  --crt-amber: #FFFF55;
+  --crt-amber-dim: #AA5500;
+  --text-primary: #55FFFF;
+  --text-secondary: #AAAAAA;
+  --text-muted: #AAAAAA;
+  --border-color: #55FFFF;
+  --glow-green: 0 0 8px rgba(85, 255, 85, 0.3), 0 0 16px rgba(85, 255, 85, 0.1);
+  --glow-amber: 0 0 8px rgba(255, 255, 85, 0.3), 0 0 16px rgba(255, 255, 85, 0.1);
+  --accent-02: rgba(85, 255, 85, 0.02);
+  --accent-05: rgba(85, 255, 85, 0.05);
+  --accent-08: rgba(85, 255, 85, 0.08);
+  --accent-10: rgba(85, 255, 85, 0.1);
+  --accent-30: rgba(85, 255, 85, 0.3);
+}
+
+/* ─── Theme F: Hybrid CRT ──────────────────────────────── */
+/* Custom blend: blue frame, grey panels, green phosphor     */
+.theme-f {
+  --bg-primary: #0000AA;
+  --bg-secondary: #555555;
+  --bg-panel: #555555;
+  --bg-input: #000000;
+  --crt-green: #55FF55;
+  --crt-green-dim: #00AA00;
+  --crt-green-bright: #55FF55;
+  --crt-amber: #FFFF55;
+  --crt-amber-dim: #AA5500;
+  --text-primary: #FFFFFF;
+  --text-secondary: #AAAAAA;
+  --text-muted: #AAAAAA;
+  --border-color: #0000AA;
+  --glow-green: 0 0 8px rgba(85, 255, 85, 0.3), 0 0 16px rgba(85, 255, 85, 0.1);
+  --glow-amber: 0 0 8px rgba(255, 255, 85, 0.3), 0 0 16px rgba(255, 255, 85, 0.1);
+  --accent-02: rgba(85, 255, 85, 0.02);
+  --accent-05: rgba(85, 255, 85, 0.05);
+  --accent-08: rgba(85, 255, 85, 0.08);
+  --accent-10: rgba(85, 255, 85, 0.1);
+  --accent-30: rgba(85, 255, 85, 0.3);
+}

@@ -2,10 +2,28 @@
 /* ABOUTME: ALL colors centralized here — components NEVER use hardcoded rgba */
 
 :root {
-  /* ─── Green accent ─────────────────────────────── */
-  --crt-green: #55FF55;
-  --crt-green-dim: #00AA00;
-  --crt-green-bright: #88FF88;
+  /* ─── CGA 16-Color Palette ──────────────────────── */
+  --cga-black:        #000000;
+  --cga-blue:         #0000AA;
+  --cga-green:        #00AA00;
+  --cga-cyan:         #00AAAA;
+  --cga-red:          #AA0000;
+  --cga-magenta:      #AA00AA;
+  --cga-brown:        #AA5500;
+  --cga-light-grey:   #AAAAAA;
+  --cga-dark-grey:    #555555;
+  --cga-hi-blue:      #5555FF;
+  --cga-hi-green:     #55FF55;
+  --cga-hi-cyan:      #55FFFF;
+  --cga-hi-red:       #FF5555;
+  --cga-hi-magenta:   #FF55FF;
+  --cga-yellow:       #FFFF55;
+  --cga-white:        #FFFFFF;
+
+  /* ─── Semantic: Green accent ────────────────────── */
+  --crt-green: var(--cga-hi-green);
+  --crt-green-dim: var(--cga-green);
+  --crt-green-bright: var(--cga-hi-green);
 
   /* Green at various opacities (backgrounds, highlights) */
   --accent-02: rgba(85, 255, 85, 0.02);
@@ -17,42 +35,42 @@
   --accent-30: rgba(85, 255, 85, 0.3);
   --accent-50: rgba(85, 255, 85, 0.5);
 
-  /* ─── Orange headers/labels ────────────────────── */
-  --crt-amber: #FF8800;
-  --crt-amber-dim: #CC6600;
+  /* ─── Semantic: Headers/labels (yellow + brown) ─── */
+  --crt-amber: var(--cga-yellow);
+  --crt-amber-dim: var(--cga-brown);
 
-  /* Orange at various opacities */
-  --warning-08: rgba(255, 136, 0, 0.08);
+  /* Yellow at various opacities */
+  --warning-08: rgba(255, 255, 85, 0.08);
 
-  /* ─── Red errors/danger ────────────────────────── */
-  --crt-red: #FF5555;
-  --crt-cyan: #55FFFF;
+  /* ─── Semantic: Red errors / Cyan info ──────────── */
+  --crt-red: var(--cga-hi-red);
+  --crt-cyan: var(--cga-hi-cyan);
 
   /* Red at various opacities */
-  --error-05: rgba(255, 51, 51, 0.05);
-  --error-08: rgba(255, 51, 51, 0.08);
-  --error-10: rgba(255, 51, 51, 0.1);
-  --error-30: rgba(255, 51, 51, 0.3);
-  --error-40: rgba(255, 51, 51, 0.4);
-  --error-50: rgba(255, 51, 51, 0.5);
+  --error-05: rgba(255, 85, 85, 0.05);
+  --error-08: rgba(255, 85, 85, 0.08);
+  --error-10: rgba(255, 85, 85, 0.1);
+  --error-30: rgba(255, 85, 85, 0.3);
+  --error-40: rgba(255, 85, 85, 0.4);
+  --error-50: rgba(255, 85, 85, 0.5);
 
   /* ─── Overlays ─────────────────────────────────── */
   --overlay-50: rgba(0, 0, 0, 0.5);
   --overlay-60: rgba(0, 0, 0, 0.6);
   --overlay-80: rgba(0, 0, 0, 0.8);
 
-  /* ─── Backgrounds: blue frame + gray surfaces ─── */
-  --bg-primary: #2244AA;
-  --bg-secondary: #3A3A55;
-  --bg-panel: #4A4A66;
-  --bg-input: #2E2E48;
+  /* ─── Backgrounds: blue frame + grey surfaces ──── */
+  --bg-primary: var(--cga-blue);
+  --bg-secondary: var(--cga-dark-grey);
+  --bg-panel: var(--cga-dark-grey);
+  --bg-input: var(--cga-black);
 
-  /* ─── Text: clean neutrals ────────────────────── */
-  --text-primary: #FFFFFF;
-  --text-secondary: #CCCCCC;
-  --text-muted: #888899;
-  --text-warning: #FF8800;
-  --text-error: #FF5555;
+  /* ─── Text ─────────────────────────────────────── */
+  --text-primary: var(--cga-white);
+  --text-secondary: var(--cga-light-grey);
+  --text-muted: var(--cga-light-grey);
+  --text-warning: var(--cga-yellow);
+  --text-error: var(--cga-hi-red);
 
   /* ─── Spacing ──────────────────────────────────── */
   --space-xs: 4px;
@@ -70,10 +88,10 @@
   --font-size-xxl: 32px;
 
   /* ─── Borders ──────────────────────────────────── */
-  --border-color: #2A2A44;
+  --border-color: var(--cga-blue);
   --border-radius: 2px;
 
   /* ─── Glow (text-shadow values) ────────────────── */
   --glow-green: 0 0 8px var(--accent-30), 0 0 16px var(--accent-10);
-  --glow-amber: 0 0 8px rgba(255, 136, 0, 0.3), 0 0 16px rgba(255, 136, 0, 0.1);
+  --glow-amber: 0 0 8px rgba(255, 255, 85, 0.3), 0 0 16px rgba(255, 255, 85, 0.1);
 }
