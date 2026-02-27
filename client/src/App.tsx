@@ -7,6 +7,8 @@ import { Dashboard } from './components/dashboard/Dashboard';
 import { ImportWizard } from './components/import/ImportWizard';
 import { CustomerSearch } from './components/customers/CustomerSearch';
 import { InventoryBrowser } from './components/inventory/InventoryBrowser';
+import { POSScreen } from './components/pos/POSScreen';
+import { ReturnScreen } from './components/rentals/ReturnScreen';
 
 function PlaceholderPage({ name }: { name: string }) {
   return (
@@ -23,9 +25,9 @@ export function App() {
       <Layout>
         <Routes>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/pos" element={<PlaceholderPage name="Point of Sale" />} />
+          <Route path="/pos" element={<POSScreen />} />
           <Route path="/customers" element={<CustomerSearch />} />
-          <Route path="/returns" element={<PlaceholderPage name="Returns" />} />
+          <Route path="/returns" element={<ReturnScreen />} />
           <Route path="/inventory" element={<InventoryBrowser />} />
           <Route path="/import" element={<ImportWizard />} />
           <Route path="/settings" element={<PlaceholderPage name="Settings" />} />
