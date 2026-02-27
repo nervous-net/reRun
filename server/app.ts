@@ -14,6 +14,12 @@ import { createTransactionsRoutes } from './routes/transactions.js';
 import { createRentalsRoutes } from './routes/rentals.js';
 import { createReservationsRoutes } from './routes/reservations.js';
 import { createImportRoutes } from './routes/import.js';
+import { createPromotionsRoutes } from './routes/promotions.js';
+import { createAlertsRoutes } from './routes/alerts.js';
+import { createSettingsRoutes } from './routes/settings.js';
+import { createBackupRoutes } from './routes/backup.js';
+import { DB_PATH } from './db/index.js';
+import path from 'path';
 
 const app = new Hono();
 
@@ -31,6 +37,13 @@ app.route('/api/transactions', createTransactionsRoutes(db));
 app.route('/api/rentals', createRentalsRoutes(db));
 app.route('/api/reservations', createReservationsRoutes(db));
 app.route('/api/import', createImportRoutes(db));
+app.route('/api/promotions', createPromotionsRoutes(db));
+app.route('/api/alerts', createAlertsRoutes(db));
+app.route('/api/settings', createSettingsRoutes(db));
+app.route('/api/backup', createBackupRoutes(db, {
+  dbPath: DB_PATH,
+  backupDir: path.join(path.dirname(DB_PATH), 'backups'),
+}));
 
 // In production, serve the built frontend
 if (process.env.NODE_ENV === 'production') {
