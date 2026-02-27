@@ -1,0 +1,84 @@
+/* ABOUTME: CRT monitor visual effects for the retro aesthetic */
+/* ABOUTME: Provides scanlines, phosphor glow, screen curvature, and vignette */
+
+/* Scanline overlay */
+.crt-screen {
+  position: relative;
+  background: var(--bg-primary);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.crt-screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.15) 0px,
+    rgba(0, 0, 0, 0.15) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Vignette effect */
+.crt-screen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 60%,
+    rgba(0, 0, 0, 0.4) 100%
+  );
+  pointer-events: none;
+  z-index: 11;
+}
+
+/* Screen curvature shadow */
+.crt-screen {
+  box-shadow:
+    inset 0 0 60px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(51, 255, 0, 0.05);
+}
+
+/* Phosphor glow text */
+.glow-text {
+  text-shadow: var(--glow-green);
+}
+
+.glow-text--amber {
+  color: var(--text-warning);
+  text-shadow: var(--glow-amber);
+}
+
+.glow-text--red {
+  color: var(--text-error);
+  text-shadow: 0 0 10px rgba(255, 51, 51, 0.3), 0 0 20px rgba(255, 51, 51, 0.1);
+}
+
+/* Optional flicker animation */
+.crt-flicker {
+  animation: flicker 0.15s infinite;
+}
+
+@keyframes flicker {
+  0% { opacity: 0.97; }
+  50% { opacity: 1; }
+  100% { opacity: 0.98; }
+}
+
+/* Boot-up text animation */
+@keyframes typeIn {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+.type-in {
+  overflow: hidden;
+  white-space: nowrap;
+  animation: typeIn 0.5s steps(20) forwards;
+}

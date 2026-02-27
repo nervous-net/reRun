@@ -1,0 +1,58 @@
+/* ABOUTME: Global reset and base styles for reRun */
+/* ABOUTME: Sets terminal-like defaults with monospace font and dark background */
+
+@import './variables.css';
+@import './crt.css';
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-md);
+  line-height: 1.5;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: unset;
+}
+
+a {
+  color: var(--crt-green);
+  text-decoration: none;
+}
+
+a:hover {
+  text-shadow: var(--glow-green);
+}
+
+::selection {
+  background: var(--crt-green);
+  color: var(--bg-primary);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--crt-green-dim);
+}

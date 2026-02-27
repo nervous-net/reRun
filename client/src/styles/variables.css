@@ -1,0 +1,49 @@
+/* ABOUTME: CSS custom properties for the reRun CRT theme */
+/* ABOUTME: Defines colors, spacing, fonts, and glow effects */
+
+:root {
+  /* CRT Phosphor Colors */
+  --crt-green: #33FF00;
+  --crt-green-dim: #1a8c00;
+  --crt-green-bright: #66FF33;
+  --crt-amber: #FFB000;
+  --crt-amber-dim: #996a00;
+  --crt-red: #FF3333;
+  --crt-cyan: #00FFFF;
+
+  /* Backgrounds */
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #111111;
+  --bg-panel: #0d1a0d;
+  --bg-input: #050a05;
+
+  /* Text */
+  --text-primary: #33FF00;
+  --text-secondary: #1a8c00;
+  --text-muted: #0d4600;
+  --text-warning: #FFB000;
+  --text-error: #FF3333;
+
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+
+  /* Font */
+  --font-mono: 'JetBrains Mono', 'IBM Plex Mono', 'Fira Code', 'Courier New', monospace;
+  --font-size-sm: 12px;
+  --font-size-md: 14px;
+  --font-size-lg: 18px;
+  --font-size-xl: 24px;
+  --font-size-xxl: 32px;
+
+  /* Borders */
+  --border-color: #1a4d00;
+  --border-radius: 2px;
+
+  /* Glow */
+  --glow-green: 0 0 10px rgba(51, 255, 0, 0.3), 0 0 20px rgba(51, 255, 0, 0.1);
+  --glow-amber: 0 0 10px rgba(255, 176, 0, 0.3), 0 0 20px rgba(255, 176, 0, 0.1);
+}
