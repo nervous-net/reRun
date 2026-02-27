@@ -3,6 +3,9 @@
 
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/common/Layout';
+import { ImportWizard } from './components/import/ImportWizard';
+import { CustomerSearch } from './components/customers/CustomerSearch';
+import { InventoryBrowser } from './components/inventory/InventoryBrowser';
 
 function PlaceholderPage({ name }: { name: string }) {
   return (
@@ -20,10 +23,10 @@ export function App() {
         <Routes>
           <Route path="/" element={<PlaceholderPage name="Dashboard" />} />
           <Route path="/pos" element={<PlaceholderPage name="Point of Sale" />} />
-          <Route path="/customers" element={<PlaceholderPage name="Customers" />} />
+          <Route path="/customers" element={<CustomerSearch />} />
           <Route path="/returns" element={<PlaceholderPage name="Returns" />} />
-          <Route path="/inventory" element={<PlaceholderPage name="Inventory" />} />
-          <Route path="/import" element={<PlaceholderPage name="Import" />} />
+          <Route path="/inventory" element={<InventoryBrowser />} />
+          <Route path="/import" element={<ImportWizard />} />
           <Route path="/settings" element={<PlaceholderPage name="Settings" />} />
         </Routes>
       </Layout>
