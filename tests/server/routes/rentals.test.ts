@@ -1,0 +1,240 @@
+// ABOUTME: Tests for the rentals API routes (checkout, return, overdue, active, history)
+// ABOUTME: Validates HTTP status codes, response shapes, and round-trip rental workflows
+
+import { describe, it, expect } from 'vitest';
+import { createTestDb, migrateTestDb } from '../../setup.js';
+import { createRentalsRoutes } from '../../../server/routes/rentals.js';
+import { Hono } from 'hono';
+import { nanoid } from 'nanoid';
+import {
+  customers,
+  titles,
+  copies,
+  pricingRules,
+  rentals,
+} from '../../../server/db/schema.js';
+import { eq } from 'drizzle-orm';
+
+function buildApp() {
+  const { db, sqlite } = createTestDb();
+  migrateTestDb(sqlite);
+  const routes = createRentalsRoutes(db);
+  const app = new Hono();
+  app.route('/api/rentals', routes);
+  return { app, db, sqlite };
+}
+
+async function seedCustomer(db: any, overrides: Record<string, any> = {}) {
+  const id = nanoid();
+  await db.insert(customers).values({
+    id,
+    firstName: overrides.firstName ?? 'Dante',
+    lastName: overrides.lastName ?? 'Hicks',
+    memberBarcode: overrides.memberBarcode ?? `MBR-${nanoid(8)}`,
+    balance: overrides.balance ?? 0,
+  });
+  return id;
+}
+
+async function seedTitleAndCopy(db: any, overrides: Record<string, any> = {}) {
+  const titleId = nanoid();
+  await db.insert(titles).values({
+    id: titleId,
+    name: overrides.titleName ?? 'Jaws',
+    year: overrides.year ?? 1975,
+  });
+  const copyId = nanoid();
+  await db.insert(copies).values({
+    id: copyId,
+    titleId,
+    barcode: overrides.barcode ?? `BC-${nanoid(6)}`,
+    format: overrides.format ?? 'DVD',
+    status: overrides.status ?? 'in',
+  });
+  return { titleId, copyId };
+}
+
+async function seedPricingRule(db: any, overrides: Record<string, any> = {}) {
+  const id = nanoid();
+  await db.insert(pricingRules).values({
+    id,
+    name: overrides.name ?? '7-Day Rental',
+    type: overrides.type ?? 'rental',
+    rate: overrides.rate ?? 399,
+    durationDays: overrides.durationDays ?? 7,
+    lateFeePerDay: overrides.lateFeePerDay ?? 100,
+    active: 1,
+  });
+  return id;
+}
+
+describe('Rentals API', () => {
+  describe('POST /api/rentals/checkout', () => {
+    it('checks out a copy and returns 201', async () => {
+      const { app, db } = buildApp();
+      const customerId = await seedCustomer(db);
+      const { copyId } = await seedTitleAndCopy(db);
+      const pricingRuleId = await seedPricingRule(db);
+
+      const res = await app.request('/api/rentals/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId, copyId, pricingRuleId }),
+      });
+
+      expect(res.status).toBe(201);
+      const body = await res.json();
+      expect(body.id).toBeDefined();
+      expect(body.customerId).toBe(customerId);
+      expect(body.copyId).toBe(copyId);
+      expect(body.status).toBe('out');
+    });
+
+    it('returns 400 when copy is already out', async () => {
+      const { app, db } = buildApp();
+      const customerId = await seedCustomer(db);
+      const { copyId } = await seedTitleAndCopy(db, { status: 'out' });
+      const pricingRuleId = await seedPricingRule(db);
+
+      const res = await app.request('/api/rentals/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId, copyId, pricingRuleId }),
+      });
+
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(body.error).toBeDefined();
+    });
+
+    it('returns 400 when required fields are missing', async () => {
+      const { app } = buildApp();
+
+      const res = await app.request('/api/rentals/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId: 'abc' }),
+      });
+
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe('POST /api/rentals/return', () => {
+    it('returns a copy and returns 200 with late fee info', async () => {
+      const { app, db } = buildApp();
+      const customerId = await seedCustomer(db);
+      const { copyId } = await seedTitleAndCopy(db);
+      const pricingRuleId = await seedPricingRule(db, { durationDays: 30 });
+
+      // Checkout first
+      await app.request('/api/rentals/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId, copyId, pricingRuleId }),
+      });
+
+      // Return
+      const res = await app.request('/api/rentals/return', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ copyId, lateFeeAction: 'pay' }),
+      });
+
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.status).toBe('returned');
+      expect(body.returnedAt).toBeDefined();
+      expect(body.lateFee).toBe(0);
+    });
+
+    it('returns 400 when no active rental for copy', async () => {
+      const { app } = buildApp();
+
+      const res = await app.request('/api/rentals/return', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ copyId: 'nonexistent', lateFeeAction: 'pay' }),
+      });
+
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe('GET /api/rentals/overdue', () => {
+    it('returns overdue rentals', async () => {
+      const { app, db } = buildApp();
+      const customerId = await seedCustomer(db);
+      const { copyId } = await seedTitleAndCopy(db);
+      const pricingRuleId = await seedPricingRule(db);
+
+      // Create an overdue rental manually
+      const rentalId = nanoid();
+      await db.insert(rentals).values({
+        id: rentalId,
+        customerId,
+        copyId,
+        pricingRuleId,
+        checkedOutAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+        dueAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'out',
+      });
+      await db.update(copies).set({ status: 'out' }).where(eq(copies.id, copyId));
+
+      const res = await app.request('/api/rentals/overdue');
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.data.length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  describe('GET /api/rentals/active', () => {
+    it('returns currently rented copies', async () => {
+      const { app, db } = buildApp();
+      const customerId = await seedCustomer(db);
+      const { copyId } = await seedTitleAndCopy(db);
+      const pricingRuleId = await seedPricingRule(db, { durationDays: 14 });
+
+      // Checkout
+      await app.request('/api/rentals/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId, copyId, pricingRuleId }),
+      });
+
+      const res = await app.request('/api/rentals/active');
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.data.length).toBeGreaterThanOrEqual(1);
+      expect(body.data[0].copyId).toBe(copyId);
+    });
+  });
+
+  describe('GET /api/rentals/customer/:id', () => {
+    it('returns rental history for a customer', async () => {
+      const { app, db } = buildApp();
+      const customerId = await seedCustomer(db);
+      const { copyId } = await seedTitleAndCopy(db);
+      const pricingRuleId = await seedPricingRule(db, { durationDays: 7 });
+
+      // Checkout and return
+      await app.request('/api/rentals/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId, copyId, pricingRuleId }),
+      });
+
+      await app.request('/api/rentals/return', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ copyId, lateFeeAction: 'pay' }),
+      });
+
+      const res = await app.request(`/api/rentals/customer/${customerId}`);
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.data).toHaveLength(1);
+      expect(body.data[0].status).toBe('returned');
+    });
+  });
+});
