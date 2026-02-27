@@ -1,0 +1,46 @@
+{
+  "name": "rerun",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "tsx watch server/index.ts",
+    "dev:client": "vite",
+    "build": "vite build && tsc -p tsconfig.server.json",
+    "start": "node dist/server/index.js",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
+    "setup": "tsx scripts/setup.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1",
+    "better-sqlite3": "^12.6.2",
+    "csv-parse": "^5",
+    "dotenv": "^16",
+    "drizzle-orm": "^0.39",
+    "hono": "^4",
+    "nanoid": "^5"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6",
+    "@testing-library/react": "^16",
+    "@types/better-sqlite3": "^7",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^4",
+    "concurrently": "^9",
+    "drizzle-kit": "^0.30",
+    "jsdom": "^25",
+    "react": "^19",
+    "react-dom": "^19",
+    "react-router-dom": "^7",
+    "tsx": "^4",
+    "typescript": "^5",
+    "vite": "^6",
+    "vitest": "^3"
+  }
+}
