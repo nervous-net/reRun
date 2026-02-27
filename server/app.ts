@@ -3,11 +3,34 @@
 
 import { Hono } from 'hono';
 import { serveStatic } from '@hono/node-server/serve-static';
+import { db } from './db/index.js';
+import { createTitlesRoutes } from './routes/titles.js';
+import { createCopiesRoutes } from './routes/copies.js';
+import { createCustomersRoutes } from './routes/customers.js';
+import { createProductsRoutes } from './routes/products.js';
+import { createPricingRoutes } from './routes/pricing.js';
+import { createSearchRoutes } from './routes/search.js';
+import { createTransactionsRoutes } from './routes/transactions.js';
+import { createRentalsRoutes } from './routes/rentals.js';
+import { createReservationsRoutes } from './routes/reservations.js';
+import { createImportRoutes } from './routes/import.js';
 
 const app = new Hono();
 
 // Health check
 app.get('/api/health', (c) => c.json({ status: 'ok', name: 'reRun', version: '0.1.0' }));
+
+// API routes
+app.route('/api/titles', createTitlesRoutes(db));
+app.route('/api/copies', createCopiesRoutes(db));
+app.route('/api/customers', createCustomersRoutes(db));
+app.route('/api/products', createProductsRoutes(db));
+app.route('/api/pricing', createPricingRoutes(db));
+app.route('/api/search', createSearchRoutes(db));
+app.route('/api/transactions', createTransactionsRoutes(db));
+app.route('/api/rentals', createRentalsRoutes(db));
+app.route('/api/reservations', createReservationsRoutes(db));
+app.route('/api/import', createImportRoutes(db));
 
 // In production, serve the built frontend
 if (process.env.NODE_ENV === 'production') {
