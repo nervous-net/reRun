@@ -17,7 +17,7 @@ const overlayStyle: CSSProperties = {
   left: 0,
   right: 0,
   bottom: 0,
-  backgroundColor: 'rgba(0, 0, 0, 0.8)',
+  backgroundColor: 'var(--overlay-80)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -49,7 +49,7 @@ const titleStyle: CSSProperties = {
   fontSize: 'var(--font-size-lg)',
   textTransform: 'uppercase',
   letterSpacing: '2px',
-  textShadow: '0 0 10px rgba(85, 255, 255, 0.5)',
+  textShadow: '0 0 10px var(--accent-50)',
   margin: 0,
 };
 

@@ -178,7 +178,7 @@ const styles: Record<string, CSSProperties> = {
     borderBottom: '1px solid var(--border-color)',
   },
   altRow: {
-    backgroundColor: 'rgba(85, 255, 255, 0.02)',
+    backgroundColor: 'var(--accent-02)',
   },
   actions: {
     display: 'flex',

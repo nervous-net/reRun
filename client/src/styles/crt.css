@@ -42,7 +42,7 @@
 .crt-screen {
   box-shadow:
     inset 0 0 60px rgba(0, 0, 0, 0.3),
-    0 0 20px rgba(85, 255, 255, 0.05);
+    0 0 20px var(--accent-05);
 }
 
 /* Phosphor glow text */
@@ -57,7 +57,7 @@
 
 .glow-text--red {
   color: var(--text-error);
-  text-shadow: 0 0 10px rgba(255, 51, 51, 0.3), 0 0 20px rgba(255, 51, 51, 0.1);
+  text-shadow: 0 0 10px var(--error-30), 0 0 20px var(--error-10);
 }
 
 /* Optional flicker animation */

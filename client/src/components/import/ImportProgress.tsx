@@ -172,7 +172,7 @@ const styles: Record<string, CSSProperties> = {
   },
   progressBarError: {
     background: 'var(--crt-red)',
-    boxShadow: '0 0 10px rgba(255, 51, 51, 0.3)',
+    boxShadow: '0 0 10px var(--error-30)',
   },
   progressLabel: {
     color: 'var(--text-secondary)',
@@ -223,7 +223,7 @@ const styles: Record<string, CSSProperties> = {
     padding: 'var(--space-md)',
     border: '1px solid var(--crt-red)',
     borderRadius: 'var(--border-radius)',
-    background: 'rgba(255, 51, 51, 0.05)',
+    background: 'var(--error-05)',
   },
   errorText: {
     color: 'var(--text-error)',

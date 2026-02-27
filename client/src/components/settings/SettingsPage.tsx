@@ -106,12 +106,12 @@ const styles: Record<string, CSSProperties> = {
   },
   feedbackSuccess: {
     color: 'var(--crt-green)',
-    backgroundColor: 'rgba(85, 255, 255, 0.05)',
+    backgroundColor: 'var(--accent-05)',
     border: '1px solid var(--crt-green-dim)',
   },
   feedbackError: {
     color: 'var(--crt-red)',
-    backgroundColor: 'rgba(255, 51, 51, 0.05)',
+    backgroundColor: 'var(--error-05)',
     border: '1px solid var(--crt-red)',
   },
   loading: {
@@ -133,7 +133,7 @@ const styles: Record<string, CSSProperties> = {
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '4px 0',
-    borderBottom: '1px solid rgba(85, 255, 255, 0.05)',
+    borderBottom: '1px solid var(--accent-05)',
     fontSize: 'var(--font-size-md)',
   },
   systemLabel: {
@@ -166,7 +166,7 @@ function percentToBasisPoints(pct: string): string {
 
 function handleInputFocus(e: React.FocusEvent<HTMLInputElement>) {
   e.currentTarget.style.borderColor = 'var(--crt-green)';
-  e.currentTarget.style.boxShadow = '0 0 10px rgba(85, 255, 255, 0.3), 0 0 20px rgba(85, 255, 255, 0.1)';
+  e.currentTarget.style.boxShadow = '0 0 10px var(--accent-30), 0 0 20px var(--accent-10)';
 }
 
 function handleInputBlur(e: React.FocusEvent<HTMLInputElement>) {
@@ -415,7 +415,7 @@ export function SettingsPage() {
         onClick={handleSave}
         onMouseEnter={e => {
           if (!saving) {
-            e.currentTarget.style.boxShadow = '0 0 10px rgba(85, 255, 255, 0.3), 0 0 20px rgba(85, 255, 255, 0.1)';
+            e.currentTarget.style.boxShadow = '0 0 10px var(--accent-30), 0 0 20px var(--accent-10)';
             e.currentTarget.style.borderColor = 'var(--crt-green-bright)';
             e.currentTarget.style.color = 'var(--crt-green-bright)';
           }

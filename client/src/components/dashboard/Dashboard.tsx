@@ -57,7 +57,7 @@ const statRowStyle: CSSProperties = {
   justifyContent: 'space-between',
   alignItems: 'center',
   padding: '3px 0',
-  borderBottom: '1px solid rgba(85, 255, 255, 0.05)',
+  borderBottom: '1px solid var(--accent-05)',
 };
 
 const statLabelStyle: CSSProperties = {
@@ -115,7 +115,7 @@ const tdStyle: CSSProperties = {
 const daysLateStyle: CSSProperties = {
   color: 'var(--crt-red)',
   fontWeight: 'bold',
-  textShadow: '0 0 8px rgba(255, 51, 51, 0.4)',
+  textShadow: '0 0 8px var(--error-40)',
 };
 
 const viewAllLinkStyle: CSSProperties = {
@@ -135,7 +135,7 @@ const reservationRowStyle: CSSProperties = {
   justifyContent: 'space-between',
   alignItems: 'center',
   padding: '4px 0',
-  borderBottom: '1px solid rgba(85, 255, 255, 0.05)',
+  borderBottom: '1px solid var(--accent-05)',
   fontSize: 'var(--font-size-md)',
 };
 
@@ -322,7 +322,7 @@ export function Dashboard() {
                   to="/returns"
                   style={alertLinkStyle}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(255, 51, 51, 0.08)';
+                    e.currentTarget.style.backgroundColor = 'var(--error-08)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
@@ -339,7 +339,7 @@ export function Dashboard() {
                   to="/inventory"
                   style={alertLinkStyle}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(255, 176, 0, 0.08)';
+                    e.currentTarget.style.backgroundColor = 'var(--warning-08)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
@@ -394,7 +394,7 @@ export function Dashboard() {
                         <tr
                           key={rental.id ?? i}
                           style={{
-                            backgroundColor: i % 2 === 1 ? 'rgba(85, 255, 255, 0.02)' : 'transparent',
+                            backgroundColor: i % 2 === 1 ? 'var(--accent-02)' : 'transparent',
                           }}
                         >
                           <td style={tdStyle}>{customerName}</td>
@@ -491,7 +491,7 @@ export function Dashboard() {
                     ...statValueStyle,
                     color: overdueCount > 0 ? 'var(--crt-red)' : 'var(--crt-green)',
                     textShadow: overdueCount > 0
-                      ? '0 0 8px rgba(255, 51, 51, 0.4)'
+                      ? '0 0 8px var(--error-40)'
                       : 'var(--glow-green)',
                   }}>
                     {overdueCount}

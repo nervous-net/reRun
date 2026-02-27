@@ -53,7 +53,7 @@ const emptyStyle: CSSProperties = {
 
 function getRowStyle(index: number, clickable: boolean): CSSProperties {
   return {
-    backgroundColor: index % 2 === 1 ? 'rgba(85, 255, 255, 0.02)' : 'transparent',
+    backgroundColor: index % 2 === 1 ? 'var(--accent-02)' : 'transparent',
     transition: 'background-color 0.1s ease',
     ...(clickable ? clickableRowStyle : {}),
   };
@@ -62,13 +62,13 @@ function getRowStyle(index: number, clickable: boolean): CSSProperties {
 export function Table({ columns, data, onRowClick, emptyMessage = 'No data', className }: TableProps) {
   const handleRowMouseEnter = (e: React.MouseEvent<HTMLTableRowElement>) => {
     if (onRowClick) {
-      e.currentTarget.style.backgroundColor = 'rgba(85, 255, 255, 0.06)';
+      e.currentTarget.style.backgroundColor = 'var(--accent-06)';
     }
   };
 
   const handleRowMouseLeave = (e: React.MouseEvent<HTMLTableRowElement>, index: number) => {
     e.currentTarget.style.backgroundColor =
-      index % 2 === 1 ? 'rgba(85, 255, 255, 0.02)' : 'transparent';
+      index % 2 === 1 ? 'var(--accent-02)' : 'transparent';
   };
 
   return (

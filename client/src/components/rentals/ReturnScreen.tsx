@@ -324,7 +324,7 @@ export function ReturnScreen() {
                 key={item.copy.barcode}
                 style={{
                   ...styles.queueRow,
-                  backgroundColor: index % 2 === 1 ? 'rgba(85, 255, 255, 0.02)' : 'transparent',
+                  backgroundColor: index % 2 === 1 ? 'var(--accent-02)' : 'transparent',
                 }}
               >
                 <div style={styles.queueRowMain}>
@@ -427,7 +427,7 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 'var(--font-size-xl)',
     textTransform: 'uppercase',
     letterSpacing: '2px',
-    textShadow: '0 0 10px rgba(85, 255, 255, 0.5)',
+    textShadow: '0 0 10px var(--accent-50)',
     margin: 0,
   },
   scanBar: {
@@ -525,7 +525,7 @@ const styles: Record<string, CSSProperties> = {
   overdueDays: {
     color: 'var(--crt-red)',
     fontSize: 'var(--font-size-md)',
-    textShadow: '0 0 8px rgba(255, 51, 51, 0.4)',
+    textShadow: '0 0 8px var(--error-40)',
     fontWeight: 'bold',
   },
   lateFeeAmount: {

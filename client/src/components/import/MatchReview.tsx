@@ -239,7 +239,7 @@ const styles: Record<string, CSSProperties> = {
   },
   altRow: {
     cursor: 'pointer',
-    backgroundColor: 'rgba(85, 255, 255, 0.02)',
+    backgroundColor: 'var(--accent-02)',
     transition: 'background-color 0.1s ease',
   },
   editRow: {

@@ -405,7 +405,7 @@ const styles: Record<string, CSSProperties> = {
     textTransform: 'uppercase',
     letterSpacing: '1px',
     whiteSpace: 'nowrap',
-    textShadow: '0 0 8px rgba(85, 255, 255, 0.3)',
+    textShadow: '0 0 8px var(--accent-30)',
   },
   scanInputWrapper: {
     flex: 1,
@@ -421,7 +421,7 @@ const styles: Record<string, CSSProperties> = {
     outline: 'none',
     width: '100%',
     boxSizing: 'border-box' as const,
-    textShadow: '0 0 5px rgba(85, 255, 255, 0.3)',
+    textShadow: '0 0 5px var(--accent-30)',
     transition: 'box-shadow 0.15s ease',
   },
   itemCount: {
@@ -498,7 +498,7 @@ const styles: Record<string, CSSProperties> = {
   paymentTotalAmount: {
     color: 'var(--crt-green)',
     fontSize: 'var(--font-size-xxl)',
-    textShadow: '0 0 10px rgba(85, 255, 255, 0.5)',
+    textShadow: '0 0 10px var(--accent-50)',
     fontWeight: 'bold',
     letterSpacing: '1px',
   },

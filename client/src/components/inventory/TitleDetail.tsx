@@ -38,7 +38,7 @@ const overlayStyle: CSSProperties = {
   left: 0,
   right: 0,
   bottom: 0,
-  backgroundColor: 'rgba(0, 0, 0, 0.6)',
+  backgroundColor: 'var(--overlay-60)',
   zIndex: 900,
 };
 
@@ -51,7 +51,7 @@ const panelStyle: CSSProperties = {
   maxWidth: '100vw',
   backgroundColor: 'var(--bg-panel)',
   borderLeft: '1px solid var(--crt-green)',
-  boxShadow: '-4px 0 20px rgba(85, 255, 255, 0.15)',
+  boxShadow: '-4px 0 20px var(--accent-15)',
   display: 'flex',
   flexDirection: 'column',
   zIndex: 901,
@@ -73,7 +73,7 @@ const headerTitleStyle: CSSProperties = {
   fontSize: 'var(--font-size-lg)',
   textTransform: 'uppercase',
   letterSpacing: '2px',
-  textShadow: '0 0 10px rgba(85, 255, 255, 0.5)',
+  textShadow: '0 0 10px var(--accent-50)',
   margin: 0,
 };
 

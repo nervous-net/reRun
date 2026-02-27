@@ -108,7 +108,7 @@ export function CustomerSearch() {
               onClick={() => setSelectedId(customer.id)}
               onMouseEnter={(e) => {
                 if (selectedId !== customer.id) {
-                  e.currentTarget.style.backgroundColor = 'rgba(85, 255, 255, 0.06)';
+                  e.currentTarget.style.backgroundColor = 'var(--accent-06)';
                 }
               }}
               onMouseLeave={(e) => {
@@ -212,7 +212,7 @@ const styles: Record<string, CSSProperties> = {
     transition: 'background-color 0.1s ease',
   },
   resultRowSelected: {
-    backgroundColor: 'rgba(85, 255, 255, 0.1)',
+    backgroundColor: 'var(--accent-10)',
     borderLeft: '2px solid var(--crt-green)',
   },
   resultName: {

@@ -210,7 +210,7 @@ export function CustomerCard({ customerId }: CustomerCardProps) {
               ...styles.balanceAmount,
               color: customer.balance < 0 ? 'var(--crt-red)' : 'var(--crt-green)',
               textShadow: customer.balance < 0
-                ? '0 0 10px rgba(255, 51, 51, 0.5)'
+                ? '0 0 10px var(--error-50)'
                 : 'var(--glow-green)',
             }}
           >

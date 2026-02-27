@@ -65,10 +65,10 @@ export function Button({
       target.style.borderColor = 'var(--crt-green-bright)';
       target.style.color = 'var(--crt-green-bright)';
     } else if (variant === 'secondary') {
-      target.style.boxShadow = '0 0 8px rgba(85, 255, 255, 0.15)';
+      target.style.boxShadow = '0 0 8px var(--accent-15)';
       target.style.color = 'var(--crt-green)';
     } else if (variant === 'danger') {
-      target.style.boxShadow = '0 0 10px rgba(255, 51, 51, 0.3)';
+      target.style.boxShadow = '0 0 10px var(--error-30)';
       target.style.borderColor = '#ff5555';
       target.style.color = '#ff5555';
     } else if (variant === 'ghost') {

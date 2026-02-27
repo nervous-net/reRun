@@ -217,7 +217,7 @@ const styles: Record<string, CSSProperties> = {
   totalAmount: {
     color: 'var(--crt-green)',
     fontSize: 'var(--font-size-xxl)',
-    textShadow: '0 0 10px rgba(85, 255, 255, 0.5)',
+    textShadow: '0 0 10px var(--accent-50)',
     fontWeight: 'bold',
   },
   methodGroup: {

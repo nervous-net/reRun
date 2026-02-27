@@ -1,41 +1,67 @@
 /* ABOUTME: CSS custom properties for the reRun CRT theme */
-/* ABOUTME: DOS POS-inspired palette matching classic video rental system UI */
+/* ABOUTME: ALL colors centralized here — components NEVER use hardcoded rgba */
 
 :root {
-  /* Accent - Bright Cyan */
-  --crt-green: #55FFFF;
-  --crt-green-dim: #00AAAA;
-  --crt-green-bright: #88FFFF;
+  /* ─── Green accent ─────────────────────────────── */
+  --crt-green: #55FF55;
+  --crt-green-dim: #00AA00;
+  --crt-green-bright: #88FF88;
 
-  /* Yellow - Headers and labels */
-  --crt-amber: #FFFF55;
-  --crt-amber-dim: #CCCC00;
+  /* Green at various opacities (backgrounds, highlights) */
+  --accent-02: rgba(85, 255, 85, 0.02);
+  --accent-05: rgba(85, 255, 85, 0.05);
+  --accent-06: rgba(85, 255, 85, 0.06);
+  --accent-08: rgba(85, 255, 85, 0.08);
+  --accent-10: rgba(85, 255, 85, 0.1);
+  --accent-15: rgba(85, 255, 85, 0.15);
+  --accent-30: rgba(85, 255, 85, 0.3);
+  --accent-50: rgba(85, 255, 85, 0.5);
 
-  /* Other colors */
+  /* ─── Orange headers/labels ────────────────────── */
+  --crt-amber: #FF8800;
+  --crt-amber-dim: #CC6600;
+
+  /* Orange at various opacities */
+  --warning-08: rgba(255, 136, 0, 0.08);
+
+  /* ─── Red errors/danger ────────────────────────── */
   --crt-red: #FF5555;
   --crt-cyan: #55FFFF;
 
-  /* Backgrounds - Medium blue like classic DOS POS */
-  --bg-primary: #2244AA;
-  --bg-secondary: #2B50B8;
-  --bg-panel: #3060C0;
-  --bg-input: #1A3399;
+  /* Red at various opacities */
+  --error-05: rgba(255, 51, 51, 0.05);
+  --error-08: rgba(255, 51, 51, 0.08);
+  --error-10: rgba(255, 51, 51, 0.1);
+  --error-30: rgba(255, 51, 51, 0.3);
+  --error-40: rgba(255, 51, 51, 0.4);
+  --error-50: rgba(255, 51, 51, 0.5);
 
-  /* Text - High contrast on medium blue */
+  /* ─── Overlays ─────────────────────────────────── */
+  --overlay-50: rgba(0, 0, 0, 0.5);
+  --overlay-60: rgba(0, 0, 0, 0.6);
+  --overlay-80: rgba(0, 0, 0, 0.8);
+
+  /* ─── Backgrounds: blue frame + gray surfaces ─── */
+  --bg-primary: #2244AA;
+  --bg-secondary: #3A3A55;
+  --bg-panel: #4A4A66;
+  --bg-input: #2E2E48;
+
+  /* ─── Text: clean neutrals ────────────────────── */
   --text-primary: #FFFFFF;
-  --text-secondary: #CCCCEE;
-  --text-muted: #8899CC;
-  --text-warning: #FFFF55;
+  --text-secondary: #CCCCCC;
+  --text-muted: #888899;
+  --text-warning: #FF8800;
   --text-error: #FF5555;
 
-  /* Spacing */
+  /* ─── Spacing ──────────────────────────────────── */
   --space-xs: 4px;
   --space-sm: 8px;
   --space-md: 16px;
   --space-lg: 24px;
   --space-xl: 32px;
 
-  /* Font */
+  /* ─── Font ─────────────────────────────────────── */
   --font-mono: 'JetBrains Mono', 'IBM Plex Mono', 'Fira Code', 'Courier New', monospace;
   --font-size-sm: 12px;
   --font-size-md: 14px;
@@ -43,11 +69,11 @@
   --font-size-xl: 24px;
   --font-size-xxl: 32px;
 
-  /* Borders - Darker blue for sunken line effect */
-  --border-color: #1A2A88;
+  /* ─── Borders ──────────────────────────────────── */
+  --border-color: #2A2A44;
   --border-radius: 2px;
 
-  /* Glow - Subtle */
-  --glow-green: 0 0 8px rgba(85, 255, 255, 0.3), 0 0 16px rgba(85, 255, 255, 0.1);
-  --glow-amber: 0 0 8px rgba(255, 255, 85, 0.3), 0 0 16px rgba(255, 255, 85, 0.1);
+  /* ─── Glow (text-shadow values) ────────────────── */
+  --glow-green: 0 0 8px var(--accent-30), 0 0 16px var(--accent-10);
+  --glow-amber: 0 0 8px rgba(255, 136, 0, 0.3), 0 0 16px rgba(255, 136, 0, 0.1);
 }

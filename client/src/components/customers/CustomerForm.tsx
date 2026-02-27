@@ -197,7 +197,7 @@ const styles: Record<string, CSSProperties> = {
     color: 'var(--crt-red)',
     fontSize: 'var(--font-size-sm)',
     padding: '4px 8px',
-    backgroundColor: 'rgba(255, 51, 51, 0.1)',
+    backgroundColor: 'var(--error-10)',
     borderRadius: 'var(--border-radius)',
   },
   textareaWrapper: {
