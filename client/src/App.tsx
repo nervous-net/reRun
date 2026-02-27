@@ -3,6 +3,7 @@
 
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/common/Layout';
+import { Dashboard } from './components/dashboard/Dashboard';
 import { ImportWizard } from './components/import/ImportWizard';
 import { CustomerSearch } from './components/customers/CustomerSearch';
 import { InventoryBrowser } from './components/inventory/InventoryBrowser';
@@ -21,7 +22,7 @@ export function App() {
     <BrowserRouter>
       <Layout>
         <Routes>
-          <Route path="/" element={<PlaceholderPage name="Dashboard" />} />
+          <Route path="/" element={<Dashboard />} />
           <Route path="/pos" element={<PlaceholderPage name="Point of Sale" />} />
           <Route path="/customers" element={<CustomerSearch />} />
           <Route path="/returns" element={<PlaceholderPage name="Returns" />} />
