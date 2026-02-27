@@ -177,9 +177,6 @@ const listColumns = [
 ];
 
 function mapTitleToSummary(raw: any): TitleSummary {
-  const copies: any[] = raw.copies ?? [];
-  const formats = [...new Set(copies.map((c: any) => c.format))] as string[];
-  const available = copies.filter((c: any) => c.status === 'available').length;
   return {
     id: raw.id,
     name: raw.name,
@@ -187,9 +184,9 @@ function mapTitleToSummary(raw: any): TitleSummary {
     genre: raw.genre ?? '',
     rating: raw.rating ?? '',
     coverUrl: raw.coverUrl,
-    availableCopies: available,
-    totalCopies: copies.length,
-    formats,
+    availableCopies: raw.availableCopies ?? 0,
+    totalCopies: raw.totalCopies ?? 0,
+    formats: [],
   };
 }
 
@@ -203,7 +200,10 @@ export function InventoryBrowser() {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [titles, setTitles] = useState<TitleSummary[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Filters
@@ -223,22 +223,30 @@ export function InventoryBrowser() {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const buildParams = useCallback(() => {
+    const params: Record<string, string> = { limit: '50' };
+    if (searchQuery.trim()) params.q = searchQuery.trim();
+    if (genreFilter) params.genre = genreFilter;
+    if (ratingFilter) params.rating = ratingFilter;
+    if (availableOnly) params.available = 'true';
+    if (formatFilters.size > 0) params.format = [...formatFilters].join(',');
+    return params;
+  }, [searchQuery, genreFilter, formatFilters, availableOnly, ratingFilter]);
+
   const fetchTitles = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setPage(1);
 
     try {
-      const params: Record<string, string> = {};
-      if (searchQuery.trim()) params.q = searchQuery.trim();
-      if (genreFilter) params.genre = genreFilter;
-      if (ratingFilter) params.rating = ratingFilter;
-      if (availableOnly) params.available = 'true';
-      if (formatFilters.size > 0) params.format = [...formatFilters].join(',');
+      const params = buildParams();
+      params.page = '1';
 
       const data = await api.search.query(params);
-      const results: any[] = data.results ?? data ?? [];
+      const results: any[] = data.titles ?? [];
       const mapped = results.map(mapTitleToSummary);
       setTitles(mapped);
+      setTotal(data.total ?? 0);
 
       // Build genre options from all unique genres
       const genres = [...new Set(mapped.map((t) => t.genre).filter(Boolean))].sort();
@@ -252,7 +260,27 @@ export function InventoryBrowser() {
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, genreFilter, formatFilters, availableOnly, ratingFilter]);
+  }, [buildParams]);
+
+  const fetchMore = useCallback(async () => {
+    const nextPage = page + 1;
+    setLoadingMore(true);
+    try {
+      const params = buildParams();
+      params.page = String(nextPage);
+
+      const data = await api.search.query(params);
+      const results: any[] = data.titles ?? [];
+      const mapped = results.map(mapTitleToSummary);
+      setTitles((prev) => [...prev, ...mapped]);
+      setPage(nextPage);
+      setTotal(data.total ?? 0);
+    } catch {
+      // silent — user can retry
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [page, buildParams]);
 
   // Debounced fetch on filter/search changes
   useEffect(() => {
@@ -393,7 +421,7 @@ export function InventoryBrowser() {
         {/* Main Content */}
         <div style={mainAreaStyle}>
           <div style={statusBarStyle}>
-            {loading ? 'Searching...' : `${titles.length} title${titles.length !== 1 ? 's' : ''} found`}
+            {loading ? 'Searching...' : `${titles.length} of ${total} title${total !== 1 ? 's' : ''}`}
             {error && <span style={{ color: 'var(--crt-red)', marginLeft: 'var(--space-sm)' }}>({error})</span>}
           </div>
 
@@ -422,6 +450,14 @@ export function InventoryBrowser() {
               onRowClick={(row) => handleTitleClick(row.id as string)}
               emptyMessage="No titles found"
             />
+          )}
+
+          {titles.length < total && !loading && (
+            <div style={{ textAlign: 'center', padding: 'var(--space-md)' }}>
+              <Button variant="secondary" onClick={fetchMore} disabled={loadingMore}>
+                {loadingMore ? 'Loading...' : `Load More (${total - titles.length} remaining)`}
+              </Button>
+            </div>
           )}
         </div>
       </div>

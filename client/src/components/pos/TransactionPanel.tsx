@@ -9,6 +9,7 @@ export interface LineItem {
   copyId?: string;
   titleId?: string;
   productId?: string;
+  pricingRuleId?: string;
 }
 
 interface TransactionPanelProps {

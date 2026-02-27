@@ -1,7 +1,7 @@
 // ABOUTME: Home dashboard screen with activity summary, alerts, overdue items, and quick stats
 // ABOUTME: Dense, information-rich CRT terminal layout using CSS grid with box-drawing characters
 
-import { type CSSProperties, useEffect, useState } from 'react';
+import { type CSSProperties, useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
 import { Badge } from '../common/Badge';
@@ -200,69 +200,68 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<string[]>([]);
 
-  useEffect(() => {
-    let mounted = true;
+  const loadDashboard = useCallback(async () => {
+    const errs: string[] = [];
 
-    async function loadDashboard() {
-      const errs: string[] = [];
+    const [overdueResult, lowStockResult, reservationsResult, titlesResult, customersResult] =
+      await Promise.allSettled([
+        api.rentals.overdue(),
+        api.products.lowStock(),
+        api.reservations.list(),
+        api.titles.list({ limit: '1' }),
+        api.customers.list({ limit: '1' }),
+      ]);
 
-      // Fetch all data in parallel; each call fails independently
-      const [overdueResult, lowStockResult, reservationsResult, titlesResult, customersResult] =
-        await Promise.allSettled([
-          api.rentals.overdue(),
-          api.products.lowStock(),
-          api.reservations.list(),
-          api.titles.list({ limit: '1' }),
-          api.customers.list({ limit: '1' }),
-        ]);
-
-      if (!mounted) return;
-
-      if (overdueResult.status === 'fulfilled') {
-        const data = overdueResult.value;
-        setOverdueRentals(Array.isArray(data) ? data : data?.rentals ?? data?.items ?? []);
-      } else {
-        errs.push('overdue rentals');
-      }
-
-      if (lowStockResult.status === 'fulfilled') {
-        const data = lowStockResult.value;
-        setLowStockProducts(Array.isArray(data) ? data : data?.products ?? data?.items ?? []);
-      } else {
-        errs.push('low stock');
-      }
-
-      if (reservationsResult.status === 'fulfilled') {
-        const data = reservationsResult.value;
-        setReservations(Array.isArray(data) ? data : data?.reservations ?? data?.items ?? []);
-      } else {
-        errs.push('reservations');
-      }
-
-      if (titlesResult.status === 'fulfilled') {
-        const data = titlesResult.value;
-        setTitleCount(data?.total ?? data?.count ?? (Array.isArray(data) ? data.length : null));
-      } else {
-        errs.push('titles');
-      }
-
-      if (customersResult.status === 'fulfilled') {
-        const data = customersResult.value;
-        setCustomerCount(data?.total ?? data?.count ?? (Array.isArray(data) ? data.length : null));
-      } else {
-        errs.push('customers');
-      }
-
-      setErrors(errs);
-      setLoading(false);
+    if (overdueResult.status === 'fulfilled') {
+      const data = overdueResult.value;
+      setOverdueRentals(Array.isArray(data) ? data : data?.data ?? []);
+    } else {
+      errs.push('overdue rentals');
     }
 
-    loadDashboard();
+    if (lowStockResult.status === 'fulfilled') {
+      const data = lowStockResult.value;
+      setLowStockProducts(Array.isArray(data) ? data : data?.data ?? []);
+    } else {
+      errs.push('low stock');
+    }
 
-    return () => {
-      mounted = false;
-    };
+    if (reservationsResult.status === 'fulfilled') {
+      const data = reservationsResult.value;
+      setReservations(Array.isArray(data) ? data : data?.data ?? []);
+    } else {
+      errs.push('reservations');
+    }
+
+    if (titlesResult.status === 'fulfilled') {
+      const data = titlesResult.value;
+      setTitleCount(data?.total ?? data?.count ?? (Array.isArray(data) ? data.length : null));
+    } else {
+      errs.push('titles');
+    }
+
+    if (customersResult.status === 'fulfilled') {
+      const data = customersResult.value;
+      setCustomerCount(data?.total ?? data?.count ?? (Array.isArray(data) ? data.length : null));
+    } else {
+      errs.push('customers');
+    }
+
+    setErrors(errs);
+    setLoading(false);
   }, []);
+
+  // Load on mount + refresh every 30s + refetch on window focus
+  useEffect(() => {
+    loadDashboard();
+    const interval = setInterval(loadDashboard, 30_000);
+    const handleFocus = () => loadDashboard();
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [loadDashboard]);
 
   const overdueCount = overdueRentals.length;
   const lowStockCount = lowStockProducts.length;
@@ -385,9 +384,11 @@ export function Dashboard() {
                   </thead>
                   <tbody>
                     {limitedOverdue.map((rental: any, i: number) => {
-                      const customerName = rental.customer?.name ?? rental.customerName ?? '—';
-                      const titleName = rental.title?.name ?? rental.titleName ?? rental.copy?.title?.name ?? '—';
-                      const dueDate = rental.dueDate ?? rental.due_date ?? '';
+                      const customerName = rental.customerFirstName
+                        ? `${rental.customerFirstName} ${rental.customerLastName}`
+                        : rental.customerName ?? '—';
+                      const titleName = rental.titleName ?? '—';
+                      const dueDate = rental.dueAt ?? '';
                       const late = dueDate ? daysLate(dueDate) : 0;
 
                       return (
@@ -439,7 +440,13 @@ export function Dashboard() {
                 const status = res.status ?? 'waiting';
 
                 return (
-                  <div key={res.id ?? i} style={reservationRowStyle}>
+                  <Link
+                    key={res.id ?? i}
+                    to={`/pos?customerId=${res.customerId ?? ''}&reservationId=${res.id ?? ''}`}
+                    style={{ ...reservationRowStyle, textDecoration: 'none', cursor: 'pointer' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--accent-10)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                  >
                     <div>
                       <span style={reservationTextStyle}>{customerName}</span>
                       <span style={arrowStyle}>&rarr;</span>
@@ -448,7 +455,7 @@ export function Dashboard() {
                     <Badge variant={status === 'available' || status === 'ready' ? 'success' : 'info'}>
                       {status}
                     </Badge>
-                  </div>
+                  </Link>
                 );
               })
             )}

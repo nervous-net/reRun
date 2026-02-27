@@ -10,13 +10,13 @@ import { api } from '../../api/client';
 
 interface Customer {
   id: string;
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
   phone: string | null;
   email: string | null;
   balance: number;
-  member_barcode: string;
-  date_of_birth: string | null;
+  memberBarcode: string;
+  birthday: string | null;
 }
 
 interface CustomerBarProps {
@@ -52,7 +52,7 @@ export function CustomerBar({ customer, onCustomerSelect, onClear }: CustomerBar
     }
     try {
       const data = await api.customers.search(q.trim());
-      setResults(Array.isArray(data) ? data : data.customers ?? []);
+      setResults(Array.isArray(data) ? data : data.data ?? []);
     } catch {
       setResults([]);
     }
@@ -90,9 +90,9 @@ export function CustomerBar({ customer, onCustomerSelect, onClear }: CustomerBar
       <div style={styles.bar}>
         <div style={styles.customerInfo}>
           <span style={styles.customerName}>
-            {customer.first_name} {customer.last_name}
+            {customer.firstName} {customer.lastName}
           </span>
-          <Badge variant="info">{customer.member_barcode}</Badge>
+          <Badge variant="info">{customer.memberBarcode}</Badge>
           <span
             style={{
               ...styles.balance,
@@ -104,7 +104,7 @@ export function CustomerBar({ customer, onCustomerSelect, onClear }: CustomerBar
           {customer.balance < 0 && (
             <Badge variant="danger">OWES {formatBalance(customer.balance)}</Badge>
           )}
-          {isBirthday(customer.date_of_birth) && (
+          {isBirthday(customer.birthday) && (
             <Badge variant="warning">BIRTHDAY</Badge>
           )}
         </div>
@@ -153,10 +153,10 @@ export function CustomerBar({ customer, onCustomerSelect, onClear }: CustomerBar
               }}
             >
               <span style={styles.dropdownName}>
-                {c.first_name} {c.last_name}
+                {c.firstName} {c.lastName}
               </span>
               <span style={styles.dropdownMeta}>
-                {c.member_barcode} | {formatBalance(c.balance)}
+                {c.memberBarcode} | {formatBalance(c.balance)}
               </span>
             </div>
           ))}

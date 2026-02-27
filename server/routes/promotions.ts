@@ -9,13 +9,9 @@ import { promotions } from '../db/schema.js';
 export function createPromotionsRoutes(db: any) {
   const routes = new Hono();
 
-  // GET / — list active promotions
+  // GET / — list all promotions
   routes.get('/', async (c) => {
-    const data = await db
-      .select()
-      .from(promotions)
-      .where(eq(promotions.active, 1));
-
+    const data = await db.select().from(promotions);
     return c.json({ data });
   });
 

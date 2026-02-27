@@ -98,6 +98,12 @@ export function TitleForm({ onClose, onSaved, titleId }: TitleFormProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadingTitle, setLoadingTitle] = useState(false);
+  const [tmdbResults, setTmdbResults] = useState<any[]>([]);
+  const [tmdbSearching, setTmdbSearching] = useState(false);
+  const [tmdbId, setTmdbId] = useState<string | null>(null);
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [cast, setCast] = useState('');
+  const [runtimeMinutes, setRuntimeMinutes] = useState<number | null>(null);
 
   useEffect(() => {
     if (!titleId) return;
@@ -124,6 +130,39 @@ export function TitleForm({ onClose, onSaved, titleId }: TitleFormProps) {
     return () => { cancelled = true; };
   }, [titleId]);
 
+  async function handleTmdbSearch() {
+    if (!name.trim()) return;
+    setTmdbSearching(true);
+    setTmdbResults([]);
+    try {
+      const yearNum = year ? parseInt(year, 10) : undefined;
+      const data = await api.tmdb.search(name.trim(), yearNum);
+      setTmdbResults(Array.isArray(data) ? data : data.data ?? []);
+    } catch {
+      setError('TMDb search failed');
+    } finally {
+      setTmdbSearching(false);
+    }
+  }
+
+  async function handleTmdbSelect(result: any) {
+    try {
+      const details = await api.tmdb.details(result.tmdbId);
+      setName(details.title ?? result.title ?? name);
+      setYear(String(details.year ?? result.year ?? ''));
+      setGenre(details.genre ?? '');
+      setRating(details.rating ?? '');
+      setSynopsis(details.synopsis ?? '');
+      setCast(details.cast ?? '');
+      setCoverUrl(details.coverUrl ?? result.posterUrl ?? null);
+      setRuntimeMinutes(details.runtimeMinutes ?? null);
+      setTmdbId(String(details.tmdbId));
+      setTmdbResults([]);
+    } catch {
+      setError('Failed to fetch TMDb details');
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -146,6 +185,10 @@ export function TitleForm({ onClose, onSaved, titleId }: TitleFormProps) {
         genre: genre || undefined,
         rating: rating || undefined,
         synopsis: synopsis.trim() || undefined,
+        tmdbId: tmdbId || undefined,
+        coverUrl: coverUrl || undefined,
+        cast: cast || undefined,
+        runtimeMinutes: runtimeMinutes || undefined,
       };
 
       if (isEditing) {
@@ -197,14 +240,66 @@ export function TitleForm({ onClose, onSaved, titleId }: TitleFormProps) {
             </Alert>
           )}
 
-          <Input
-            label="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Title name"
-            required
-            autoFocus
-          />
+          {!isEditing && (
+            <div>
+              <div style={rowStyle}>
+                <div style={{ flex: 1 }}>
+                  <Input
+                    label="Name"
+                    value={name}
+                    onChange={(e) => { setName(e.target.value); setTmdbResults([]); }}
+                    placeholder="Title name"
+                    required
+                    autoFocus
+                  />
+                </div>
+                <div style={{ alignSelf: 'flex-end' }}>
+                  <Button variant="secondary" onClick={handleTmdbSearch} disabled={tmdbSearching || !name.trim()}>
+                    {tmdbSearching ? 'Searching...' : 'TMDb Lookup'}
+                  </Button>
+                </div>
+              </div>
+              {tmdbResults.length > 0 && (
+                <div style={tmdbDropdownStyle}>
+                  {tmdbResults.map((r: any) => (
+                    <div
+                      key={r.tmdbId}
+                      style={tmdbResultStyle}
+                      onClick={() => handleTmdbSelect(r)}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--accent-10)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                    >
+                      {r.posterUrl && (
+                        <img src={r.posterUrl} alt="" style={{ width: '32px', height: '48px', objectFit: 'cover', borderRadius: '2px' }} />
+                      )}
+                      <div style={{ flex: 1 }}>
+                        <div style={{ color: 'var(--text-primary)' }}>{r.title}</div>
+                        <div style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)' }}>
+                          {r.year ?? '—'} | Rating: {r.voteAverage?.toFixed(1) ?? '—'}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {coverUrl && (
+                <div style={{ marginTop: 'var(--space-sm)', display: 'flex', gap: 'var(--space-sm)', alignItems: 'center' }}>
+                  <img src={coverUrl} alt="" style={{ width: '48px', height: '72px', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--border-color)' }} />
+                  <span style={{ color: 'var(--crt-green)', fontSize: 'var(--font-size-sm)' }}>TMDb matched</span>
+                </div>
+              )}
+            </div>
+          )}
+          {isEditing && (
+            <Input
+              label="Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Title name"
+              required
+              autoFocus
+            />
+          )}
 
           <div style={rowStyle}>
             <Input
@@ -276,3 +371,22 @@ export function TitleForm({ onClose, onSaved, titleId }: TitleFormProps) {
     </Modal>
   );
 }
+
+const tmdbDropdownStyle: CSSProperties = {
+  marginTop: 'var(--space-xs)',
+  border: '1px solid var(--crt-green)',
+  borderRadius: 'var(--border-radius)',
+  backgroundColor: 'var(--bg-panel)',
+  maxHeight: '200px',
+  overflowY: 'auto',
+};
+
+const tmdbResultStyle: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 'var(--space-sm)',
+  padding: '6px 10px',
+  cursor: 'pointer',
+  borderBottom: '1px solid var(--border-color)',
+  transition: 'background-color 0.1s ease',
+};

@@ -6,6 +6,7 @@ import { Hono } from 'hono';
 import { createTestDb, migrateTestDb } from '../../setup.js';
 import { createImportRoutes } from '../../../server/routes/import.js';
 import { titles, copies } from '../../../server/db/schema.js';
+import { TmdbClient } from '../../../server/services/tmdb.js';
 
 let db: ReturnType<typeof createTestDb>['db'];
 let sqlite: ReturnType<typeof createTestDb>['sqlite'];
@@ -43,8 +44,8 @@ describe('POST /api/import/parse', () => {
     const body = await res.json();
 
     expect(body.headers).toEqual(['Title', 'Year', 'Format', 'Quantity', 'Genre', 'Rating']);
-    expect(body.rows).toHaveLength(5); // first 5 rows as preview
-    expect(body.totalRows).toBe(7);
+    expect(body.sampleRows).toHaveLength(5); // first 5 rows as preview
+    expect(body.rowCount).toBe(7);
 
     // Detected mapping should map known columns
     expect(body.detectedMapping.title).toBe('Title');
@@ -80,7 +81,7 @@ Hackers,1995,VHS`;
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.headers).toEqual(['Movie Name', 'Release Year', 'Media Type']);
-    expect(body.totalRows).toBe(1);
+    expect(body.rowCount).toBe(1);
     // 'Movie Name' matches 'movie name' alias for title
     expect(body.detectedMapping.title).toBe('Movie Name');
   });
@@ -88,9 +89,10 @@ Hackers,1995,VHS`;
 
 describe('POST /api/import/match', () => {
   it('validates and structures data with column mapping', async () => {
+    const csvHeaders = ['Title', 'Year', 'Format', 'Quantity', 'Genre', 'Rating'];
     const rows = [
-      { Title: 'Blade Runner', Year: '1982', Format: 'VHS', Quantity: '2', Genre: 'Sci-Fi', Rating: 'R' },
-      { Title: 'The Matrix', Year: '1999', Format: 'DVD', Quantity: '3', Genre: 'Sci-Fi', Rating: 'R' },
+      ['Blade Runner', '1982', 'VHS', '2', 'Sci-Fi', 'R'],
+      ['The Matrix', '1999', 'DVD', '3', 'Sci-Fi', 'R'],
     ];
 
     const mapping = {
@@ -108,29 +110,31 @@ describe('POST /api/import/match', () => {
     const res = await app.request('/api/import/match', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rows, mapping }),
+      body: JSON.stringify({ rows, headers: csvHeaders, mapping }),
     });
 
     expect(res.status).toBe(200);
     const body = await res.json();
 
     expect(body.titles).toHaveLength(2);
-    expect(body.titles[0].name).toBe('Blade Runner');
-    expect(body.titles[0].year).toBe(1982);
+    expect(body.titles[0].title).toBe('Blade Runner');
+    expect(body.titles[0].year).toBe('1982');
     expect(body.titles[0].format).toBe('VHS');
-    expect(body.titles[0].quantity).toBe(2);
+    expect(body.titles[0].quantity).toBe('2');
     expect(body.titles[0].genre).toBe('Sci-Fi');
     expect(body.titles[0].rating).toBe('R');
+    expect(body.titles[0].matched).toBe(false);
 
-    expect(body.titles[1].name).toBe('The Matrix');
-    expect(body.titles[1].year).toBe(1999);
+    expect(body.titles[1].title).toBe('The Matrix');
+    expect(body.titles[1].year).toBe('1999');
     expect(body.titles[1].format).toBe('DVD');
-    expect(body.titles[1].quantity).toBe(3);
+    expect(body.titles[1].quantity).toBe('3');
   });
 
   it('defaults year to 0 when not mapped', async () => {
+    const csvHeaders = ['Title', 'Format'];
     const rows = [
-      { Title: 'Unknown Movie', Format: 'VHS' },
+      ['Unknown Movie', 'VHS'],
     ];
 
     const mapping = {
@@ -148,13 +152,90 @@ describe('POST /api/import/match', () => {
     const res = await app.request('/api/import/match', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rows, mapping }),
+      body: JSON.stringify({ rows, headers: csvHeaders, mapping }),
     });
 
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.titles[0].year).toBe(0);
-    expect(body.titles[0].quantity).toBe(1);
+    expect(body.titles[0].year).toBe('');
+    expect(body.titles[0].quantity).toBe('1');
+  });
+
+  it('enriches titles with TMDb data when client is provided', async () => {
+    const mockFetch = async (url: string) => {
+      const urlStr = String(url);
+      if (urlStr.includes('/search/movie')) {
+        return new Response(JSON.stringify({
+          results: [{
+            id: 78,
+            title: 'Blade Runner',
+            release_date: '1982-06-25',
+            overview: 'A blade runner hunts replicants.',
+            poster_path: '/blade.jpg',
+            vote_average: 8.1,
+          }],
+        }));
+      }
+      if (urlStr.includes('/movie/78')) {
+        return new Response(JSON.stringify({
+          id: 78,
+          title: 'Blade Runner',
+          release_date: '1982-06-25',
+          overview: 'A blade runner hunts replicants.',
+          poster_path: '/blade.jpg',
+          runtime: 117,
+          genres: [{ name: 'Sci-Fi' }, { name: 'Thriller' }],
+          credits: {
+            cast: [
+              { name: 'Harrison Ford' },
+              { name: 'Rutger Hauer' },
+              { name: 'Sean Young' },
+            ],
+          },
+          release_dates: {
+            results: [{
+              iso_3166_1: 'US',
+              release_dates: [{ certification: 'R' }],
+            }],
+          },
+          vote_average: 8.1,
+        }));
+      }
+      return new Response('{}', { status: 404 });
+    };
+
+    const tmdb = new TmdbClient('fake-key', mockFetch as any);
+    const tmdbApp = new Hono();
+    tmdbApp.route('/api/import', createImportRoutes(db, tmdb));
+
+    const csvHeaders = ['Title', 'Year', 'Format', 'Quantity'];
+    const rows = [['Blade Runner', '1982', 'VHS', '2']];
+    const mapping = {
+      title: 'Title', year: 'Year', format: 'Format', quantity: 'Quantity',
+      genre: null, barcode: null, director: null, cast: null, rating: null,
+    };
+
+    const res = await tmdbApp.request('/api/import/match', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rows, headers: csvHeaders, mapping }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+
+    expect(body.titles[0].matched).toBe(true);
+    expect(body.titles[0].tmdbId).toBe('78');
+    expect(body.titles[0].coverUrl).toBe('https://image.tmdb.org/t/p/w500/blade.jpg');
+    expect(body.titles[0].synopsis).toBe('A blade runner hunts replicants.');
+    expect(body.titles[0].runtimeMinutes).toBe('117');
+    expect(body.titles[0].genre).toBe('Sci-Fi, Thriller');
+    expect(body.titles[0].cast).toBe('Harrison Ford, Rutger Hauer, Sean Young');
+    expect(body.titles[0].rating).toBe('R');
+    // CSV values preserved
+    expect(body.titles[0].title).toBe('Blade Runner');
+    expect(body.titles[0].format).toBe('VHS');
+    expect(body.titles[0].quantity).toBe('2');
   });
 });
 

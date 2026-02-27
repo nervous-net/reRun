@@ -2,6 +2,7 @@
 // ABOUTME: Keyboard-friendly layout with customer bar, scan input, transaction panel, and quick actions
 
 import { type CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '../common/Button';
 import { Input } from '../common/Input';
 import { Alert } from '../common/Alert';
@@ -14,18 +15,26 @@ import { Receipt } from './Receipt';
 
 interface Customer {
   id: string;
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
   phone: string | null;
   email: string | null;
   balance: number;
-  member_barcode: string;
-  date_of_birth: string | null;
+  memberBarcode: string;
+  birthday: string | null;
+}
+
+interface PricingRule {
+  id: string;
+  name: string;
+  rate: number;
+  durationDays: number;
 }
 
 const TAX_RATE = 0.08;
 
 export function POSScreen() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [scanValue, setScanValue] = useState('');
@@ -34,6 +43,8 @@ export function POSScreen() {
   const [showHeld, setShowHeld] = useState(false);
   const [heldCount, setHeldCount] = useState(0);
   const [completedTransaction, setCompletedTransaction] = useState<any>(null);
+  const [pricingRules, setPricingRules] = useState<PricingRule[]>([]);
+  const [pendingScan, setPendingScan] = useState<{ copyId: string; titleId: string; titleName: string; format: string } | null>(null);
   const scanRef = useRef<HTMLInputElement>(null);
 
   const subtotal = lineItems.reduce((sum, item) => sum + item.amount, 0);
@@ -51,11 +62,30 @@ export function POSScreen() {
     focusScanInput();
   }, [focusScanInput, lineItems]);
 
+  // Fetch pricing rules on mount
+  useEffect(() => {
+    api.pricing.list().then((data) => {
+      const rules = Array.isArray(data) ? data : data.data ?? [];
+      setPricingRules(rules.filter((r: any) => r.active));
+    }).catch(() => {});
+  }, []);
+
+  // Pre-load customer from query params (e.g. from reservation click)
+  useEffect(() => {
+    const customerId = searchParams.get('customerId');
+    if (customerId && !customer) {
+      api.customers.get(customerId).then((c) => {
+        setCustomer(c);
+        setSearchParams({}, { replace: true });
+      }).catch(() => {});
+    }
+  }, [searchParams, customer, setSearchParams]);
+
   // Fetch held transaction count
   const refreshHeldCount = useCallback(async () => {
     try {
       const data = await api.transactions.held();
-      const list = Array.isArray(data) ? data : data.transactions ?? [];
+      const list = Array.isArray(data) ? data : data.data ?? [];
       setHeldCount(list.length);
     } catch {
       // Silently ignore held count fetch errors
@@ -110,18 +140,18 @@ export function POSScreen() {
         }
         const titleName = copyResult.title?.name ?? copyResult.titleName ?? 'Unknown Title';
         const format = copyResult.format ?? 'DVD';
-        const rate = copyResult.pricingRate ?? copyResult.pricing?.rate ?? 399;
-        setLineItems((prev) => [
-          ...prev,
-          {
-            type: 'rental',
-            description: `${titleName} (${format})`,
-            amount: rate,
-            copyId: copyResult.id,
-            titleId: copyResult.titleId ?? copyResult.title_id,
-          },
-        ]);
-        focusScanInput();
+        if (copyResult.status !== 'in') {
+          setError(`"${titleName}" is currently ${copyResult.status} and not available.`);
+          focusScanInput();
+          return;
+        }
+        // Show pricing rule picker
+        setPendingScan({
+          copyId: copyResult.id,
+          titleId: copyResult.titleId ?? copyResult.title?.id,
+          titleName,
+          format,
+        });
         return;
       }
     } catch {
@@ -130,10 +160,10 @@ export function POSScreen() {
 
     try {
       // Try as member barcode search
-      const customers = await api.customers.search(barcode);
-      const customerList = Array.isArray(customers) ? customers : customers.customers ?? [];
+      const custData = await api.customers.search(barcode);
+      const customerList = Array.isArray(custData) ? custData : custData.data ?? [];
       const match = customerList.find(
-        (c: Customer) => c.member_barcode === barcode
+        (c: Customer) => c.memberBarcode === barcode
       );
       if (match) {
         setCustomer(match);
@@ -145,6 +175,23 @@ export function POSScreen() {
     }
 
     setError(`Barcode not recognized: ${barcode}`);
+    focusScanInput();
+  }
+
+  function handleSelectPricing(rule: PricingRule) {
+    if (!pendingScan) return;
+    setLineItems((prev) => [
+      ...prev,
+      {
+        type: 'rental',
+        description: `${pendingScan.titleName} (${pendingScan.format})`,
+        amount: rule.rate,
+        copyId: pendingScan.copyId,
+        titleId: pendingScan.titleId,
+        pricingRuleId: rule.id,
+      },
+    ]);
+    setPendingScan(null);
     focusScanInput();
   }
 
@@ -166,7 +213,7 @@ export function POSScreen() {
       await api.transactions.hold({
         customerId: customer?.id ?? null,
         customerName: customer
-          ? `${customer.first_name} ${customer.last_name}`
+          ? `${customer.firstName} ${customer.lastName}`
           : null,
         items: lineItems,
         total,
@@ -221,7 +268,7 @@ export function POSScreen() {
       id: transaction.id ?? 'N/A',
       date: transaction.date ?? new Date().toISOString(),
       customerName: customer
-        ? `${customer.first_name} ${customer.last_name}`
+        ? `${customer.firstName} ${customer.lastName}`
         : null,
       paymentMethod: transaction.paymentMethod ?? 'cash',
       items: lineItems.map((item) => ({
@@ -347,6 +394,27 @@ export function POSScreen() {
           Complete [Enter]
         </Button>
       </div>
+
+      {/* Pricing Rule Picker */}
+      {pendingScan && (
+        <div style={styles.pricingOverlay} onClick={() => setPendingScan(null)}>
+          <div style={styles.pricingPanel} onClick={(e) => e.stopPropagation()}>
+            <div style={styles.pricingHeader}>
+              Select Rental Period — {pendingScan.titleName} ({pendingScan.format})
+            </div>
+            <div style={styles.pricingOptions}>
+              {pricingRules.map((rule) => (
+                <Button key={rule.id} variant="secondary" onClick={() => handleSelectPricing(rule)}>
+                  {rule.name} — ${(rule.rate / 100).toFixed(2)}
+                </Button>
+              ))}
+            </div>
+            <div style={{ textAlign: 'right', marginTop: 'var(--space-sm)' }}>
+              <Button variant="ghost" onClick={() => setPendingScan(null)}>Cancel</Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Payment Modal */}
       {showPayment && (
@@ -501,5 +569,40 @@ const styles: Record<string, CSSProperties> = {
     textShadow: '0 0 10px var(--accent-50)',
     fontWeight: 'bold',
     letterSpacing: '1px',
+  },
+  pricingOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'var(--overlay-60)',
+    zIndex: 900,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pricingPanel: {
+    backgroundColor: 'var(--bg-panel)',
+    border: '1px solid var(--crt-green)',
+    borderRadius: 'var(--border-radius)',
+    padding: 'var(--space-md)',
+    minWidth: '350px',
+    maxWidth: '450px',
+    boxShadow: '0 0 20px var(--accent-15)',
+  },
+  pricingHeader: {
+    color: 'var(--crt-green)',
+    fontSize: 'var(--font-size-md)',
+    textTransform: 'uppercase',
+    letterSpacing: '1px',
+    marginBottom: 'var(--space-md)',
+    borderBottom: '1px solid var(--border-color)',
+    paddingBottom: 'var(--space-sm)',
+  },
+  pricingOptions: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 'var(--space-xs)',
   },
 };

@@ -2,6 +2,8 @@
 // ABOUTME: Delegates business logic to the rental service, handles HTTP concerns only
 
 import { Hono } from 'hono';
+import { eq, and, count } from 'drizzle-orm';
+import { rentals, storeSettings } from '../db/schema.js';
 import {
   checkoutCopy,
   returnCopy,
@@ -22,6 +24,17 @@ export function createRentalsRoutes(db: any) {
         { error: 'Missing required fields: customerId, copyId, pricingRuleId' },
         400
       );
+    }
+
+    // Check rental limit from settings
+    const [maxSetting] = await db.select().from(storeSettings).where(eq(storeSettings.key, 'max_active_rentals'));
+    const maxRentals = maxSetting ? parseInt(maxSetting.value ?? '6', 10) : 6;
+    const [activeCount] = await db
+      .select({ count: count() })
+      .from(rentals)
+      .where(and(eq(rentals.customerId, body.customerId), eq(rentals.status, 'out')));
+    if (activeCount.count >= maxRentals) {
+      return c.json({ error: `Rental limit reached. Maximum ${maxRentals} active rentals allowed.` }, 400);
     }
 
     try {

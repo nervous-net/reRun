@@ -14,8 +14,8 @@ interface CustomerFormProps {
 }
 
 interface FormData {
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
   phone: string;
   email: string;
   address: string;
@@ -24,8 +24,8 @@ interface FormData {
 }
 
 const emptyForm: FormData = {
-  first_name: '',
-  last_name: '',
+  firstName: '',
+  lastName: '',
   phone: '',
   email: '',
   address: '',
@@ -48,8 +48,8 @@ export function CustomerForm({ onClose, onSaved, customerId }: CustomerFormProps
       .get(customerId)
       .then((data: any) => {
         setForm({
-          first_name: data.first_name ?? '',
-          last_name: data.last_name ?? '',
+          firstName: data.firstName ?? '',
+          lastName: data.lastName ?? '',
           phone: data.phone ?? '',
           email: data.email ?? '',
           address: data.address ?? '',
@@ -70,7 +70,7 @@ export function CustomerForm({ onClose, onSaved, customerId }: CustomerFormProps
   }
 
   async function handleSubmit() {
-    if (!form.first_name.trim() || !form.last_name.trim()) {
+    if (!form.firstName.trim() || !form.lastName.trim()) {
       setError('First name and last name are required');
       return;
     }
@@ -79,8 +79,8 @@ export function CustomerForm({ onClose, onSaved, customerId }: CustomerFormProps
     setError(null);
 
     const payload: Record<string, string | undefined> = {
-      first_name: form.first_name.trim(),
-      last_name: form.last_name.trim(),
+      firstName: form.firstName.trim(),
+      lastName: form.lastName.trim(),
       phone: form.phone.trim() || undefined,
       email: form.email.trim() || undefined,
       address: form.address.trim() || undefined,
@@ -102,7 +102,7 @@ export function CustomerForm({ onClose, onSaved, customerId }: CustomerFormProps
     }
   }
 
-  const canSubmit = form.first_name.trim().length > 0 && form.last_name.trim().length > 0 && !loading;
+  const canSubmit = form.firstName.trim().length > 0 && form.lastName.trim().length > 0 && !loading;
 
   return (
     <Modal
@@ -128,14 +128,14 @@ export function CustomerForm({ onClose, onSaved, customerId }: CustomerFormProps
           <div style={styles.row}>
             <Input
               label="First Name *"
-              value={form.first_name}
-              onChange={(e) => updateField('first_name', e.target.value)}
+              value={form.firstName}
+              onChange={(e) => updateField('firstName', e.target.value)}
               required
             />
             <Input
               label="Last Name *"
-              value={form.last_name}
-              onChange={(e) => updateField('last_name', e.target.value)}
+              value={form.lastName}
+              onChange={(e) => updateField('lastName', e.target.value)}
               required
             />
           </div>

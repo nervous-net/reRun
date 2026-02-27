@@ -97,8 +97,21 @@ export const api = {
     match: (data: any) => post<any>('/api/import/match', data),
     commit: (data: any) => post<any>('/api/import/commit', data),
   },
+  tmdb: {
+    search: (q: string, year?: number) => get<any>('/api/tmdb/search', {
+      q,
+      ...(year ? { year: String(year) } : {}),
+    }),
+    details: (tmdbId: number) => get<any>(`/api/tmdb/details/${tmdbId}`),
+  },
+  promotions: {
+    list: () => get<any>('/api/promotions'),
+    create: (data: any) => post<any>('/api/promotions', data),
+    update: (id: string, data: any) => put<any>(`/api/promotions/${id}`, data),
+  },
   settings: {
     list: () => get<any>('/api/settings'),
+    get: (key: string) => get<any>(`/api/settings/${key}`),
     update: (key: string, value: string) => put<any>(`/api/settings/${key}`, { value }),
   },
 };

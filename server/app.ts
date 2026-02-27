@@ -14,10 +14,12 @@ import { createTransactionsRoutes } from './routes/transactions.js';
 import { createRentalsRoutes } from './routes/rentals.js';
 import { createReservationsRoutes } from './routes/reservations.js';
 import { createImportRoutes } from './routes/import.js';
+import { TmdbClient } from './services/tmdb.js';
 import { createPromotionsRoutes } from './routes/promotions.js';
 import { createAlertsRoutes } from './routes/alerts.js';
 import { createSettingsRoutes } from './routes/settings.js';
 import { createBackupRoutes } from './routes/backup.js';
+import { createTmdbRoutes } from './routes/tmdb.js';
 import { DB_PATH } from './db/index.js';
 import path from 'path';
 
@@ -36,7 +38,11 @@ app.route('/api/search', createSearchRoutes(db));
 app.route('/api/transactions', createTransactionsRoutes(db));
 app.route('/api/rentals', createRentalsRoutes(db));
 app.route('/api/reservations', createReservationsRoutes(db));
-app.route('/api/import', createImportRoutes(db));
+const tmdbApiKey = process.env.TMDB_API_KEY;
+const tmdb = tmdbApiKey && tmdbApiKey !== 'your_tmdb_api_key_here'
+  ? new TmdbClient(tmdbApiKey) : undefined;
+app.route('/api/import', createImportRoutes(db, tmdb));
+app.route('/api/tmdb', createTmdbRoutes(tmdb));
 app.route('/api/promotions', createPromotionsRoutes(db));
 app.route('/api/alerts', createAlertsRoutes(db));
 app.route('/api/settings', createSettingsRoutes(db));

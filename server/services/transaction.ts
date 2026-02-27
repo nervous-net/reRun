@@ -31,15 +31,23 @@ export interface CreateTransactionInput {
   items: TransactionItemInput[];
 }
 
-interface HeldTransaction {
-  holdId: string;
+interface HeldTransactionEntry {
   data: any;
+  heldAt: string;
+}
+
+interface HeldTransactionSummary {
+  id: string;
+  customerId: string | null;
+  customerName: string | null;
+  itemCount: number;
+  total: number;
   heldAt: string;
 }
 
 // ─── In-memory hold storage ─────────────────────────────────────────
 
-const heldTransactions = new Map<string, { data: any; heldAt: string }>();
+const heldTransactions = new Map<string, HeldTransactionEntry>();
 
 export function holdTransaction(holdId: string, data: any): void {
   heldTransactions.set(holdId, {
@@ -48,10 +56,17 @@ export function holdTransaction(holdId: string, data: any): void {
   });
 }
 
-export function getHeldTransactions(): HeldTransaction[] {
-  const result: HeldTransaction[] = [];
+export function getHeldTransactions(): HeldTransactionSummary[] {
+  const result: HeldTransactionSummary[] = [];
   for (const [holdId, entry] of heldTransactions.entries()) {
-    result.push({ holdId, data: entry.data, heldAt: entry.heldAt });
+    result.push({
+      id: holdId,
+      customerId: entry.data.customerId ?? null,
+      customerName: entry.data.customerName ?? null,
+      itemCount: Array.isArray(entry.data.items) ? entry.data.items.length : 0,
+      total: entry.data.total ?? 0,
+      heldAt: entry.heldAt,
+    });
   }
   return result;
 }

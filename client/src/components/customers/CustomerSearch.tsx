@@ -11,13 +11,13 @@ import { CustomerForm } from './CustomerForm';
 
 interface CustomerResult {
   id: string;
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
   phone: string | null;
   email: string | null;
   balance: number;
   active: number;
-  member_barcode: string;
+  memberBarcode: string;
   activeRentalCount?: number;
 }
 
@@ -30,15 +30,15 @@ export function CustomerSearch() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const performSearch = useCallback(async (q: string) => {
-    if (q.trim().length === 0) {
-      setResults([]);
-      setLoading(false);
-      return;
-    }
     setLoading(true);
     try {
-      const data = await api.customers.search(q.trim());
-      setResults(Array.isArray(data) ? data : data.customers ?? []);
+      if (q.trim().length === 0) {
+        const data = await api.customers.list();
+        setResults(Array.isArray(data) ? data : data.data ?? []);
+      } else {
+        const data = await api.customers.search(q.trim());
+        setResults(Array.isArray(data) ? data : data.data ?? []);
+      }
     } catch {
       setResults([]);
     } finally {
@@ -95,8 +95,8 @@ export function CustomerSearch() {
           {results.length === 0 && !loading && query.trim().length > 0 && (
             <div style={styles.emptyState}>No customers found</div>
           )}
-          {results.length === 0 && query.trim().length === 0 && (
-            <div style={styles.emptyState}>Type to search customers</div>
+          {results.length === 0 && !loading && query.trim().length === 0 && (
+            <div style={styles.emptyState}>No customers yet</div>
           )}
           {results.map((customer) => (
             <div
@@ -118,7 +118,7 @@ export function CustomerSearch() {
               }}
             >
               <div style={styles.resultName}>
-                {customer.first_name} {customer.last_name}
+                {customer.firstName} {customer.lastName}
               </div>
               <div style={styles.resultMeta}>
                 {customer.phone && (

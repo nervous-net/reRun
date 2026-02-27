@@ -17,8 +17,8 @@ interface CustomerCardProps {
 
 interface Customer {
   id: string;
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
   email: string | null;
   phone: string | null;
   address: string | null;
@@ -26,23 +26,23 @@ interface Customer {
   notes: string | null;
   balance: number;
   active: number;
-  member_barcode: string;
-  created_at: string;
+  memberBarcode: string;
+  createdAt: string;
   familyMembers?: FamilyMember[];
 }
 
 interface FamilyMember {
   id: string;
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
   relationship: string | null;
 }
 
 interface ActiveRental {
   id: string;
-  title: string;
-  due_at: string;
-  copy_barcode?: string;
+  titleName?: string;
+  copyBarcode?: string;
+  dueAt: string;
 }
 
 export function CustomerCard({ customerId }: CustomerCardProps) {
@@ -70,7 +70,7 @@ export function CustomerCard({ customerId }: CustomerCardProps) {
         api.rentals.customer(customerId).catch(() => []),
       ]);
       setCustomer(data);
-      const rentalList = Array.isArray(rentalData) ? rentalData : rentalData.rentals ?? [];
+      const rentalList = Array.isArray(rentalData) ? rentalData : rentalData.data ?? [];
       setRentals(rentalList.filter((r: any) => r.status === 'out' || r.status === 'active'));
     } catch {
       setError('Failed to load customer');
@@ -120,8 +120,8 @@ export function CustomerCard({ customerId }: CustomerCardProps) {
     if (!familyFirst.trim() || !familyLast.trim()) return;
     try {
       await api.customers.addFamily(customerId, {
-        first_name: familyFirst.trim(),
-        last_name: familyLast.trim(),
+        firstName: familyFirst.trim(),
+        lastName: familyLast.trim(),
         relationship: familyRelation.trim() || undefined,
       });
       setShowAddFamily(false);
@@ -143,10 +143,10 @@ export function CustomerCard({ customerId }: CustomerCardProps) {
   }
 
   const rentalTableData = rentals.map((r) => {
-    const days = daysRemaining(r.due_at);
+    const days = daysRemaining(r.dueAt);
     return {
-      title: r.title ?? r.copy_barcode ?? 'Unknown',
-      due: new Date(r.due_at).toLocaleDateString(),
+      title: r.titleName ?? r.copyBarcode ?? 'Unknown',
+      due: new Date(r.dueAt).toLocaleDateString(),
       remaining: (
         <span style={{ color: days < 0 ? 'var(--crt-red)' : 'var(--text-primary)' }}>
           {days < 0 ? `${Math.abs(days)}d overdue` : `${days}d`}
@@ -161,9 +161,9 @@ export function CustomerCard({ customerId }: CustomerCardProps) {
       <div style={styles.header}>
         <div>
           <h2 style={styles.name}>
-            {customer.first_name} {customer.last_name}
+            {customer.firstName} {customer.lastName}
           </h2>
-          <div style={styles.barcode}>{customer.member_barcode}</div>
+          <div style={styles.barcode}>{customer.memberBarcode}</div>
         </div>
         <Badge variant={customer.active ? 'success' : 'danger'}>
           {customer.active ? 'Active' : 'Inactive'}
@@ -253,7 +253,7 @@ export function CustomerCard({ customerId }: CustomerCardProps) {
           <div style={styles.familyList}>
             {customer.familyMembers.map((fm) => (
               <div key={fm.id} style={styles.familyItem}>
-                <span style={styles.fieldValue}>{fm.first_name} {fm.last_name}</span>
+                <span style={styles.fieldValue}>{fm.firstName} {fm.lastName}</span>
                 {fm.relationship && (
                   <span style={styles.fieldLabel}>{fm.relationship}</span>
                 )}

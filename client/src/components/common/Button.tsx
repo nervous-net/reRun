@@ -79,9 +79,10 @@ export function Button({
 
   const handleMouseLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
     const target = e.currentTarget;
+    const vs = variantStyles[variant];
     target.style.boxShadow = '';
-    target.style.borderColor = '';
-    target.style.color = '';
+    target.style.borderColor = (vs.border ? vs.border.toString().replace(/^1px solid /, '') : '');
+    target.style.color = (vs.color as string) || '';
     onMouseLeave?.(e);
   };
 

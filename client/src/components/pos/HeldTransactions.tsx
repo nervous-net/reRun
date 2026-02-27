@@ -39,7 +39,7 @@ export function HeldTransactions({ isOpen, onClose, onRecall }: HeldTransactions
     setLoading(true);
     try {
       const data = await api.transactions.held();
-      setHeld(Array.isArray(data) ? data : data.transactions ?? []);
+      setHeld(Array.isArray(data) ? data : data.data ?? []);
     } catch {
       setHeld([]);
     } finally {

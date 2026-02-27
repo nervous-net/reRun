@@ -141,23 +141,27 @@ describe('Import Flow E2E', () => {
       });
       expect(parseRes.status).toBe(200);
       const parseBody = await parseRes.json();
-      expect(parseBody.totalRows).toBe(3);
+      expect(parseBody.rowCount).toBe(3);
       expect(parseBody.detectedMapping.title).toBe('Title');
 
       // Step 2: Match/structure via route using all rows from parsed CSV
-      const allRows = (await parseCsv(INVENTORY_CSV)).rows;
+      const parsed = await parseCsv(INVENTORY_CSV);
+      const allRows = parsed.rows.map((row) =>
+        parsed.headers.map((h) => row[h] ?? '')
+      );
       const matchRes = await app.request('/api/import/match', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           rows: allRows,
+          headers: parsed.headers,
           mapping: parseBody.detectedMapping,
         }),
       });
       expect(matchRes.status).toBe(200);
       const matchBody = await matchRes.json();
       expect(matchBody.titles).toHaveLength(3);
-      expect(matchBody.titles[0].name).toBe('Blade Runner');
+      expect(matchBody.titles[0].title).toBe('Blade Runner');
 
       // Step 3: Commit via route
       const commitRes = await app.request('/api/import/commit', {
@@ -243,6 +247,48 @@ describe('Import Flow E2E', () => {
       const alienCopies = await db.select().from(copies).where(eq(copies.titleId, alien.id));
       expect(alienCopies).toHaveLength(1);
       expect(alienCopies[0].format).toBe('VHS');
+    });
+
+    it('deduplicates titles by name+year and stacks copies', async () => {
+      // First import: Blade Runner VHS x2
+      const firstImport = [
+        { name: 'Blade Runner', year: 1982, format: 'VHS', quantity: 2, genre: 'Sci-Fi', rating: 'R' },
+      ];
+      const res1 = await app.request('/api/import/commit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titles: firstImport }),
+      });
+      expect(res1.status).toBe(201);
+      const body1 = await res1.json();
+      expect(body1.titlesCreated).toBe(1);
+      expect(body1.copiesCreated).toBe(2);
+
+      // Second import: Blade Runner DVD x1 (same title+year, different format)
+      const secondImport = [
+        { name: 'Blade Runner', year: 1982, format: 'DVD', quantity: 1, genre: 'Sci-Fi', rating: 'R' },
+      ];
+      const res2 = await app.request('/api/import/commit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titles: secondImport }),
+      });
+      expect(res2.status).toBe(201);
+      const body2 = await res2.json();
+      expect(body2.titlesCreated).toBe(0); // No new title created
+      expect(body2.copiesCreated).toBe(1); // 1 new copy added
+
+      // Should be 1 title with 3 copies total
+      const allTitles = await db.select().from(titles);
+      expect(allTitles).toHaveLength(1);
+
+      const allCopies = await db.select().from(copies);
+      expect(allCopies).toHaveLength(3);
+
+      const vhsCopies = allCopies.filter((c: any) => c.format === 'VHS');
+      expect(vhsCopies).toHaveLength(2);
+      const dvdCopies = allCopies.filter((c: any) => c.format === 'DVD');
+      expect(dvdCopies).toHaveLength(1);
     });
 
     it('detects non-standard column names in a messy CSV', async () => {

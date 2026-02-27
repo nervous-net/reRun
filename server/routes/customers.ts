@@ -4,7 +4,7 @@
 import { Hono } from 'hono';
 import { eq, like, or, sql, count } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { customers, familyMembers } from '../db/schema.js';
+import { customers, familyMembers, storeSettings } from '../db/schema.js';
 
 export function createCustomersRoutes(db: any) {
   const routes = new Hono();
@@ -185,6 +185,14 @@ export function createCustomersRoutes(db: any) {
     }
     if (!body.lastName) {
       return c.json({ error: 'lastName is required' }, 400);
+    }
+
+    // Check family member limit from settings
+    const [maxSetting] = await db.select().from(storeSettings).where(eq(storeSettings.key, 'max_family_members'));
+    const maxMembers = maxSetting ? parseInt(maxSetting.value ?? '6', 10) : 6;
+    const [memberCount] = await db.select({ count: count() }).from(familyMembers).where(eq(familyMembers.customerId, customerId));
+    if (memberCount.count >= maxMembers) {
+      return c.json({ error: `Maximum of ${maxMembers} family members allowed` }, 400);
     }
 
     const id = nanoid();

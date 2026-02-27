@@ -206,8 +206,23 @@ export async function getOverdueRentals(db: any) {
 
 export async function getCustomerRentals(db: any, customerId: string) {
   const results = await db
-    .select()
+    .select({
+      id: rentals.id,
+      customerId: rentals.customerId,
+      copyId: rentals.copyId,
+      pricingRuleId: rentals.pricingRuleId,
+      checkedOutAt: rentals.checkedOutAt,
+      dueAt: rentals.dueAt,
+      returnedAt: rentals.returnedAt,
+      lateFee: rentals.lateFee,
+      lateFeeStatus: rentals.lateFeeStatus,
+      status: rentals.status,
+      titleName: titles.name,
+      copyBarcode: copies.barcode,
+    })
     .from(rentals)
+    .innerJoin(copies, eq(rentals.copyId, copies.id))
+    .innerJoin(titles, eq(copies.titleId, titles.id))
     .where(eq(rentals.customerId, customerId));
 
   return results;

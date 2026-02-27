@@ -3,6 +3,8 @@
 
 import { type CSSProperties, useEffect, useState, useCallback } from 'react';
 import { api } from '../../api/client';
+import { PricingRulesManager } from './PricingRulesManager';
+import { PromotionsManager } from './PromotionsManager';
 
 // --- Types ---
 
@@ -182,6 +184,10 @@ const SETTINGS_KEYS = [
   'store_address',
   'tax_rate',
   'late_fee_grace_period',
+  'max_active_rentals',
+  'max_family_members',
+  'age_check_enabled',
+  'return_by_hour',
   'tmdb_api_key',
   'theme',
 ] as const;
@@ -405,6 +411,83 @@ export function SettingsPage() {
           onFocus={handleInputFocus}
           onBlur={handleInputBlur}
         />
+      </div>
+
+      {/* Pricing Rules / Rental Types */}
+      <div style={styles.sectionHeader}>Rental Types &amp; Pricing</div>
+      <PricingRulesManager />
+
+      {/* Promotions */}
+      <div style={styles.sectionHeader}>Promotions &amp; Deals</div>
+      <PromotionsManager />
+
+      {/* Rental Policies */}
+      <div style={styles.sectionHeader}>Rental Policies</div>
+
+      <div style={styles.fieldRow}>
+        <label style={styles.label}>Max Active Rentals (per family)</label>
+        <input
+          style={styles.input}
+          type="number"
+          min="1"
+          max="50"
+          value={settings.max_active_rentals ?? ''}
+          placeholder="6"
+          onChange={e => updateSetting('max_active_rentals', e.target.value)}
+          onFocus={handleInputFocus}
+          onBlur={handleInputBlur}
+        />
+        <div style={styles.hint}>
+          Maximum movies a customer can have checked out at once
+        </div>
+      </div>
+
+      <div style={styles.fieldRow}>
+        <label style={styles.label}>Return By Hour (24h format)</label>
+        <input
+          style={styles.input}
+          type="number"
+          min="0"
+          max="23"
+          value={settings.return_by_hour ?? ''}
+          placeholder="12"
+          onChange={e => updateSetting('return_by_hour', e.target.value)}
+          onFocus={handleInputFocus}
+          onBlur={handleInputBlur}
+        />
+        <div style={styles.hint}>
+          12 = noon. Late fees start after this hour on the due date.
+        </div>
+      </div>
+
+      <div style={styles.fieldRow}>
+        <label style={styles.label}>Max Family Members</label>
+        <input
+          style={styles.input}
+          type="number"
+          min="1"
+          max="20"
+          value={settings.max_family_members ?? ''}
+          placeholder="6"
+          onChange={e => updateSetting('max_family_members', e.target.value)}
+          onFocus={handleInputFocus}
+          onBlur={handleInputBlur}
+        />
+      </div>
+
+      <div style={styles.fieldRow}>
+        <label style={styles.label}>Age Check for Rated Content</label>
+        <select
+          style={styles.input}
+          value={settings.age_check_enabled ?? '1'}
+          onChange={e => updateSetting('age_check_enabled', e.target.value)}
+        >
+          <option value="1">Enabled — Warn on R/NC-17 for minors</option>
+          <option value="0">Disabled</option>
+        </select>
+        <div style={styles.hint}>
+          Shows warning when renting R or NC-17 rated content to customers under 17
+        </div>
       </div>
 
       {/* Integration */}

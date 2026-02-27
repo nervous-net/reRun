@@ -20,6 +20,16 @@ export function createSettingsRoutes(db: any) {
     return c.json({ data: settings });
   });
 
+  // GET /:key — get a single setting
+  routes.get('/:key', async (c) => {
+    const key = c.req.param('key');
+    const [row] = await db.select().from(storeSettings).where(eq(storeSettings.key, key));
+    if (!row) {
+      return c.json({ key, value: null });
+    }
+    return c.json(row);
+  });
+
   // PUT /:key — upsert a setting
   routes.put('/:key', async (c) => {
     const key = c.req.param('key');

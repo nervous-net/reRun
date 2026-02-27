@@ -11,8 +11,8 @@ import type { LineItem } from './TransactionPanel';
 
 interface Customer {
   id: string;
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
   balance: number;
 }
 
@@ -45,20 +45,33 @@ export function PaymentModal({ total, customer, lineItems, onComplete, onCancel 
     setProcessing(true);
     setError(null);
     try {
+      // Checkout rental copies first (creates rental records with due dates)
+      const rentalItems = lineItems.filter((item) => item.type === 'rental' && item.copyId && item.pricingRuleId);
+      for (const item of rentalItems) {
+        await api.rentals.checkout({
+          customerId: customer!.id,
+          copyId: item.copyId!,
+          pricingRuleId: item.pricingRuleId!,
+        });
+      }
+
+      // Determine transaction type from items
+      const hasRentals = lineItems.some((i) => i.type === 'rental');
+      const hasProducts = lineItems.some((i) => i.type === 'product');
+      const txnType = hasRentals && hasProducts ? 'mixed' : hasRentals ? 'rental' : hasProducts ? 'sale' : 'fee';
+
       const transaction = await api.transactions.create({
         customerId: customer?.id ?? null,
+        type: txnType,
         paymentMethod: method,
         items: lineItems.map((item) => ({
           type: item.type,
           description: item.description,
           amount: item.amount,
           copyId: item.copyId ?? null,
-          titleId: item.titleId ?? null,
           productId: item.productId ?? null,
         })),
-        total,
-        cashTendered: method === 'cash' ? tenderedCents : undefined,
-        changeDue: method === 'cash' ? Math.max(0, changeDue) : undefined,
+        amountTendered: method === 'cash' ? tenderedCents : undefined,
       });
       onComplete(transaction);
     } catch (err) {

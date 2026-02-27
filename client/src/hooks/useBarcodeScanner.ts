@@ -12,7 +12,7 @@ interface UseBarcodeProps {
 export function useBarcodeScanner({ onScan, minLength = 3, maxDelay = 50 }: UseBarcodeProps) {
   const buffer = useRef('');
   const lastKeyTime = useRef(0);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     const now = Date.now();

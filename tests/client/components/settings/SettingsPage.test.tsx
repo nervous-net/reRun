@@ -6,11 +6,28 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { SettingsPage } from '../../../../client/src/components/settings/SettingsPage';
 
-function mockSettingsResponse(data: Record<string, string> = {}) {
-  return {
-    ok: true,
-    status: 200,
-    json: () => Promise.resolve({ data }),
+function mockFetch(settingsData: Record<string, string> = {}) {
+  return (url: string) => {
+    if (url.includes('/api/pricing')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ data: [] }),
+      });
+    }
+    if (url.includes('/api/promotions')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ data: [] }),
+      });
+    }
+    // Default: settings endpoint
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ data: settingsData }),
+    });
   };
 }
 
@@ -41,7 +58,7 @@ describe('SettingsPage', () => {
   });
 
   it('renders all settings sections after loading', async () => {
-    fetchSpy.mockResolvedValue(mockSettingsResponse({}));
+    fetchSpy.mockImplementation(mockFetch({}));
 
     render(
       <MemoryRouter>
@@ -59,8 +76,8 @@ describe('SettingsPage', () => {
   });
 
   it('displays fetched settings values in form fields', async () => {
-    fetchSpy.mockResolvedValue(
-      mockSettingsResponse({
+    fetchSpy.mockImplementation(
+      mockFetch({
         store_name: 'Mondo Video',
         store_phone: '555-0199',
         store_address: '42 Tape Lane',
@@ -103,7 +120,7 @@ describe('SettingsPage', () => {
   });
 
   it('displays system information', async () => {
-    fetchSpy.mockResolvedValue(mockSettingsResponse({}));
+    fetchSpy.mockImplementation(mockFetch({}));
 
     render(
       <MemoryRouter>
@@ -120,7 +137,7 @@ describe('SettingsPage', () => {
   });
 
   it('renders the save button', async () => {
-    fetchSpy.mockResolvedValue(mockSettingsResponse({}));
+    fetchSpy.mockImplementation(mockFetch({}));
 
     render(
       <MemoryRouter>
@@ -134,8 +151,8 @@ describe('SettingsPage', () => {
   });
 
   it('renders the TMDb API key field as password by default', async () => {
-    fetchSpy.mockResolvedValue(
-      mockSettingsResponse({ tmdb_api_key: 'secret-key-123' })
+    fetchSpy.mockImplementation(
+      mockFetch({ tmdb_api_key: 'secret-key-123' })
     );
 
     render(

@@ -6,11 +6,20 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { SettingsPage } from '../../../../client/src/components/settings/SettingsPage';
 
-function mockSettingsResponse(data: Record<string, string> = {}) {
-  return {
-    ok: true,
-    status: 200,
-    json: () => Promise.resolve({ data }),
+function mockFetch(settingsData: Record<string, string> = {}) {
+  return (url: string) => {
+    if (url.includes('/api/pricing') || url.includes('/api/promotions')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ data: [] }),
+      });
+    }
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ data: settingsData }),
+    });
   };
 }
 
@@ -29,7 +38,7 @@ describe('Settings Theme', () => {
   });
 
   it('renders the Appearance section with theme dropdown', async () => {
-    fetchSpy.mockResolvedValue(mockSettingsResponse({}));
+    fetchSpy.mockImplementation(mockFetch({}));
 
     render(
       <MemoryRouter>
@@ -47,7 +56,7 @@ describe('Settings Theme', () => {
   });
 
   it('shows all six theme options', async () => {
-    fetchSpy.mockResolvedValue(mockSettingsResponse({}));
+    fetchSpy.mockImplementation(mockFetch({}));
 
     render(
       <MemoryRouter>
@@ -68,7 +77,7 @@ describe('Settings Theme', () => {
   });
 
   it('applies theme class to documentElement on dropdown change', async () => {
-    fetchSpy.mockResolvedValue(mockSettingsResponse({}));
+    fetchSpy.mockImplementation(mockFetch({}));
 
     render(
       <MemoryRouter>
@@ -86,7 +95,7 @@ describe('Settings Theme', () => {
   });
 
   it('removes theme class when selecting theme F', async () => {
-    fetchSpy.mockResolvedValue(mockSettingsResponse({ theme: 'b' }));
+    fetchSpy.mockImplementation(mockFetch({ theme: 'b' }));
     document.documentElement.className = 'theme-b';
 
     render(
@@ -105,7 +114,7 @@ describe('Settings Theme', () => {
   });
 
   it('defaults to theme F when no theme is stored', async () => {
-    fetchSpy.mockResolvedValue(mockSettingsResponse({}));
+    fetchSpy.mockImplementation(mockFetch({}));
 
     render(
       <MemoryRouter>
@@ -123,7 +132,7 @@ describe('Settings Theme', () => {
   });
 
   it('shows stored theme as selected on load', async () => {
-    fetchSpy.mockResolvedValue(mockSettingsResponse({ theme: 'c' }));
+    fetchSpy.mockImplementation(mockFetch({ theme: 'c' }));
 
     render(
       <MemoryRouter>
@@ -140,7 +149,7 @@ describe('Settings Theme', () => {
   });
 
   it('includes theme in save request when changed', async () => {
-    fetchSpy.mockResolvedValue(mockSettingsResponse({}));
+    fetchSpy.mockImplementation(mockFetch({}));
 
     render(
       <MemoryRouter>

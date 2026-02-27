@@ -3,6 +3,8 @@
 
 import { type CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 import { Badge } from '../common/Badge';
+import { Button } from '../common/Button';
+import { Input } from '../common/Input';
 import { Table } from '../common/Table';
 import { api } from '../../api/client';
 
@@ -27,7 +29,7 @@ interface TitleData {
   runtime?: number;
   rating: string;
   synopsis?: string;
-  cast?: string[];
+  cast?: string;
   coverUrl?: string;
   copies: CopyData[];
 }
@@ -180,11 +182,14 @@ const copiesColumns = [
   { key: 'format', label: 'Format', width: '70px' },
   { key: 'condition', label: 'Cond', width: '60px' },
   { key: 'status', label: 'Status', width: '80px' },
+  { key: 'actions', label: '', width: '90px' },
 ];
 
 function getStatusVariant(status: string): 'success' | 'warning' | 'danger' | 'info' {
   switch (status.toLowerCase()) {
+    case 'in':
     case 'available': return 'success';
+    case 'out':
     case 'rented': return 'warning';
     case 'lost':
     case 'damaged': return 'danger';
@@ -196,29 +201,54 @@ export function TitleDetail({ titleId, onClose }: TitleDetailProps) {
   const [title, setTitle] = useState<TitleData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAddCopies, setShowAddCopies] = useState(false);
+  const [addFormat, setAddFormat] = useState('DVD');
+  const [addQty, setAddQty] = useState('1');
+  const [addingCopies, setAddingCopies] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  const loadTitle = useCallback(() => {
     setLoading(true);
     setError(null);
-
     api.titles.get(titleId)
       .then((data) => {
-        if (!cancelled) {
-          setTitle(data);
-          setLoading(false);
-        }
+        setTitle(data);
+        setLoading(false);
       })
       .catch((err) => {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Failed to load title');
-          setLoading(false);
-        }
+        setError(err instanceof Error ? err.message : 'Failed to load title');
+        setLoading(false);
       });
-
-    return () => { cancelled = true; };
   }, [titleId]);
+
+  useEffect(() => {
+    loadTitle();
+  }, [loadTitle]);
+
+  async function updateCopyStatus(copyId: string, status: string) {
+    try {
+      await api.copies.update(copyId, { status });
+      loadTitle();
+    } catch {
+      // silent — visible from stale state
+    }
+  }
+
+  async function handleAddCopies() {
+    const qty = parseInt(addQty, 10);
+    if (!qty || qty < 1) return;
+    setAddingCopies(true);
+    try {
+      await api.titles.addCopies(titleId, { format: addFormat, quantity: qty });
+      loadTitle();
+      setShowAddCopies(false);
+      setAddQty('1');
+    } catch {
+      // visible from stale state
+    } finally {
+      setAddingCopies(false);
+    }
+  }
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') onClose();
@@ -240,6 +270,20 @@ export function TitleDetail({ titleId, onClose }: TitleDetailProps) {
     format: copy.format,
     condition: copy.condition,
     status: <Badge variant={getStatusVariant(copy.status)}>{copy.status}</Badge>,
+    actions: copy.status === 'in' ? (
+      <div style={{ display: 'flex', gap: '4px' }}>
+        <Button variant="danger" onClick={() => updateCopyStatus(copy.id, 'damaged')}>
+          Dmg
+        </Button>
+        <Button variant="ghost" onClick={() => updateCopyStatus(copy.id, 'retired')}>
+          Retire
+        </Button>
+      </div>
+    ) : copy.status === 'damaged' || copy.status === 'lost' || copy.status === 'retired' ? (
+      <Button variant="secondary" onClick={() => updateCopyStatus(copy.id, 'in')}>
+        Restore
+      </Button>
+    ) : null,
   }));
 
   return (
@@ -311,15 +355,45 @@ export function TitleDetail({ titleId, onClose }: TitleDetailProps) {
                 </div>
               )}
 
-              {title.cast && title.cast.length > 0 && (
+              {title.cast && (
                 <div>
                   <div style={sectionLabelStyle}>Cast</div>
-                  <div style={synopsisStyle}>{title.cast.join(', ')}</div>
+                  <div style={synopsisStyle}>{title.cast}</div>
                 </div>
               )}
 
               <div>
-                <div style={sectionLabelStyle}>Copies ({title.copies.length})</div>
+                <div style={{ ...sectionLabelStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Copies ({title.copies.length})</span>
+                  <Button variant="secondary" onClick={() => setShowAddCopies(!showAddCopies)}>
+                    {showAddCopies ? 'Cancel' : '+ Add'}
+                  </Button>
+                </div>
+                {showAddCopies && (
+                  <div style={addCopiesFormStyle}>
+                    <select
+                      value={addFormat}
+                      onChange={(e) => setAddFormat(e.target.value)}
+                      style={selectStyle}
+                    >
+                      <option value="VHS">VHS</option>
+                      <option value="DVD">DVD</option>
+                      <option value="Blu-ray">Blu-ray</option>
+                      <option value="4K">4K UHD</option>
+                    </select>
+                    <input
+                      type="number"
+                      min="1"
+                      max="50"
+                      value={addQty}
+                      onChange={(e) => setAddQty(e.target.value)}
+                      style={{ width: '60px', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: 'var(--border-radius)', padding: '4px 8px' }}
+                    />
+                    <Button variant="primary" onClick={handleAddCopies} disabled={addingCopies}>
+                      {addingCopies ? 'Adding...' : 'Add Copies'}
+                    </Button>
+                  </div>
+                )}
                 <Table
                   columns={copiesColumns}
                   data={copiesData}
@@ -333,3 +407,20 @@ export function TitleDetail({ titleId, onClose }: TitleDetailProps) {
     </>
   );
 }
+
+const addCopiesFormStyle: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 'var(--space-sm)',
+  padding: 'var(--space-sm) 0',
+};
+
+const selectStyle: CSSProperties = {
+  backgroundColor: 'var(--bg-input)',
+  color: 'var(--text-primary)',
+  border: '1px solid var(--border-color)',
+  borderRadius: 'var(--border-radius)',
+  padding: '6px 8px',
+  fontFamily: 'inherit',
+  fontSize: 'var(--font-size-md)',
+};

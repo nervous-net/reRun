@@ -7,6 +7,6 @@ export function generateBarcode(format: string, titleId: string, sequence: numbe
   return `${prefix}-${titleId}-${seqPad}`;
 }
 
-export function generateBarcodes(format: string, titleId: string, count: number): string[] {
-  return Array.from({ length: count }, (_, i) => generateBarcode(format, titleId, i + 1));
+export function generateBarcodes(format: string, titleId: string, count: number, startSeq = 1): string[] {
+  return Array.from({ length: count }, (_, i) => generateBarcode(format, titleId, startSeq + i));
 }

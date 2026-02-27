@@ -337,8 +337,8 @@ describe('Transaction Service', () => {
       holdTransaction('hold-1', holdData);
       const held = getHeldTransactions();
       expect(held).toHaveLength(1);
-      expect(held[0].holdId).toBe('hold-1');
-      expect(held[0].data.customerId).toBe('cust-1');
+      expect(held[0].id).toBe('hold-1');
+      expect(held[0].customerId).toBe('cust-1');
 
       const recalled = recallTransaction('hold-1');
       expect(recalled).toBeDefined();
@@ -358,7 +358,7 @@ describe('Transaction Service', () => {
       // Clean slate (clear any leftover holds)
       while (getHeldTransactions().length > 0) {
         const h = getHeldTransactions()[0];
-        recallTransaction(h.holdId);
+        recallTransaction(h.id);
       }
 
       holdTransaction('h1', { customerId: 'c1', items: [] });

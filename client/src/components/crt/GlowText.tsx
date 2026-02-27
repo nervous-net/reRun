@@ -1,10 +1,12 @@
 // ABOUTME: Text component with CRT phosphor glow effect
 // ABOUTME: Supports green, amber, and red color variants
 
+import type { ReactNode, ElementType } from 'react';
+
 interface GlowTextProps {
-  children: React.ReactNode;
+  children: ReactNode;
   variant?: 'green' | 'amber' | 'red';
-  as?: keyof JSX.IntrinsicElements;
+  as?: ElementType;
   className?: string;
 }
 
