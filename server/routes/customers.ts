@@ -189,7 +189,8 @@ export function createCustomersRoutes(db: any) {
 
     // Check family member limit from settings
     const [maxSetting] = await db.select().from(storeSettings).where(eq(storeSettings.key, 'max_family_members'));
-    const maxMembers = maxSetting ? parseInt(maxSetting.value ?? '6', 10) : 6;
+    const parsed = maxSetting ? parseInt(maxSetting.value ?? '6', 10) : 6;
+    const maxMembers = Number.isNaN(parsed) ? 6 : parsed;
     const [memberCount] = await db.select({ count: count() }).from(familyMembers).where(eq(familyMembers.customerId, customerId));
     if (memberCount.count >= maxMembers) {
       return c.json({ error: `Maximum of ${maxMembers} family members allowed` }, 400);

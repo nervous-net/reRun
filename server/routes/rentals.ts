@@ -28,7 +28,8 @@ export function createRentalsRoutes(db: any) {
 
     // Check rental limit from settings
     const [maxSetting] = await db.select().from(storeSettings).where(eq(storeSettings.key, 'max_active_rentals'));
-    const maxRentals = maxSetting ? parseInt(maxSetting.value ?? '6', 10) : 6;
+    const parsed = maxSetting ? parseInt(maxSetting.value ?? '6', 10) : 6;
+    const maxRentals = Number.isNaN(parsed) ? 6 : parsed;
     const [activeCount] = await db
       .select({ count: count() })
       .from(rentals)

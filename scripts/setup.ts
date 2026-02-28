@@ -121,6 +121,8 @@ async function main() {
       ['store_address', ''],
       ['store_phone', ''],
       ['receipt_footer', 'Thank you for choosing Way Cool Video!'],
+      ['max_active_rentals', '6'],
+      ['max_family_members', '6'],
     ];
 
     const stmt = sqlite.prepare('INSERT INTO store_settings (key, value) VALUES (?, ?)');

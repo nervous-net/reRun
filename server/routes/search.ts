@@ -91,10 +91,18 @@ export function createSearchRoutes(db: any) {
       ${orderClause}
       LIMIT ${limit} OFFSET ${offset}
     `;
-    const rows = sqlite.prepare(mainSql).all(...params);
+    const rows = sqlite.prepare(mainSql).all(...params) as any[];
+
+    // Fetch distinct formats per title
+    const formatSql = `SELECT DISTINCT format FROM copies WHERE title_id = ?`;
+    const formatStmt = sqlite.prepare(formatSql);
+    const enriched = rows.map((row) => {
+      const formatRows = formatStmt.all(row.id) as { format: string }[];
+      return { ...row, formats: formatRows.map((f) => f.format) };
+    });
 
     return c.json({
-      titles: rows,
+      titles: enriched,
       total,
       page,
       limit,

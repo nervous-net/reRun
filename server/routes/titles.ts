@@ -162,16 +162,9 @@ export function createTitlesRoutes(db: any) {
       .from(copies)
       .where(eq(copies.titleId, titleId));
 
-    const barcodes = generateBarcodes(body.format, titleId, quantity);
+    const barcodes = generateBarcodes(body.format, titleId, quantity, existingCount + 1);
 
-    // Offset barcodes by existing count to avoid collisions
-    const offsetBarcodes = Array.from({ length: quantity }, (_, i) => {
-      const seq = existingCount + i + 1;
-      const prefix = body.format.toUpperCase().substring(0, 3);
-      return `${prefix}-${titleId}-${String(seq).padStart(3, '0')}`;
-    });
-
-    const newCopies = offsetBarcodes.map((barcode) => ({
+    const newCopies = barcodes.map((barcode) => ({
       id: nanoid(),
       titleId,
       barcode,

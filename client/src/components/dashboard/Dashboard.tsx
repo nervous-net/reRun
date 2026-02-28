@@ -435,8 +435,8 @@ export function Dashboard() {
               </div>
             ) : (
               limitedReservations.map((res: any, i: number) => {
-                const customerName = res.customer?.name ?? res.customerName ?? '—';
-                const titleName = res.title?.name ?? res.titleName ?? '—';
+                const customerName = res.customerName ?? '—';
+                const titleName = res.titleName ?? '—';
                 const status = res.status ?? 'waiting';
 
                 return (

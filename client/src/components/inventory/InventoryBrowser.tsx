@@ -186,7 +186,7 @@ function mapTitleToSummary(raw: any): TitleSummary {
     coverUrl: raw.coverUrl,
     availableCopies: raw.availableCopies ?? 0,
     totalCopies: raw.totalCopies ?? 0,
-    formats: [],
+    formats: raw.formats ?? [],
   };
 }
 

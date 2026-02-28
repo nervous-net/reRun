@@ -223,7 +223,7 @@ describe('Transactions API', () => {
       const listRes2 = await app.request('/api/transactions/held');
       const listBody2 = await listRes2.json();
       const stillHeld = listBody2.data.filter(
-        (h: any) => h.holdId === holdBody.holdId
+        (h: any) => h.id === holdBody.holdId
       );
       expect(stillHeld).toHaveLength(0);
     });

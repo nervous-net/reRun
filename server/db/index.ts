@@ -15,7 +15,7 @@ if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
 }
 
-const sqlite = new Database(DB_PATH);
+const sqlite: Database.Database = new Database(DB_PATH);
 sqlite.pragma('journal_mode = WAL');
 sqlite.pragma('foreign_keys = ON');
 
