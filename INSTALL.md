@@ -43,10 +43,23 @@ Before you start, make sure you have:
 
 ## Installation
 
-### Step 1: Get the files
+### Step 1: Download the project
 
-Download or copy the reRun application folder to your computer. It doesn't matter
-where — your Desktop, Documents folder, or anywhere you like.
+**Option A — Download as a ZIP (easiest):**
+
+1. Go to https://github.com/nervous-net/CRTvideo
+2. Click the green **"Code"** button near the top right
+3. Click **"Download ZIP"**
+4. Find the downloaded ZIP file (usually in your Downloads folder) and unzip it
+5. Move the unzipped folder anywhere you like — Desktop, Documents, wherever
+
+**Option B — Clone with Git (if you have Git installed):**
+
+```
+git clone https://github.com/nervous-net/CRTvideo.git
+```
+
+This creates a `CRTvideo` folder with all the files.
 
 ### Step 2: Open a terminal
 
