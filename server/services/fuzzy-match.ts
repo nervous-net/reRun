@@ -83,9 +83,64 @@ export function scoreTmdbMatch(
 }
 
 /**
+ * Generate spelling correction candidates for a single word by:
+ * - Removing each doubled letter ("Jurrasic" → "Jurasic")
+ * - Doubling each consonant ("Jurasic" → "Jurrasic", "Jurassic")
+ * - Swapping adjacent characters ("Godfarther" → "Godfatrher")
+ * Returns deduplicated candidates excluding the original.
+ */
+function spellVariants(word: string): string[] {
+  const variants: string[] = [];
+  const lower = word.toLowerCase();
+
+  // Remove doubled letters: "rr" → "r", "ss" → "s"
+  for (let i = 0; i < lower.length - 1; i++) {
+    if (lower[i] === lower[i + 1]) {
+      variants.push(word.slice(0, i) + word.slice(i + 1));
+    }
+  }
+
+  // Double each consonant: "Jurasic" → "Jurrasic", "Jurassic"
+  const consonants = 'bcdfghjklmnpqrstvwxyz';
+  for (let i = 0; i < lower.length; i++) {
+    if (consonants.includes(lower[i]) && lower[i] !== lower[i + 1]) {
+      variants.push(word.slice(0, i + 1) + word[i] + word.slice(i + 1));
+    }
+  }
+
+  // Swap adjacent characters: catch transpositions
+  for (let i = 0; i < word.length - 1; i++) {
+    if (lower[i] !== lower[i + 1]) {
+      variants.push(word.slice(0, i) + word[i + 1] + word[i] + word.slice(i + 2));
+    }
+  }
+
+  // Delete single characters: catch insertions ("Godfarther" → "Godfather")
+  for (let i = 1; i < word.length - 1; i++) {
+    variants.push(word.slice(0, i) + word.slice(i + 1));
+  }
+
+  // Common vowel swaps: a↔e, e↔i, a↔o
+  const vowelSwaps: Record<string, string[]> = {
+    a: ['e', 'o'], e: ['a', 'i'], i: ['e'], o: ['a'], u: ['o'],
+  };
+  for (let i = 0; i < lower.length; i++) {
+    const swaps = vowelSwaps[lower[i]];
+    if (swaps) {
+      for (const s of swaps) {
+        variants.push(word.slice(0, i) + s + word.slice(i + 1));
+      }
+    }
+  }
+
+  return [...new Set(variants)].filter((v) => v.toLowerCase() !== lower);
+}
+
+/**
  * Generate search query variations to improve TMDb matching.
  * Returns: original, strip subtitle after colon, drop leading "The",
- * strip trailing parenthetical year. All deduplicated.
+ * strip trailing parenthetical year, and spelling corrections for
+ * each word. All deduplicated.
  */
 export function queryVariations(title: string): string[] {
   const variations: string[] = [title];
@@ -105,6 +160,23 @@ export function queryVariations(title: string): string[] {
   const withoutYear = title.replace(/\s*\(\d{4}\)\s*$/, '').trim();
   if (withoutYear !== title) {
     variations.push(withoutYear);
+  }
+
+  // Generate spelling correction variations per word (cap at 8 total spelling variants)
+  const words = title.split(/\s+/);
+  if (words.length <= 5) {
+    let spellingCount = 0;
+    for (let wi = 0; wi < words.length && spellingCount < 8; wi++) {
+      if (words[wi].length < 3) continue;
+      const wordVariants = spellVariants(words[wi]);
+      for (const variant of wordVariants.slice(0, 4)) {
+        if (spellingCount >= 8) break;
+        const corrected = [...words];
+        corrected[wi] = variant;
+        variations.push(corrected.join(' '));
+        spellingCount++;
+      }
+    }
   }
 
   // Deduplicate while preserving order

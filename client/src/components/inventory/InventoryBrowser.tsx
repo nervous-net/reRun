@@ -220,6 +220,7 @@ export function InventoryBrowser() {
   // Panels
   const [detailTitleId, setDetailTitleId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [editTitleId, setEditTitleId] = useState<string | null>(null);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -311,7 +312,14 @@ export function InventoryBrowser() {
 
   const handleFormSaved = () => {
     setShowForm(false);
+    setEditTitleId(null);
     fetchTitles();
+  };
+
+  const handleEditTitle = (id: string) => {
+    setDetailTitleId(null);
+    setEditTitleId(id);
+    setShowForm(true);
   };
 
   // Build list-view data
@@ -467,14 +475,16 @@ export function InventoryBrowser() {
         <TitleDetail
           titleId={detailTitleId}
           onClose={() => setDetailTitleId(null)}
+          onEdit={handleEditTitle}
         />
       )}
 
       {/* Add/Edit Title Modal */}
       {showForm && (
         <TitleForm
-          onClose={() => setShowForm(false)}
+          onClose={() => { setShowForm(false); setEditTitleId(null); }}
           onSaved={handleFormSaved}
+          titleId={editTitleId ?? undefined}
         />
       )}
     </div>

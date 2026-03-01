@@ -126,9 +126,9 @@ export function createImportRoutes(db: any, tmdb?: TmdbClient) {
               structured[i + j] = {
                 ...item,
                 year: item.year || String(details.year ?? ''),
-                genre: item.genre || details.genre,
+                genre: details.genre || item.genre,
                 cast: item.cast || details.cast,
-                rating: item.rating || details.rating || '',
+                rating: details.rating || item.rating || '',
                 tmdbId: String(details.tmdbId),
                 coverUrl: details.coverUrl || '',
                 synopsis: details.synopsis || '',

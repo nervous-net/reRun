@@ -114,4 +114,22 @@ describe('queryVariations', () => {
     expect(variations).toContain('The Matrix');
     expect(variations).toContain('Matrix: Reloaded (2003)');
   });
+
+  it('generates spelling corrections with doubled consonants', () => {
+    const variations = queryVariations('Jurasic Park');
+    // Should generate "Jurrasic Park" or "Jurassic Park" by doubling consonants
+    const hasDoubled = variations.some((v) => v.includes('rr') || v.includes('ss'));
+    expect(hasDoubled).toBe(true);
+  });
+
+  it('generates spelling corrections by removing doubled letters', () => {
+    const variations = queryVariations('Jurrasic Park');
+    expect(variations).toContain('Jurasic Park');
+  });
+
+  it('generates transposition corrections', () => {
+    const variations = queryVariations('Godfarther');
+    // Swapping adjacent chars should produce variations
+    expect(variations.length).toBeGreaterThan(1);
+  });
 });

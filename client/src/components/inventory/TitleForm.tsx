@@ -119,6 +119,10 @@ export function TitleForm({ onClose, onSaved, titleId }: TitleFormProps) {
         setGenre(data.genre ?? '');
         setRating(data.rating ?? '');
         setSynopsis(data.synopsis ?? '');
+        setCast(data.cast ?? '');
+        setCoverUrl(data.coverUrl ?? null);
+        setTmdbId(data.tmdbId ? String(data.tmdbId) : null);
+        setRuntimeMinutes(data.runtimeMinutes ?? null);
         setLoadingTitle(false);
       })
       .catch((err) => {
@@ -240,71 +244,59 @@ export function TitleForm({ onClose, onSaved, titleId }: TitleFormProps) {
             </Alert>
           )}
 
-          {!isEditing && (
-            <div>
-              <div style={rowStyle}>
-                <div style={{ flex: 1 }}>
-                  <Input
-                    label="Name"
-                    value={name}
-                    onChange={(e) => { setName(e.target.value); setTmdbResults([]); }}
-                    placeholder="Title name"
-                    required
-                    autoFocus
-                  />
-                </div>
-                <div style={{ alignSelf: 'flex-end' }}>
-                  <Button variant="secondary" onClick={handleTmdbSearch} disabled={tmdbSearching || !name.trim()}>
-                    {tmdbSearching ? 'Searching...' : 'TMDb Lookup'}
-                  </Button>
-                </div>
+          <div>
+            <div style={rowStyle}>
+              <div style={{ flex: 1 }}>
+                <Input
+                  label="Name"
+                  value={name}
+                  onChange={(e) => { setName(e.target.value); setTmdbResults([]); }}
+                  placeholder="Title name"
+                  required
+                  autoFocus
+                />
               </div>
-              {tmdbResults.length > 0 && (
-                <div style={tmdbDropdownStyle}>
-                  {tmdbResults.map((r: any) => (
-                    <div
-                      key={`${r.tmdbId}-${r.mediaType}`}
-                      style={tmdbResultStyle}
-                      onClick={() => handleTmdbSelect(r)}
-                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--accent-10)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-                    >
-                      {r.posterUrl && (
-                        <img src={r.posterUrl} alt="" style={{ width: '32px', height: '48px', objectFit: 'cover', borderRadius: '2px' }} />
-                      )}
-                      <div style={{ flex: 1 }}>
-                        <div style={{ color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          {r.title}
-                          {r.mediaType === 'tv' && (
-                            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--crt-amber)', border: '1px solid var(--crt-amber)', borderRadius: '3px', padding: '0 4px' }}>TV</span>
-                          )}
-                        </div>
-                        <div style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)' }}>
-                          {r.year ?? '—'} | Rating: {r.voteAverage?.toFixed(1) ?? '—'}
-                        </div>
+              <div style={{ alignSelf: 'flex-end' }}>
+                <Button variant="secondary" onClick={handleTmdbSearch} disabled={tmdbSearching || !name.trim()}>
+                  {tmdbSearching ? 'Searching...' : 'TMDb Lookup'}
+                </Button>
+              </div>
+            </div>
+            {tmdbResults.length > 0 && (
+              <div style={tmdbDropdownStyle}>
+                {tmdbResults.map((r: any) => (
+                  <div
+                    key={`${r.tmdbId}-${r.mediaType}`}
+                    style={tmdbResultStyle}
+                    onClick={() => handleTmdbSelect(r)}
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--accent-10)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                  >
+                    {r.posterUrl && (
+                      <img src={r.posterUrl} alt="" style={{ width: '32px', height: '48px', objectFit: 'cover', borderRadius: '2px' }} />
+                    )}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {r.title}
+                        {r.mediaType === 'tv' && (
+                          <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--crt-amber)', border: '1px solid var(--crt-amber)', borderRadius: '3px', padding: '0 4px' }}>TV</span>
+                        )}
+                      </div>
+                      <div style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)' }}>
+                        {r.year ?? '—'} | Rating: {r.voteAverage?.toFixed(1) ?? '—'}
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-              {coverUrl && (
-                <div style={{ marginTop: 'var(--space-sm)', display: 'flex', gap: 'var(--space-sm)', alignItems: 'center' }}>
-                  <img src={coverUrl} alt="" style={{ width: '48px', height: '72px', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--border-color)' }} />
-                  <span style={{ color: 'var(--crt-green)', fontSize: 'var(--font-size-sm)' }}>TMDb matched</span>
-                </div>
-              )}
-            </div>
-          )}
-          {isEditing && (
-            <Input
-              label="Name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Title name"
-              required
-              autoFocus
-            />
-          )}
+                  </div>
+                ))}
+              </div>
+            )}
+            {coverUrl && (
+              <div style={{ marginTop: 'var(--space-sm)', display: 'flex', gap: 'var(--space-sm)', alignItems: 'center' }}>
+                <img src={coverUrl} alt="" style={{ width: '48px', height: '72px', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--border-color)' }} />
+                <span style={{ color: 'var(--crt-green)', fontSize: 'var(--font-size-sm)' }}>TMDb matched</span>
+              </div>
+            )}
+          </div>
 
           <div style={rowStyle}>
             <Input

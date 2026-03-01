@@ -11,6 +11,7 @@ import { api } from '../../api/client';
 interface TitleDetailProps {
   titleId: string;
   onClose: () => void;
+  onEdit?: (titleId: string) => void;
 }
 
 interface CopyData {
@@ -197,7 +198,7 @@ function getStatusVariant(status: string): 'success' | 'warning' | 'danger' | 'i
   }
 }
 
-export function TitleDetail({ titleId, onClose }: TitleDetailProps) {
+export function TitleDetail({ titleId, onClose, onEdit }: TitleDetailProps) {
   const [title, setTitle] = useState<TitleData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -292,21 +293,28 @@ export function TitleDetail({ titleId, onClose }: TitleDetailProps) {
       <div ref={panelRef} style={panelStyle} role="dialog" aria-modal="true" aria-label="Title Detail">
         <div style={headerStyle}>
           <h2 style={headerTitleStyle}>Title Detail</h2>
-          <button
-            style={closeButtonStyle}
-            onClick={onClose}
-            aria-label="Close"
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'var(--crt-green)';
-              e.currentTarget.style.borderColor = 'var(--crt-green)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--text-secondary)';
-              e.currentTarget.style.borderColor = 'var(--border-color)';
-            }}
-          >
-            [X]
-          </button>
+          <div style={{ display: 'flex', gap: 'var(--space-xs)', alignItems: 'center' }}>
+            {onEdit && (
+              <Button variant="secondary" onClick={() => onEdit(titleId)}>
+                Edit
+              </Button>
+            )}
+            <button
+              style={closeButtonStyle}
+              onClick={onClose}
+              aria-label="Close"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = 'var(--crt-green)';
+                e.currentTarget.style.borderColor = 'var(--crt-green)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'var(--text-secondary)';
+                e.currentTarget.style.borderColor = 'var(--border-color)';
+              }}
+            >
+              [X]
+            </button>
+          </div>
         </div>
 
         <div style={bodyStyle}>
