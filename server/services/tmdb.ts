@@ -54,7 +54,7 @@ export class TmdbClient {
     }
 
     const data = await response.json();
-    return data.results.map((r: any) => ({
+    return (data.results || []).map((r: any) => ({
       tmdbId: r.id,
       title: r.title,
       year: r.release_date ? parseInt(r.release_date.substring(0, 4), 10) : null,

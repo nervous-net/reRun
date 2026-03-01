@@ -5,7 +5,7 @@ import { Hono } from 'hono';
 import { eq, sql, count } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { titles, copies } from '../db/schema.js';
-import { generateBarcodes } from '../services/barcode.js';
+import { generateBarcode, generateBarcodes } from '../services/barcode.js';
 
 export function createTitlesRoutes(db: any) {
   const routes = new Hono();
@@ -83,6 +83,21 @@ export function createTitlesRoutes(db: any) {
     };
 
     await db.insert(titles).values(values);
+
+    if (body.format && body.quantity) {
+      const existingCopies = await db.select({ id: copies.id }).from(copies).where(eq(copies.titleId, id));
+      for (let i = 0; i < body.quantity; i++) {
+        const barcode = generateBarcode(body.format, id, existingCopies.length + i + 1);
+        db.insert(copies).values({
+          id: nanoid(),
+          titleId: id,
+          barcode,
+          format: body.format,
+          status: 'in',
+          condition: 'good',
+        }).run();
+      }
+    }
 
     const [created] = await db
       .select()

@@ -23,6 +23,30 @@ interface ParseResult {
   detectedMapping: Record<string, string>;
 }
 
+function parseCSVLine(line: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    if (char === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  result.push(current.trim());
+  return result;
+}
+
 export function ImportWizard() {
   const [currentStep, setCurrentStep] = useState(1);
   const [parsedData, setParsedData] = useState<ParseResult | null>(null);
@@ -42,10 +66,8 @@ export function ImportWizard() {
     } catch (err) {
       // If parse endpoint fails, do basic client-side parsing as fallback
       const lines = csv.split('\n').filter((l) => l.trim());
-      const headers = lines[0]?.split(',').map((h) => h.trim().replace(/^"|"$/g, '')) ?? [];
-      const sampleRows = lines.slice(1, 4).map((line) =>
-        line.split(',').map((c) => c.trim().replace(/^"|"$/g, ''))
-      );
+      const headers = parseCSVLine(lines[0] ?? '');
+      const sampleRows = lines.slice(1, 4).map((line) => parseCSVLine(line));
 
       // Attempt auto-detection of column mapping
       const detectedMapping: Record<string, string> = {};
@@ -92,10 +114,8 @@ export function ImportWizard() {
     try {
       // Parse all rows using the mapping
       const lines = csvContent.split('\n').filter((l) => l.trim());
-      const headers = lines[0]?.split(',').map((h) => h.trim().replace(/^"|"$/g, '')) ?? [];
-      const rows = lines.slice(1).map((line) =>
-        line.split(',').map((c) => c.trim().replace(/^"|"$/g, ''))
-      );
+      const headers = parseCSVLine(lines[0] ?? '');
+      const rows = lines.slice(1).map((line) => parseCSVLine(line));
 
       const result = await api.import.match({ rows, headers, mapping });
       setMatchedTitles(result.titles ?? []);
@@ -104,10 +124,8 @@ export function ImportWizard() {
     } catch (err) {
       // Fallback: construct titles locally from CSV data
       const lines = csvContent.split('\n').filter((l) => l.trim());
-      const headers = lines[0]?.split(',').map((h) => h.trim().replace(/^"|"$/g, '')) ?? [];
-      const rows = lines.slice(1).map((line) =>
-        line.split(',').map((c) => c.trim().replace(/^"|"$/g, ''))
-      );
+      const headers = parseCSVLine(lines[0] ?? '');
+      const rows = lines.slice(1).map((line) => parseCSVLine(line));
 
       const titles: ImportTitle[] = rows.map((row) => {
         const getValue = (field: string): string => {

@@ -7,7 +7,7 @@ import * as schema from './schema.js';
 import fs from 'fs';
 import path from 'path';
 
-export const DB_PATH = process.env.DATABASE_URL || './data/rerun.db';
+export const DB_PATH = process.env.DB_PATH || './data/rerun.db';
 
 // Ensure the data directory exists
 const dbDir = path.dirname(DB_PATH);

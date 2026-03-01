@@ -30,7 +30,10 @@ async function put<T>(path: string, body: unknown): Promise<T> {
 
 async function del<T>(path: string): Promise<T> {
   const res = await fetch(path, { method: 'DELETE' });
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  if (!res.ok) throw new Error(`DELETE ${path} failed: ${res.status}`);
+  if (res.status === 204 || res.headers.get('content-length') === '0') {
+    return {} as T;
+  }
   return res.json();
 }
 

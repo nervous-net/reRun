@@ -40,6 +40,13 @@ export function App() {
               <Route path="/inventory" element={<InventoryBrowser />} />
               <Route path="/import" element={<ImportWizard />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="*" element={
+                <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--crt-green)' }}>
+                  <h2 style={{ textShadow: 'var(--glow-green)' }}>PAGE NOT FOUND</h2>
+                  <p style={{ color: 'var(--text-secondary)' }}>The requested path does not exist.</p>
+                  <a href="/" style={{ color: 'var(--crt-amber)', textDecoration: 'underline' }}>Back to Dashboard</a>
+                </div>
+              } />
             </Routes>
           </Layout>
         } />

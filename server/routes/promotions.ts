@@ -2,7 +2,7 @@
 // ABOUTME: Supports listing active promotions, creating, and updating promotion rules
 
 import { Hono } from 'hono';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { promotions } from '../db/schema.js';
 

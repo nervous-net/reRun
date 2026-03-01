@@ -287,9 +287,9 @@ describe('POST /api/import/commit', () => {
     const allCopies = await db.select().from(copies);
     expect(allCopies).toHaveLength(2);
 
-    // Barcodes should follow VHS-{titleId}-001 pattern
+    // Barcodes should follow VHS.{titleId}.001 pattern
     for (const copy of allCopies) {
-      expect(copy.barcode).toMatch(/^VHS-.+-\d{3}$/);
+      expect(copy.barcode).toMatch(/^VHS\..+\.\d{3}$/);
       expect(copy.format).toBe('VHS');
       expect(copy.status).toBe('in');
     }

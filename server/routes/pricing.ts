@@ -9,13 +9,19 @@ import { pricingRules } from '../db/schema.js';
 export function createPricingRoutes(db: any) {
   const routes = new Hono();
 
-  // GET / — list active pricing rules
+  // GET / — list pricing rules (all by default, or filter by ?active=1/0)
   routes.get('/', async (c) => {
-    const data = await db
-      .select()
-      .from(pricingRules)
-      .where(eq(pricingRules.active, 1))
-      .all();
+    const activeParam = c.req.query('active');
+    let data;
+    if (activeParam !== undefined && activeParam !== '') {
+      data = await db
+        .select()
+        .from(pricingRules)
+        .where(eq(pricingRules.active, Number(activeParam)))
+        .all();
+    } else {
+      data = await db.select().from(pricingRules).all();
+    }
 
     return c.json({ data });
   });

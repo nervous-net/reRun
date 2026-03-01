@@ -2,12 +2,13 @@
 // ABOUTME: Manages sale stock adjustments and rental copy status within SQLite transactions
 
 import { nanoid } from 'nanoid';
-import { eq, sql } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import {
   transactions,
   transactionItems,
   products,
   copies,
+  rentals,
   storeSettings,
 } from '../db/schema.js';
 
@@ -87,7 +88,7 @@ async function getTaxRate(db: any): Promise<number> {
     .where(eq(storeSettings.key, 'tax_rate'));
 
   if (!setting || !setting.value) return 0;
-  return parseInt(setting.value, 10);
+  return Number(setting.value) || 0;
 }
 
 function calculateTax(subtotal: number, taxRateBasisPoints: number): number {
@@ -150,9 +151,23 @@ export async function createTransaction(db: any, data: CreateTransactionInput) {
 
       // Decrement product stock for sale items
       if (item.type === 'sale' && item.productId) {
+        // Check stock availability before decrementing
+        const [product] = db.select().from(products).where(eq(products.id, item.productId)).all();
+        if (product && product.stockQty <= 0) {
+          throw new Error(`Product ${product.name} is out of stock`);
+        }
+
         db.update(products)
           .set({ stockQty: sql`${products.stockQty} - 1` })
           .where(eq(products.id, item.productId))
+          .run();
+      }
+
+      // Link rental record to this transaction
+      if (item.type === 'rental' && item.copyId) {
+        db.update(rentals)
+          .set({ transactionId: txnId })
+          .where(and(eq(rentals.copyId, item.copyId), eq(rentals.status, 'out')))
           .run();
       }
     }
@@ -186,6 +201,10 @@ export async function voidTransaction(db: any, transactionId: string, reason: st
     throw new Error('Transaction not found');
   }
 
+  if (txn.voided) {
+    throw new Error('Transaction is already voided');
+  }
+
   const items = await db
     .select()
     .from(transactionItems)
@@ -213,6 +232,14 @@ export async function voidTransaction(db: any, transactionId: string, reason: st
           .set({ status: 'in' })
           .where(eq(copies.id, item.copyId))
           .run();
+
+        // Find and reverse the rental for this copy
+        if (item.rentalId) {
+          db.update(rentals)
+            .set({ status: 'returned', returnedAt: new Date().toISOString() })
+            .where(eq(rentals.id, item.rentalId))
+            .run();
+        }
       }
     }
   });

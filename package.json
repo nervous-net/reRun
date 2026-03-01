@@ -8,7 +8,7 @@
     "dev:server": "tsx watch server/index.ts",
     "dev:client": "vite",
     "build": "vite build && tsc -p tsconfig.server.json",
-    "start": "node dist/server/index.js",
+    "start": "node dist/index.js",
     "test": "vitest",
     "test:run": "vitest run",
     "db:generate": "drizzle-kit generate",
@@ -23,7 +23,10 @@
     "dotenv": "^16",
     "drizzle-orm": "^0.39",
     "hono": "^4",
-    "nanoid": "^5"
+    "nanoid": "^5",
+    "react": "^19",
+    "react-dom": "^19",
+    "react-router-dom": "^7"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6",
@@ -35,9 +38,6 @@
     "concurrently": "^9",
     "drizzle-kit": "^0.30",
     "jsdom": "^25",
-    "react": "^19",
-    "react-dom": "^19",
-    "react-router-dom": "^7",
     "tsx": "^4",
     "typescript": "^5",
     "vite": "^6",

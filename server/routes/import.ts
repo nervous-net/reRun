@@ -122,59 +122,65 @@ export function createImportRoutes(db: any, tmdb?: TmdbClient) {
     let titlesCreated = 0;
     let copiesCreated = 0;
 
-    for (const item of titleData) {
-      const format = item.format || 'VHS';
-      const name = item.name || item.title;
-      const year = typeof item.year === 'string' ? parseInt(item.year, 10) || 0 : (item.year ?? 0);
-      const quantity = typeof item.quantity === 'string' ? parseInt(item.quantity, 10) || 1 : (item.quantity ?? 1);
+    const rawDb = (db as any).$client;
+    const runImport = rawDb.transaction(() => {
+      for (const item of titleData) {
+        const format = item.format || 'VHS';
+        const name = item.name || item.title;
+        const year = typeof item.year === 'string' ? parseInt(item.year, 10) || 0 : (item.year ?? 0);
+        const quantity = typeof item.quantity === 'string' ? parseInt(item.quantity, 10) || 1 : (item.quantity ?? 1);
 
-      // Check if a title with the same name and year already exists
-      const existing = await db.select({ id: titles.id })
-        .from(titles)
-        .where(and(eq(titles.name, name), eq(titles.year, year)))
-        .limit(1);
+        // Check if a title with the same name and year already exists
+        const existing = db.select({ id: titles.id })
+          .from(titles)
+          .where(and(eq(titles.name, name), eq(titles.year, year)))
+          .limit(1)
+          .all();
 
-      let titleId: string;
-      if (existing.length > 0) {
-        titleId = existing[0].id;
-      } else {
-        titleId = nanoid();
-        await db.insert(titles).values({
-          id: titleId,
-          name,
-          year,
-          tmdbId: item.tmdbId ?? null,
-          genre: item.genre ?? null,
-          runtimeMinutes: item.runtimeMinutes ?? null,
-          synopsis: item.synopsis ?? null,
-          rating: item.rating ?? null,
-          cast: item.cast ?? null,
-          coverUrl: item.coverUrl ?? null,
-        });
-        titlesCreated++;
+        let titleId: string;
+        if (existing.length > 0) {
+          titleId = existing[0].id;
+        } else {
+          titleId = nanoid();
+          db.insert(titles).values({
+            id: titleId,
+            name,
+            year,
+            tmdbId: item.tmdbId ?? null,
+            genre: item.genre ?? null,
+            runtimeMinutes: item.runtimeMinutes ?? null,
+            synopsis: item.synopsis ?? null,
+            rating: item.rating ?? null,
+            cast: item.cast ?? null,
+            coverUrl: item.coverUrl ?? null,
+          }).run();
+          titlesCreated++;
+        }
+
+        // Count existing copies so new barcodes start after them
+        const existingCopies = db.select({ id: copies.id })
+          .from(copies)
+          .where(eq(copies.titleId, titleId))
+          .all();
+        const startSeq = existingCopies.length + 1;
+        const barcodes = generateBarcodes(format, titleId, quantity, startSeq);
+
+        const newCopies = barcodes.map((barcode) => ({
+          id: nanoid(),
+          titleId,
+          barcode,
+          format,
+          condition: 'good',
+          status: 'in',
+        }));
+
+        if (newCopies.length > 0) {
+          db.insert(copies).values(newCopies).run();
+          copiesCreated += newCopies.length;
+        }
       }
-
-      // Count existing copies so new barcodes start after them
-      const existingCopies = await db.select({ id: copies.id })
-        .from(copies)
-        .where(eq(copies.titleId, titleId));
-      const startSeq = existingCopies.length + 1;
-      const barcodes = generateBarcodes(format, titleId, quantity, startSeq);
-
-      const newCopies = barcodes.map((barcode) => ({
-        id: nanoid(),
-        titleId,
-        barcode,
-        format,
-        condition: 'good',
-        status: 'in',
-      }));
-
-      if (newCopies.length > 0) {
-        await db.insert(copies).values(newCopies);
-        copiesCreated += newCopies.length;
-      }
-    }
+    });
+    runImport();
 
     return c.json({ titlesCreated, copiesCreated }, 201);
   });

@@ -22,6 +22,7 @@ import { createBackupRoutes } from './routes/backup.js';
 import { createTmdbRoutes } from './routes/tmdb.js';
 import { DB_PATH } from './db/index.js';
 import path from 'path';
+import fs from 'fs';
 
 const app = new Hono();
 
@@ -54,6 +55,11 @@ app.route('/api/backup', createBackupRoutes(db, {
 // In production, serve the built frontend
 if (process.env.NODE_ENV === 'production') {
   app.use('/*', serveStatic({ root: './dist/client' }));
+  // SPA fallback for client-side routing
+  app.get('*', (c) => {
+    const html = fs.readFileSync('./dist/client/index.html', 'utf-8');
+    return c.html(html);
+  });
 }
 
 export { app };

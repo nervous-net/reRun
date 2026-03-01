@@ -111,7 +111,7 @@ describe('Import Flow E2E', () => {
       expect(brCopies).toHaveLength(2);
       for (const copy of brCopies) {
         expect(copy.format).toBe('VHS');
-        expect(copy.barcode).toMatch(/^VHS-.+-\d{3}$/);
+        expect(copy.barcode).toMatch(/^VHS\..+\.\d{3}$/);
         expect(copy.status).toBe('in');
         expect(copy.condition).toBe('good');
       }
@@ -123,7 +123,7 @@ describe('Import Flow E2E', () => {
       expect(matrixCopies).toHaveLength(3);
       for (const copy of matrixCopies) {
         expect(copy.format).toBe('DVD');
-        expect(copy.barcode).toMatch(/^DVD-.+-\d{3}$/);
+        expect(copy.barcode).toMatch(/^DVD\..+\.\d{3}$/);
       }
 
       // Ghostbusters should have 1 VHS copy

@@ -90,6 +90,7 @@ export function ReturnScreen() {
   const [barcodeInput, setBarcodeInput] = useState('');
   const [returnQueue, setReturnQueue] = useState<ReturnQueueItem[]>([]);
   const [scanError, setScanError] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [results, setResults] = useState<ReturnResult[] | null>(null);
 
@@ -104,19 +105,21 @@ export function ReturnScreen() {
   }, [results, focusScanInput]);
 
   const handleScan = useCallback(async () => {
+    if (scanning) return;
     const barcode = barcodeInput.trim();
     if (!barcode) return;
 
+    setScanning(true);
     setScanError(null);
     setBarcodeInput('');
 
-    // Check if already in queue
-    if (returnQueue.some((item) => item.copy.barcode === barcode)) {
-      setScanError(`Barcode ${barcode} is already in the return queue`);
-      return;
-    }
-
     try {
+      // Check if already in queue
+      if (returnQueue.some((item) => item.copy.barcode === barcode)) {
+        setScanError(`Barcode ${barcode} is already in the return queue`);
+        return;
+      }
+
       // Look up the copy by barcode
       const copyData: CopyLookup = await api.copies.lookupBarcode(barcode);
 
@@ -169,8 +172,10 @@ export function ReturnScreen() {
       setReturnQueue((prev) => [...prev, queueItem]);
     } catch (err: any) {
       setScanError(err.message || 'Copy not found');
+    } finally {
+      setScanning(false);
     }
-  }, [barcodeInput, returnQueue]);
+  }, [barcodeInput, returnQueue, scanning]);
 
   const handleBarcodeKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -262,11 +267,12 @@ export function ReturnScreen() {
             value={barcodeInput}
             onChange={(e) => setBarcodeInput(e.target.value)}
             onKeyDown={handleBarcodeKeyDown}
+            disabled={scanning}
             autoFocus
             data-scan-input
           />
         </div>
-        <Button variant="primary" onClick={handleScan} disabled={!barcodeInput.trim()}>
+        <Button variant="primary" onClick={handleScan} disabled={scanning || !barcodeInput.trim()}>
           Look Up
         </Button>
       </div>

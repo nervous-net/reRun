@@ -2,7 +2,7 @@
 // ABOUTME: Supports CRUD operations and low-stock query for reorder alerts
 
 import { Hono } from 'hono';
-import { eq, and, lte, sql } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { products } from '../db/schema.js';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';

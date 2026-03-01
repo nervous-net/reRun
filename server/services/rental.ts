@@ -29,17 +29,7 @@ export interface ReturnInput {
 export async function checkoutCopy(db: any, input: CheckoutInput) {
   const { customerId, copyId, pricingRuleId } = input;
 
-  // Validate copy is available
-  const [copy] = await db
-    .select()
-    .from(copies)
-    .where(eq(copies.id, copyId));
-
-  if (!copy || copy.status !== 'in') {
-    throw new Error('Copy is not available for checkout');
-  }
-
-  // Fetch pricing rule for duration
+  // Fetch pricing rule for duration (immutable lookup, safe outside transaction)
   const [rule] = await db
     .select()
     .from(pricingRules)
@@ -54,9 +44,15 @@ export async function checkoutCopy(db: any, input: CheckoutInput) {
 
   const rentalId = nanoid();
 
-  // Use SQLite transaction for atomicity
+  // Use SQLite transaction for atomicity — availability check MUST be inside
   const rawDb = (db as any).session.client;
   const runInTransaction = rawDb.transaction(() => {
+    // Re-read copy status inside transaction to prevent race conditions
+    const [copy] = db.select().from(copies).where(eq(copies.id, copyId)).all();
+    if (!copy || copy.status !== 'in') {
+      throw new Error('Copy is not available for checkout');
+    }
+
     db.insert(rentals)
       .values({
         id: rentalId,
@@ -121,7 +117,7 @@ export async function returnCopy(db: any, input: ReturnInput) {
 
   if (now > dueAt && lateFeePerDay > 0) {
     const msOverdue = now.getTime() - dueAt.getTime();
-    const daysOverdue = Math.floor(msOverdue / (1000 * 60 * 60 * 24));
+    const daysOverdue = Math.ceil(msOverdue / (1000 * 60 * 60 * 24));
     lateFee = daysOverdue * lateFeePerDay;
   }
 

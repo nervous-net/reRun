@@ -3,6 +3,7 @@
 
 import { Hono } from 'hono';
 import { eq } from 'drizzle-orm';
+import { nanoid } from 'nanoid';
 import { alertConfigs } from '../db/schema.js';
 import {
   getOverdueRentals,
@@ -28,6 +29,14 @@ export function createAlertsRoutes(db: any) {
   routes.get('/configs', async (c) => {
     const data = await db.select().from(alertConfigs);
     return c.json({ data });
+  });
+
+  // POST /configs — create an alert config
+  routes.post('/configs', async (c) => {
+    const body = await c.req.json();
+    const id = nanoid();
+    await db.insert(alertConfigs).values({ id, ...body }).run();
+    return c.json({ data: { id, ...body } }, 201);
   });
 
   // PUT /configs/:id — update an alert config

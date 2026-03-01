@@ -31,8 +31,6 @@ interface PricingRule {
   durationDays: number;
 }
 
-const TAX_RATE = 0.08;
-
 export function POSScreen() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [customer, setCustomer] = useState<Customer | null>(null);
@@ -45,10 +43,13 @@ export function POSScreen() {
   const [completedTransaction, setCompletedTransaction] = useState<any>(null);
   const [pricingRules, setPricingRules] = useState<PricingRule[]>([]);
   const [pendingScan, setPendingScan] = useState<{ copyId: string; titleId: string; titleName: string; format: string } | null>(null);
+  const [taxRate, setTaxRate] = useState(0.08);
+  const [storeName, setStoreName] = useState('reRun Video');
   const scanRef = useRef<HTMLInputElement>(null);
+  const holdRef = useRef<() => void>(() => {});
 
   const subtotal = lineItems.reduce((sum, item) => sum + item.amount, 0);
-  const tax = Math.round(subtotal * TAX_RATE);
+  const tax = Math.round(subtotal * taxRate);
   const total = subtotal + tax;
 
   // Keep scan input focused
@@ -68,6 +69,21 @@ export function POSScreen() {
       const rules = Array.isArray(data) ? data : data.data ?? [];
       setPricingRules(rules.filter((r: any) => r.active));
     }).catch(() => {});
+  }, []);
+
+  // Fetch tax rate and store name from settings
+  useEffect(() => {
+    api.settings.list().then((data) => {
+      const settings = data.data ?? data;
+      if (settings?.tax_rate != null) {
+        setTaxRate(Number(settings.tax_rate) / 10000);
+      }
+      if (settings?.store_name) {
+        setStoreName(settings.store_name);
+      }
+    }).catch((err) => {
+      console.error('Failed to load settings for POS:', err);
+    });
   }, []);
 
   // Pre-load customer from query params (e.g. from reservation click)
@@ -103,7 +119,7 @@ export function POSScreen() {
       if (e.key === 'F5') {
         e.preventDefault();
         e.stopPropagation();
-        handleHoldTransaction();
+        holdRef.current();
         return;
       }
 
@@ -224,6 +240,8 @@ export function POSScreen() {
       setError(err instanceof Error ? err.message : 'Failed to hold transaction');
     }
   }
+
+  holdRef.current = handleHoldTransaction;
 
   async function handleRecallHeld(holdId: string) {
     try {
@@ -403,11 +421,17 @@ export function POSScreen() {
               Select Rental Period — {pendingScan.titleName} ({pendingScan.format})
             </div>
             <div style={styles.pricingOptions}>
-              {pricingRules.map((rule) => (
-                <Button key={rule.id} variant="secondary" onClick={() => handleSelectPricing(rule)}>
-                  {rule.name} — ${(rule.rate / 100).toFixed(2)}
-                </Button>
-              ))}
+              {pricingRules.length === 0 ? (
+                <div style={{ color: 'var(--text-secondary)', padding: 'var(--space-sm)', textAlign: 'center' }}>
+                  No pricing rules configured
+                </div>
+              ) : (
+                pricingRules.map((rule) => (
+                  <Button key={rule.id} variant="secondary" onClick={() => handleSelectPricing(rule)}>
+                    {rule.name} — ${(rule.rate / 100).toFixed(2)}
+                  </Button>
+                ))
+              )}
             </div>
             <div style={{ textAlign: 'right', marginTop: 'var(--space-sm)' }}>
               <Button variant="ghost" onClick={() => setPendingScan(null)}>Cancel</Button>
@@ -446,6 +470,7 @@ export function POSScreen() {
           transaction={completedTransaction}
           isOpen={!!completedTransaction}
           onClose={handleReceiptClose}
+          storeName={storeName}
         />
       )}
     </div>

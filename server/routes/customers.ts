@@ -275,7 +275,7 @@ export function createCustomersRoutes(db: any) {
       .where(eq(customers.id, id))
       .all();
 
-    return c.json(updated);
+    return c.json({ ...updated, balanceAdjustReason: body.reason ?? null });
   });
 
   return routes;

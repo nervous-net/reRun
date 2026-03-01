@@ -4,6 +4,7 @@
 import { type ReactNode, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AsciiDisplay, LOGO_SMALL } from './AsciiArt';
+import { api } from '../../api/client';
 
 const NAV_ITEMS = [
   { key: 'F1', label: 'POS', path: '/pos' },
@@ -30,20 +31,20 @@ export function Layout({ children }: { children: ReactNode }) {
   const [storeName, setStoreName] = useState('reRun Video');
 
   useEffect(() => {
-    fetch('/api/settings')
-      .then(res => res.json())
-      .then(data => {
-        if (data.data?.store_name) {
-          setStoreName(data.data.store_name);
-        }
-        const theme = data.data?.theme;
-        if (theme && theme !== 'f') {
-          document.documentElement.className = `theme-${theme}`;
-        } else {
-          document.documentElement.className = '';
-        }
-      })
-      .catch(() => {}); // Silently fail - use default
+    api.settings.list().then((data) => {
+      const settings = data.data ?? data;
+      if (settings?.store_name) {
+        setStoreName(settings.store_name);
+      }
+      const theme = settings?.theme;
+      if (theme && theme !== 'f') {
+        document.documentElement.className = `theme-${theme}`;
+      } else {
+        document.documentElement.className = '';
+      }
+    }).catch((err) => {
+      console.error('Failed to load settings:', err);
+    });
     return () => {
       document.documentElement.className = '';
     };
@@ -51,6 +52,11 @@ export function Layout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'F10') {
+        e.preventDefault();
+        navigate('/settings');
+        return;
+      }
       const item = NAV_ITEMS.find((nav) => nav.key === e.key);
       if (item) {
         e.preventDefault();

@@ -2,7 +2,7 @@
 // ABOUTME: Provides copy status/condition updates and barcode-based copy+title retrieval
 
 import { Hono } from 'hono';
-import { eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { copies, titles } from '../db/schema.js';
 
 export function createCopiesRoutes(db: any) {

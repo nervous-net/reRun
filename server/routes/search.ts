@@ -32,8 +32,8 @@ export function createSearchRoutes(db: any) {
     }
 
     if (genre) {
-      conditions.push(`t.genre = ?`);
-      params.push(genre);
+      conditions.push(`t.genre LIKE ?`);
+      params.push(`%${genre}%`);
     }
 
     if (rating) {
@@ -47,10 +47,12 @@ export function createSearchRoutes(db: any) {
     }
 
     if (format) {
+      const formats = format.split(',').map(f => f.trim());
+      const placeholders = formats.map(() => '?').join(',');
       conditions.push(
-        `EXISTS (SELECT 1 FROM copies c2 WHERE c2.title_id = t.id AND c2.format = ?)`
+        `EXISTS (SELECT 1 FROM copies c2 WHERE c2.title_id = t.id AND c2.format IN (${placeholders}))`
       );
-      params.push(format);
+      params.push(...formats);
     }
 
     if (available === 'true') {

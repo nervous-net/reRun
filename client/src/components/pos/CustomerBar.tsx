@@ -33,9 +33,9 @@ function formatBalance(cents: number): string {
 
 function isBirthday(dateStr: string | null): boolean {
   if (!dateStr) return false;
-  const today = new Date();
-  const dob = new Date(dateStr);
-  return today.getMonth() === dob.getMonth() && today.getDate() === dob.getDate();
+  const [, month, day] = dateStr.split('-').map(Number);
+  const now = new Date();
+  return now.getMonth() + 1 === month && now.getDate() === day;
 }
 
 export function CustomerBar({ customer, onCustomerSelect, onClear }: CustomerBarProps) {

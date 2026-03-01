@@ -8,6 +8,6 @@ export default defineConfig({
   out: './drizzle',
   dialect: 'sqlite',
   dbCredentials: {
-    url: './data/rerun.db',
+    url: process.env.DB_PATH || './data/rerun.db',
   },
 });

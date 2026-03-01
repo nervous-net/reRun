@@ -136,7 +136,7 @@ describe('POST /api/pricing', () => {
 });
 
 describe('GET /api/pricing', () => {
-  it('lists only active pricing rules', async () => {
+  it('returns all rules by default', async () => {
     // Insert one active and one inactive rule
     db.insert(pricingRules).values({
       id: nanoid(),
@@ -159,11 +159,19 @@ describe('GET /api/pricing', () => {
     const res = await app.request('/api/pricing');
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.data).toHaveLength(1);
-    expect(body.data[0].name).toBe('Active Rule');
+    expect(body.data).toHaveLength(2);
   });
 
-  it('returns empty array when no active rules exist', async () => {
+  it('filters by active status when query param provided', async () => {
+    db.insert(pricingRules).values({
+      id: nanoid(),
+      name: 'Active Rule',
+      type: 'catalog',
+      rate: 299,
+      durationDays: 7,
+      active: 1,
+    }).run();
+
     db.insert(pricingRules).values({
       id: nanoid(),
       name: 'Inactive Rule',
@@ -173,10 +181,11 @@ describe('GET /api/pricing', () => {
       active: 0,
     }).run();
 
-    const res = await app.request('/api/pricing');
+    const res = await app.request('/api/pricing?active=1');
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.data).toHaveLength(0);
+    expect(body.data).toHaveLength(1);
+    expect(body.data[0].name).toBe('Active Rule');
   });
 });
 
@@ -247,10 +256,16 @@ describe('DELETE /api/pricing/:id', () => {
     const body = await res.json();
     expect(body.success).toBe(true);
 
-    // Verify it no longer appears in list
+    // Verify it still appears in unfiltered list but as inactive
     const listRes = await app.request('/api/pricing');
     const listBody = await listRes.json();
-    expect(listBody.data).toHaveLength(0);
+    expect(listBody.data).toHaveLength(1);
+    expect(listBody.data[0].active).toBe(0);
+
+    // Verify it does not appear in active-only list
+    const activeRes = await app.request('/api/pricing?active=1');
+    const activeBody = await activeRes.json();
+    expect(activeBody.data).toHaveLength(0);
   });
 
   it('returns 404 for non-existent rule', async () => {

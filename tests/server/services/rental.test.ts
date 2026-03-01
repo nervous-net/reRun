@@ -144,9 +144,12 @@ describe('Rental Service', () => {
       });
 
       // Create rental manually with past dates to simulate overdue
+      // Add 1hr buffer so Math.ceil gives exact day count
+      const HOUR = 60 * 60 * 1000;
+      const DAY = 24 * HOUR;
       const rentalId = nanoid();
-      const checkedOutAt = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString();
-      const dueAt = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+      const checkedOutAt = new Date(Date.now() - 6 * DAY + HOUR).toISOString();
+      const dueAt = new Date(Date.now() - 3 * DAY + HOUR).toISOString();
 
       await db.insert(rentals).values({
         id: rentalId,
@@ -178,10 +181,12 @@ describe('Rental Service', () => {
         lateFeePerDay: 200,
       });
 
-      // Create overdue rental
+      // Create overdue rental (add 1hr buffer so Math.ceil gives exact day count)
       const rentalId = nanoid();
-      const checkedOutAt = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
-      const dueAt = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+      const HOUR = 60 * 60 * 1000;
+      const DAY = 24 * HOUR;
+      const checkedOutAt = new Date(Date.now() - 5 * DAY + HOUR).toISOString();
+      const dueAt = new Date(Date.now() - 2 * DAY + HOUR).toISOString();
 
       await db.insert(rentals).values({
         id: rentalId,

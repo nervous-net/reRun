@@ -27,6 +27,7 @@ interface ReceiptProps {
   transaction: ReceiptTransaction;
   isOpen: boolean;
   onClose: () => void;
+  storeName?: string;
 }
 
 function formatCurrency(cents: number): string {
@@ -45,7 +46,7 @@ function formatDate(isoStr: string): string {
   });
 }
 
-export function Receipt({ transaction, isOpen, onClose }: ReceiptProps) {
+export function Receipt({ transaction, isOpen, onClose, storeName = 'reRun Video' }: ReceiptProps) {
   function handlePrint() {
     window.print();
   }
@@ -66,7 +67,7 @@ export function Receipt({ transaction, isOpen, onClose }: ReceiptProps) {
       <div style={styles.receipt} className="pos-receipt">
         {/* Store Header */}
         <div style={styles.header}>
-          <div style={styles.storeName}>reRun Video</div>
+          <div style={styles.storeName}>{storeName}</div>
           <div style={styles.storeTagline}>Your Neighborhood Video Store</div>
           <div style={styles.separator}>{'='.repeat(40)}</div>
         </div>
@@ -124,7 +125,7 @@ export function Receipt({ transaction, isOpen, onClose }: ReceiptProps) {
 
         {/* Footer */}
         <div style={styles.footer}>
-          <div>Thank you for choosing reRun!</div>
+          <div>Thank you for choosing {storeName}!</div>
           <div style={styles.footerSmall}>Rentals are due back in 3 days</div>
           <div style={styles.footerSmall}>Late fees may apply</div>
         </div>

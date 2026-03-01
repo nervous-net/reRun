@@ -119,8 +119,11 @@ describe('Return Flow E2E', () => {
       expect(rental.status).toBe('out');
 
       // Step 2: Backdate the rental's due_at to make it 5 days overdue
-      const fiveDaysAgo = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
-      const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString();
+      // Add 1hr buffer so Math.ceil gives exact day count
+      const HOUR = 60 * 60 * 1000;
+      const DAY = 24 * HOUR;
+      const fiveDaysAgo = new Date(Date.now() - 5 * DAY + HOUR).toISOString();
+      const eightDaysAgo = new Date(Date.now() - 8 * DAY + HOUR).toISOString();
 
       await db.update(rentals)
         .set({
@@ -290,9 +293,11 @@ describe('Return Flow E2E', () => {
       const [rentalMid] = await db.select().from(rentals).where(eq(rentals.id, rental.id));
       expect(rentalMid.status).toBe('out');
 
-      // Backdate to 3 days overdue
-      const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
-      const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+      // Backdate to 3 days overdue (add 1hr buffer so Math.ceil gives exact day count)
+      const HOUR = 60 * 60 * 1000;
+      const DAY = 24 * HOUR;
+      const threeDaysAgo = new Date(Date.now() - 3 * DAY + HOUR).toISOString();
+      const tenDaysAgo = new Date(Date.now() - 10 * DAY + HOUR).toISOString();
 
       await db.update(rentals)
         .set({

@@ -1,7 +1,7 @@
 // ABOUTME: Drizzle ORM schema definitions for all reRun database tables
 // ABOUTME: Stores all amounts in cents (integer) to avoid floating point issues
 
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 
 // ─── Titles ──────────────────────────────────────────────────────────
@@ -15,6 +15,7 @@ export const titles = sqliteTable('titles', {
   synopsis: text('synopsis'),
   rating: text('rating'),
   cast: text('cast_list'),
+  director: text('director'),
   coverUrl: text('cover_url'),
   createdAt: text('created_at').default(sql`(datetime('now'))`),
   updatedAt: text('updated_at').default(sql`(datetime('now'))`),
@@ -29,7 +30,10 @@ export const copies = sqliteTable('copies', {
   condition: text('condition').default('good'),
   status: text('status').default('in'),
   createdAt: text('created_at').default(sql`(datetime('now'))`),
-});
+}, (table) => [
+  index('copies_title_id_idx').on(table.titleId),
+  index('copies_status_idx').on(table.status),
+]);
 
 // ─── Customers ───────────────────────────────────────────────────────
 export const customers = sqliteTable('customers', {
@@ -55,7 +59,9 @@ export const familyMembers = sqliteTable('family_members', {
   firstName: text('first_name').notNull(),
   lastName: text('last_name').notNull(),
   relationship: text('relationship'),
-});
+}, (table) => [
+  index('family_members_customer_id_idx').on(table.customerId),
+]);
 
 // ─── Pricing Rules ───────────────────────────────────────────────────
 export const pricingRules = sqliteTable('pricing_rules', {
@@ -98,7 +104,11 @@ export const rentals = sqliteTable('rentals', {
   lateFee: integer('late_fee').default(0),
   lateFeeStatus: text('late_fee_status'),
   status: text('status').notNull(),
-});
+}, (table) => [
+  index('rentals_customer_id_idx').on(table.customerId),
+  index('rentals_copy_id_idx').on(table.copyId),
+  index('rentals_status_idx').on(table.status),
+]);
 
 // ─── Products ────────────────────────────────────────────────────────
 export const products = sqliteTable('products', {
@@ -126,7 +136,9 @@ export const transactionItems = sqliteTable('transaction_items', {
   description: text('description'),
   amount: integer('amount').notNull(),
   tax: integer('tax').default(0),
-});
+}, (table) => [
+  index('transaction_items_transaction_id_idx').on(table.transactionId),
+]);
 
 // ─── Reservations ────────────────────────────────────────────────────
 export const reservations = sqliteTable('reservations', {
@@ -137,7 +149,10 @@ export const reservations = sqliteTable('reservations', {
   expiresAt: text('expires_at').notNull(),
   fulfilled: integer('fulfilled').default(0),
   notified: integer('notified').default(0),
-});
+}, (table) => [
+  index('reservations_customer_id_idx').on(table.customerId),
+  index('reservations_title_id_idx').on(table.titleId),
+]);
 
 // ─── Promotions ──────────────────────────────────────────────────────
 export const promotions = sqliteTable('promotions', {

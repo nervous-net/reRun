@@ -8,8 +8,10 @@ import { storeSettings } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 
 const VALID_TABLES = [
-  'titles', 'copies', 'customers', 'rentals',
-  'transactions', 'products',
+  'titles', 'copies', 'customers', 'family_members',
+  'rentals', 'transactions', 'transaction_items',
+  'products', 'pricing_rules', 'reservations',
+  'promotions', 'store_settings', 'alert_configs',
 ] as const;
 
 type ValidTable = typeof VALID_TABLES[number];

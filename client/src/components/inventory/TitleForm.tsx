@@ -215,7 +215,7 @@ export function TitleForm({ onClose, onSaved, titleId }: TitleFormProps) {
       <Button variant="ghost" onClick={onClose} disabled={saving}>
         Cancel
       </Button>
-      <Button variant="primary" onClick={handleSubmit} disabled={saving || loadingTitle}>
+      <Button variant="primary" type="submit" form="title-form" disabled={saving || loadingTitle}>
         {saving ? 'Saving...' : isEditing ? 'Update' : 'Create'}
       </Button>
     </>
@@ -233,7 +233,7 @@ export function TitleForm({ onClose, onSaved, titleId }: TitleFormProps) {
           Loading...
         </div>
       ) : (
-        <form style={formStyle} onSubmit={handleSubmit}>
+        <form id="title-form" style={formStyle} onSubmit={handleSubmit}>
           {error && (
             <Alert variant="error" onDismiss={() => setError(null)}>
               {error}

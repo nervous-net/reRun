@@ -25,6 +25,7 @@ export function migrateTestDb(sqlite: Database.Database) {
       synopsis TEXT,
       rating TEXT,
       cast_list TEXT,
+      director TEXT,
       cover_url TEXT,
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now'))
@@ -181,5 +182,15 @@ export function migrateTestDb(sqlite: Database.Database) {
       key TEXT PRIMARY KEY,
       value TEXT
     );
+
+    CREATE INDEX IF NOT EXISTS copies_title_id_idx ON copies(title_id);
+    CREATE INDEX IF NOT EXISTS copies_status_idx ON copies(status);
+    CREATE INDEX IF NOT EXISTS family_members_customer_id_idx ON family_members(customer_id);
+    CREATE INDEX IF NOT EXISTS rentals_customer_id_idx ON rentals(customer_id);
+    CREATE INDEX IF NOT EXISTS rentals_copy_id_idx ON rentals(copy_id);
+    CREATE INDEX IF NOT EXISTS rentals_status_idx ON rentals(status);
+    CREATE INDEX IF NOT EXISTS transaction_items_transaction_id_idx ON transaction_items(transaction_id);
+    CREATE INDEX IF NOT EXISTS reservations_customer_id_idx ON reservations(customer_id);
+    CREATE INDEX IF NOT EXISTS reservations_title_id_idx ON reservations(title_id);
   `);
 }
