@@ -147,7 +147,7 @@ export function TitleForm({ onClose, onSaved, titleId }: TitleFormProps) {
 
   async function handleTmdbSelect(result: any) {
     try {
-      const details = await api.tmdb.details(result.tmdbId);
+      const details = await api.tmdb.details(result.tmdbId, result.mediaType);
       setName(details.title ?? result.title ?? name);
       setYear(String(details.year ?? result.year ?? ''));
       setGenre(details.genre ?? '');
@@ -263,7 +263,7 @@ export function TitleForm({ onClose, onSaved, titleId }: TitleFormProps) {
                 <div style={tmdbDropdownStyle}>
                   {tmdbResults.map((r: any) => (
                     <div
-                      key={r.tmdbId}
+                      key={`${r.tmdbId}-${r.mediaType}`}
                       style={tmdbResultStyle}
                       onClick={() => handleTmdbSelect(r)}
                       onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--accent-10)'; }}
@@ -273,7 +273,12 @@ export function TitleForm({ onClose, onSaved, titleId }: TitleFormProps) {
                         <img src={r.posterUrl} alt="" style={{ width: '32px', height: '48px', objectFit: 'cover', borderRadius: '2px' }} />
                       )}
                       <div style={{ flex: 1 }}>
-                        <div style={{ color: 'var(--text-primary)' }}>{r.title}</div>
+                        <div style={{ color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {r.title}
+                          {r.mediaType === 'tv' && (
+                            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--crt-amber)', border: '1px solid var(--crt-amber)', borderRadius: '3px', padding: '0 4px' }}>TV</span>
+                          )}
+                        </div>
                         <div style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)' }}>
                           {r.year ?? '—'} | Rating: {r.voteAverage?.toFixed(1) ?? '—'}
                         </div>

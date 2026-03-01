@@ -7,7 +7,8 @@ import { nanoid } from 'nanoid';
 import { titles, copies } from '../db/schema.js';
 import { parseCsv, detectColumns } from '../services/csv-import.js';
 import { generateBarcodes } from '../services/barcode.js';
-import { TmdbClient } from '../services/tmdb.js';
+import { TmdbClient, TmdbSearchResult } from '../services/tmdb.js';
+import { scoreTmdbMatch, queryVariations } from '../services/fuzzy-match.js';
 
 export function createImportRoutes(db: any, tmdb?: TmdbClient) {
   const routes = new Hono();
@@ -56,6 +57,8 @@ export function createImportRoutes(db: any, tmdb?: TmdbClient) {
       coverUrl?: string;
       synopsis?: string;
       runtimeMinutes?: string;
+      mediaType?: string;
+      numberOfSeasons?: string;
     }
 
     const structured: StructuredTitle[] = (rows as string[][]).map((row) => {
@@ -80,17 +83,46 @@ export function createImportRoutes(db: any, tmdb?: TmdbClient) {
       };
     });
 
-    // Enrich with TMDb data if client is available
+    // Enrich with TMDb data using fuzzy matching
     if (tmdb) {
       const BATCH_SIZE = 5;
       for (let i = 0; i < structured.length; i += BATCH_SIZE) {
         const batch = structured.slice(i, i + BATCH_SIZE);
         await Promise.allSettled(batch.map(async (item, j) => {
           try {
-            const year = parseInt(item.year, 10) || undefined;
-            const results = await tmdb.searchMovie(item.title, year);
-            if (results.length > 0) {
-              const details = await tmdb.getMovieDetails(results[0].tmdbId);
+            const inputYear = parseInt(item.year, 10) || undefined;
+            const variations = queryVariations(item.title);
+
+            let bestResult: TmdbSearchResult | null = null;
+            let bestScore = 0;
+
+            for (const variation of variations) {
+              // Search with year first
+              let results = await tmdb.searchMulti(variation, inputYear);
+
+              // Retry without year if no results
+              if (results.length === 0 && inputYear) {
+                results = await tmdb.searchMulti(variation);
+              }
+
+              // Score top 5 results
+              for (const result of results.slice(0, 5)) {
+                const score = scoreTmdbMatch(
+                  item.title, result.title, inputYear, result.year ?? undefined
+                );
+                if (score > bestScore) {
+                  bestScore = score;
+                  bestResult = result;
+                }
+              }
+
+              // High confidence — stop searching variations
+              if (bestScore >= 0.85) break;
+            }
+
+            // Only use match if score meets minimum threshold
+            if (bestResult && bestScore >= 0.5) {
+              const details = await tmdb.getDetails(bestResult.tmdbId, bestResult.mediaType);
               structured[i + j] = {
                 ...item,
                 year: item.year || String(details.year ?? ''),
@@ -101,6 +133,8 @@ export function createImportRoutes(db: any, tmdb?: TmdbClient) {
                 coverUrl: details.coverUrl || '',
                 synopsis: details.synopsis || '',
                 runtimeMinutes: String(details.runtimeMinutes || ''),
+                mediaType: details.mediaType,
+                numberOfSeasons: details.numberOfSeasons ? String(details.numberOfSeasons) : '',
                 matched: true,
               };
             }
@@ -152,7 +186,10 @@ export function createImportRoutes(db: any, tmdb?: TmdbClient) {
             synopsis: item.synopsis ?? null,
             rating: item.rating ?? null,
             cast: item.cast ?? null,
+            director: item.director ?? null,
             coverUrl: item.coverUrl ?? null,
+            mediaType: item.mediaType ?? 'movie',
+            numberOfSeasons: item.numberOfSeasons ? parseInt(String(item.numberOfSeasons), 10) : null,
           }).run();
           titlesCreated++;
         }

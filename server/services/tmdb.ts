@@ -11,6 +11,7 @@ export interface TmdbSearchResult {
   overview: string;
   posterUrl: string | null;
   voteAverage: number;
+  mediaType: 'movie' | 'tv';
 }
 
 export interface TmdbMovieDetails {
@@ -24,6 +25,8 @@ export interface TmdbMovieDetails {
   cast: string;
   rating: string | null;
   voteAverage: number;
+  mediaType: 'movie' | 'tv';
+  numberOfSeasons: number | null;
 }
 
 type FetchFn = typeof globalThis.fetch;
@@ -61,6 +64,7 @@ export class TmdbClient {
       overview: r.overview,
       posterUrl: r.poster_path ? `${TMDB_IMAGE_BASE}${r.poster_path}` : null,
       voteAverage: r.vote_average,
+      mediaType: 'movie' as const,
     }));
   }
 
@@ -109,6 +113,99 @@ export class TmdbClient {
       cast: castNames,
       rating,
       voteAverage: data.vote_average,
+      mediaType: 'movie' as const,
+      numberOfSeasons: null,
     };
+  }
+
+  async searchMulti(query: string, year?: number): Promise<TmdbSearchResult[]> {
+    const params = new URLSearchParams({
+      query,
+      api_key: this.apiKey,
+    });
+    if (year) params.set('year', String(year));
+
+    const response = await this.fetchFn(
+      `${TMDB_BASE_URL}/search/multi?${params}`,
+      { method: 'GET' }
+    );
+
+    if (!response.ok) {
+      throw new Error(`TMDb API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return (data.results || [])
+      .filter((r: any) => r.media_type !== 'person')
+      .map((r: any) => {
+        const isTV = r.media_type === 'tv';
+        const dateStr = isTV ? r.first_air_date : r.release_date;
+        return {
+          tmdbId: r.id,
+          title: isTV ? r.name : r.title,
+          year: dateStr ? parseInt(dateStr.substring(0, 4), 10) : null,
+          overview: r.overview,
+          posterUrl: r.poster_path ? `${TMDB_IMAGE_BASE}${r.poster_path}` : null,
+          voteAverage: r.vote_average,
+          mediaType: isTV ? 'tv' as const : 'movie' as const,
+        };
+      });
+  }
+
+  async getTvDetails(tmdbId: number): Promise<TmdbMovieDetails> {
+    const params = new URLSearchParams({
+      api_key: this.apiKey,
+      append_to_response: 'credits,content_ratings',
+    });
+
+    const response = await this.fetchFn(
+      `${TMDB_BASE_URL}/tv/${tmdbId}?${params}`,
+      { method: 'GET' }
+    );
+
+    if (!response.ok) {
+      throw new Error(`TMDb API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // Extract US content rating
+    let rating: string | null = null;
+    const usRating = data.content_ratings?.results?.find((r: any) => r.iso_3166_1 === 'US');
+    if (usRating) rating = usRating.rating;
+
+    // Top 5 cast members
+    const castNames = (data.credits?.cast || [])
+      .slice(0, 5)
+      .map((c: any) => c.name)
+      .join(', ');
+
+    // Genre names
+    const genres = (data.genres || []).map((g: any) => g.name).join(', ');
+
+    // Episode runtime (first value from array)
+    const runtime = data.episode_run_time?.[0] || null;
+
+    return {
+      tmdbId: data.id,
+      title: data.name,
+      year: data.first_air_date ? parseInt(data.first_air_date.substring(0, 4), 10) : null,
+      synopsis: data.overview,
+      coverUrl: data.poster_path ? `${TMDB_IMAGE_BASE}${data.poster_path}` : null,
+      runtimeMinutes: runtime,
+      genre: genres,
+      cast: castNames,
+      rating,
+      voteAverage: data.vote_average,
+      mediaType: 'tv' as const,
+      numberOfSeasons: data.number_of_seasons ?? null,
+    };
+  }
+
+  async getDetails(tmdbId: number, mediaType: 'movie' | 'tv'): Promise<TmdbMovieDetails> {
+    if (mediaType === 'tv') {
+      return this.getTvDetails(tmdbId);
+    }
+    return this.getMovieDetails(tmdbId);
   }
 }

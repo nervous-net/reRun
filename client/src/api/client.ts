@@ -105,7 +105,10 @@ export const api = {
       q,
       ...(year ? { year: String(year) } : {}),
     }),
-    details: (tmdbId: number) => get<any>(`/api/tmdb/details/${tmdbId}`),
+    details: (tmdbId: number, mediaType?: string) => get<any>(
+      `/api/tmdb/details/${tmdbId}`,
+      mediaType === 'tv' ? { type: 'tv' } : undefined,
+    ),
   },
   promotions: {
     list: () => get<any>('/api/promotions'),

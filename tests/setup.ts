@@ -27,6 +27,8 @@ export function migrateTestDb(sqlite: Database.Database) {
       cast_list TEXT,
       director TEXT,
       cover_url TEXT,
+      media_type TEXT DEFAULT 'movie',
+      number_of_seasons INTEGER,
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now'))
     );

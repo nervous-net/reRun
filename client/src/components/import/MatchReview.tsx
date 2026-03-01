@@ -22,6 +22,8 @@ export interface ImportTitle {
   coverUrl?: string;
   synopsis?: string;
   runtimeMinutes?: string;
+  mediaType?: string;
+  numberOfSeasons?: string;
 }
 
 interface MatchReviewProps {
@@ -95,7 +97,7 @@ export function MatchReview({ titles: initialTitles, onConfirm }: MatchReviewPro
   async function handleTmdbSelect(result: any) {
     if (!editDraft) return;
     try {
-      const details = await api.tmdb.details(result.tmdbId);
+      const details = await api.tmdb.details(result.tmdbId, result.mediaType);
       setEditDraft({
         ...editDraft,
         title: details.title ?? editDraft.title,
@@ -107,6 +109,8 @@ export function MatchReview({ titles: initialTitles, onConfirm }: MatchReviewPro
         coverUrl: details.coverUrl ?? result.posterUrl ?? editDraft.coverUrl,
         runtimeMinutes: details.runtimeMinutes ? String(details.runtimeMinutes) : editDraft.runtimeMinutes,
         tmdbId: String(details.tmdbId),
+        mediaType: details.mediaType ?? result.mediaType ?? 'movie',
+        numberOfSeasons: details.numberOfSeasons ? String(details.numberOfSeasons) : '',
         matched: true,
       });
       setTmdbSuggestions([]);
@@ -214,7 +218,7 @@ export function MatchReview({ titles: initialTitles, onConfirm }: MatchReviewPro
                           <div style={styles.tmdbResults}>
                             {tmdbSuggestions.map((r: any) => (
                               <div
-                                key={r.tmdbId}
+                                key={`${r.tmdbId}-${r.mediaType}`}
                                 style={styles.tmdbResult}
                                 onClick={() => handleTmdbSelect(r)}
                                 onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--accent-10)'; }}
@@ -224,7 +228,12 @@ export function MatchReview({ titles: initialTitles, onConfirm }: MatchReviewPro
                                   <img src={r.posterUrl} alt="" style={{ width: '28px', height: '42px', objectFit: 'cover', borderRadius: '2px' }} />
                                 )}
                                 <div style={{ flex: 1 }}>
-                                  <div style={{ color: 'var(--text-primary)' }}>{r.title}</div>
+                                  <div style={{ color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    {r.title}
+                                    {r.mediaType === 'tv' && (
+                                      <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--crt-amber)', border: '1px solid var(--crt-amber)', borderRadius: '3px', padding: '0 4px' }}>TV</span>
+                                    )}
+                                  </div>
                                   <div style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)' }}>
                                     {r.year ?? '—'} | {r.voteAverage?.toFixed(1) ?? '—'}
                                   </div>
@@ -266,9 +275,14 @@ export function MatchReview({ titles: initialTitles, onConfirm }: MatchReviewPro
                   <td style={styles.td}>{title.quantity || '1'}</td>
                   <td style={styles.td}>{title.rating}</td>
                   <td style={styles.td}>
-                    <Badge variant={title.matched ? 'success' : 'warning'}>
-                      {title.matched ? 'matched' : 'unmatched'}
-                    </Badge>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Badge variant={title.matched ? 'success' : 'warning'}>
+                        {title.matched ? 'matched' : 'unmatched'}
+                      </Badge>
+                      {title.mediaType === 'tv' && (
+                        <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--crt-amber)', border: '1px solid var(--crt-amber)', borderRadius: '3px', padding: '0 4px' }}>TV</span>
+                      )}
+                    </div>
                   </td>
                 </tr>
               )

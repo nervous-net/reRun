@@ -164,10 +164,11 @@ describe('POST /api/import/match', () => {
   it('enriches titles with TMDb data when client is provided', async () => {
     const mockFetch = async (url: string) => {
       const urlStr = String(url);
-      if (urlStr.includes('/search/movie')) {
+      if (urlStr.includes('/search/multi')) {
         return new Response(JSON.stringify({
           results: [{
             id: 78,
+            media_type: 'movie',
             title: 'Blade Runner',
             release_date: '1982-06-25',
             overview: 'A blade runner hunts replicants.',

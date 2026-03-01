@@ -17,6 +17,8 @@ CREATE TABLE `copies` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `copies_barcode_unique` ON `copies` (`barcode`);--> statement-breakpoint
+CREATE INDEX `copies_title_id_idx` ON `copies` (`title_id`);--> statement-breakpoint
+CREATE INDEX `copies_status_idx` ON `copies` (`status`);--> statement-breakpoint
 CREATE TABLE `customer_prepaid` (
 	`id` text PRIMARY KEY NOT NULL,
 	`customer_id` text NOT NULL,
@@ -55,6 +57,7 @@ CREATE TABLE `family_members` (
 	FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
+CREATE INDEX `family_members_customer_id_idx` ON `family_members` (`customer_id`);--> statement-breakpoint
 CREATE TABLE `prepaid_plans` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
@@ -118,6 +121,9 @@ CREATE TABLE `rentals` (
 	FOREIGN KEY (`pricing_rule_id`) REFERENCES `pricing_rules`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
+CREATE INDEX `rentals_customer_id_idx` ON `rentals` (`customer_id`);--> statement-breakpoint
+CREATE INDEX `rentals_copy_id_idx` ON `rentals` (`copy_id`);--> statement-breakpoint
+CREATE INDEX `rentals_status_idx` ON `rentals` (`status`);--> statement-breakpoint
 CREATE TABLE `reservations` (
 	`id` text PRIMARY KEY NOT NULL,
 	`customer_id` text NOT NULL,
@@ -130,6 +136,8 @@ CREATE TABLE `reservations` (
 	FOREIGN KEY (`title_id`) REFERENCES `titles`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
+CREATE INDEX `reservations_customer_id_idx` ON `reservations` (`customer_id`);--> statement-breakpoint
+CREATE INDEX `reservations_title_id_idx` ON `reservations` (`title_id`);--> statement-breakpoint
 CREATE TABLE `store_settings` (
 	`key` text PRIMARY KEY NOT NULL,
 	`value` text
@@ -145,7 +153,10 @@ CREATE TABLE `titles` (
 	`synopsis` text,
 	`rating` text,
 	`cast_list` text,
+	`director` text,
 	`cover_url` text,
+	`media_type` text DEFAULT 'movie',
+	`number_of_seasons` integer,
 	`created_at` text DEFAULT (datetime('now')),
 	`updated_at` text DEFAULT (datetime('now'))
 );
@@ -166,6 +177,7 @@ CREATE TABLE `transaction_items` (
 	FOREIGN KEY (`rental_id`) REFERENCES `rentals`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
+CREATE INDEX `transaction_items_transaction_id_idx` ON `transaction_items` (`transaction_id`);--> statement-breakpoint
 CREATE TABLE `transactions` (
 	`id` text PRIMARY KEY NOT NULL,
 	`customer_id` text NOT NULL,

@@ -26,7 +26,8 @@ export function createTitlesRoutes(db: any) {
       SELECT
         t.id, t.tmdb_id AS "tmdbId", t.name, t.year, t.genre,
         t.runtime_minutes AS "runtimeMinutes", t.synopsis, t.rating,
-        t.cast_list AS "cast", t.cover_url AS "coverUrl",
+        t.cast_list AS "cast", t.director, t.cover_url AS "coverUrl",
+        t.media_type AS "mediaType", t.number_of_seasons AS "numberOfSeasons",
         t.created_at AS "createdAt", t.updated_at AS "updatedAt",
         (SELECT count(*) FROM copies c WHERE c.title_id = t.id AND c.status = 'in') AS "availableCopies"
       FROM titles t
@@ -80,6 +81,8 @@ export function createTitlesRoutes(db: any) {
       rating: body.rating ?? null,
       cast: body.cast ?? null,
       coverUrl: body.coverUrl ?? null,
+      mediaType: body.mediaType ?? 'movie',
+      numberOfSeasons: body.numberOfSeasons ?? null,
     };
 
     await db.insert(titles).values(values);
@@ -125,7 +128,7 @@ export function createTitlesRoutes(db: any) {
     const updateData: Record<string, any> = {};
     const updatableFields = [
       'name', 'year', 'tmdbId', 'genre', 'runtimeMinutes',
-      'synopsis', 'rating', 'cast', 'coverUrl',
+      'synopsis', 'rating', 'cast', 'coverUrl', 'mediaType', 'numberOfSeasons',
     ];
 
     for (const field of updatableFields) {
