@@ -26,6 +26,12 @@ import fs from 'fs';
 
 const app = new Hono();
 
+// Global error handler: return structured JSON instead of bare 500s
+app.onError((err, c) => {
+  console.error(`[${c.req.method}] ${c.req.path} — ${err.message}`);
+  return c.json({ error: err.message }, 500);
+});
+
 // Health check
 app.get('/api/health', (c) => c.json({ status: 'ok', name: 'reRun', version: '0.1.0' }));
 
