@@ -17,6 +17,7 @@ import { createImportRoutes } from './routes/import.js';
 import { TmdbClient } from './services/tmdb.js';
 import { createPromotionsRoutes } from './routes/promotions.js';
 import { createAlertsRoutes } from './routes/alerts.js';
+import { createDashboardRoutes } from './routes/dashboard.js';
 import { createSettingsRoutes } from './routes/settings.js';
 import { createBackupRoutes } from './routes/backup.js';
 import { createTmdbRoutes } from './routes/tmdb.js';
@@ -52,6 +53,7 @@ app.route('/api/import', createImportRoutes(db, tmdb));
 app.route('/api/tmdb', createTmdbRoutes(tmdb));
 app.route('/api/promotions', createPromotionsRoutes(db));
 app.route('/api/alerts', createAlertsRoutes(db));
+app.route('/api/dashboard', createDashboardRoutes(db));
 app.route('/api/settings', createSettingsRoutes(db));
 app.route('/api/backup', createBackupRoutes(db, {
   dbPath: DB_PATH,
