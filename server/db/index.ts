@@ -25,9 +25,14 @@ const tables = sqlite.prepare(
   "SELECT name FROM sqlite_master WHERE type='table' AND name='store_settings'"
 ).all();
 if (tables.length === 0) {
+  // Try both dev path (server/db/ -> ../../drizzle) and prod path (CWD/drizzle)
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
-  const drizzleDir = path.resolve(__dirname, '../../drizzle');
-  if (fs.existsSync(drizzleDir)) {
+  const candidates = [
+    path.resolve(__dirname, '../../drizzle'),
+    path.resolve('drizzle'),
+  ];
+  const drizzleDir = candidates.find(d => fs.existsSync(d));
+  if (drizzleDir) {
     const sqlFiles = fs.readdirSync(drizzleDir).filter(f => f.endsWith('.sql')).sort();
     for (const file of sqlFiles) {
       const sql = fs.readFileSync(path.join(drizzleDir, file), 'utf-8');

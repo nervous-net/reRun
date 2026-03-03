@@ -139,14 +139,11 @@ async function main() {
   console.log('  ║   Setup complete!               ║');
   console.log('  ╠═══════════════════════════════╣');
   console.log('  ║                                 ║');
-  console.log('  ║   Development:                  ║');
+  console.log('  ║   Start the app:                ║');
   console.log('  ║     npm run dev                 ║');
   console.log('  ║                                 ║');
-  console.log('  ║   Production:                   ║');
-  console.log('  ║     npm run build               ║');
-  console.log('  ║     npm start                   ║');
-  console.log('  ║                                 ║');
-  console.log('  ║   http://localhost:1987          ║');
+  console.log('  ║   Then open your browser to:    ║');
+  console.log('  ║     http://localhost:5173        ║');
   console.log('  ╚═══════════════════════════════╝');
   console.log('');
 }

@@ -7,6 +7,6 @@ import { app } from './app.js';
 
 const port = parseInt(process.env.PORT || '1987', 10);
 
-serve({ fetch: app.fetch, port }, () => {
+serve({ fetch: app.fetch, port, hostname: '127.0.0.1' }, () => {
   console.log(`reRun is running on http://localhost:${port}`);
 });

@@ -116,11 +116,15 @@ You'll see some output scroll by. Once you see lines about both the server and
 client running, open your web browser and go to:
 
 ```
-http://localhost:1987
+http://localhost:5173
 ```
 
 That's it — you should see the reRun dashboard with the retro green-on-black
 terminal look.
+
+> **Why port 5173?** In development mode, the app runs two processes: a backend
+> server (port 1987) and a frontend dev server (port 5173). You always access the
+> app through port 5173 — it handles everything automatically.
 
 **To stop the app**, go back to the terminal and press `Ctrl+C`.
 
@@ -447,26 +451,42 @@ close and reopen your terminal, then try again.
 
 ### "npm ERR!" during install
 
-Try deleting the `node_modules` folder and running `npm install` again:
+Try deleting the `node_modules` folder and running `npm install` again.
+On Mac/Linux:
 
 ```
 rm -rf node_modules
 npm install
 ```
 
-On Windows, use `rmdir /s /q node_modules` instead of the `rm` command.
+On Windows, either delete the `node_modules` folder in File Explorer, or run:
+
+```
+rmdir /s /q node_modules
+npm install
+```
+
+**Windows users:** If you see errors about `node-gyp`, `prebuild-install`, or
+`better-sqlite3` during install, you may need to install Windows build tools.
+Open PowerShell as Administrator and run:
+
+```
+npm install -g windows-build-tools
+```
+
+Then try `npm install` again.
 
 ### The app won't start / "port already in use"
 
-Something else is using port 1987. Either close that other program, or edit your
-`.env` file and change `PORT=1987` to a different number (like `PORT=3000`), then
-go to `http://localhost:3000` instead.
+Something else is using port 5173 or 1987. Either close that other program, or
+try stopping the app (Ctrl+C) and starting it again. If the problem persists,
+check for other terminal windows that might be running the app.
 
 ### The browser shows a blank page
 
-Make sure you're going to `http://localhost:1987` (not `https`). Check the
-terminal for error messages. If you see errors, try stopping the app (Ctrl+C)
-and starting it again.
+Make sure you're going to `http://localhost:5173` (not `https`, not port 1987).
+Check the terminal for error messages. If you see errors, try stopping the app
+(Ctrl+C) and starting it again.
 
 ### Movies aren't matching during import
 
@@ -486,6 +506,19 @@ and starting it again.
 You can void a transaction from the transaction history. This will reverse any
 inventory changes (copies go back to "in" status, product stock is restored) and
 mark the transaction as voided for your records.
+
+### Windows: "Do you want to allow Node.js through the firewall?"
+
+If Windows shows a firewall dialog when you start the app, click **Allow**.
+The app only listens on your local machine (localhost) — it does not accept
+connections from the internet or other computers on your network.
+
+### Windows: app is slow, crashes, or database errors
+
+If you installed reRun inside a cloud-synced folder (OneDrive, Dropbox, Google
+Drive, iCloud), the sync service can conflict with the database. Move the reRun
+folder to a location that is **not** synced to the cloud — for example,
+`C:\rerun` or `C:\Users\YourName\rerun`.
 
 ### I need to reset everything and start over
 
