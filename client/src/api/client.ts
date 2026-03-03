@@ -120,4 +120,7 @@ export const api = {
     get: (key: string) => get<any>(`/api/settings/${key}`),
     update: (key: string, value: string) => put<any>(`/api/settings/${key}`, { value }),
   },
+  dashboard: {
+    stats: () => get<any>('/api/dashboard/stats'),
+  },
 };

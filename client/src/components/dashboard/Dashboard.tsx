@@ -199,17 +199,24 @@ export function Dashboard() {
   const [customerCount, setCustomerCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<string[]>([]);
+  const [todayStats, setTodayStats] = useState<{
+    rentalsToday: number;
+    returnsToday: number;
+    revenueCents: number;
+    lateFeesCollectedCents: number;
+  } | null>(null);
 
   const loadDashboard = useCallback(async () => {
     const errs: string[] = [];
 
-    const [overdueResult, lowStockResult, reservationsResult, titlesResult, customersResult] =
+    const [overdueResult, lowStockResult, reservationsResult, titlesResult, customersResult, statsResult] =
       await Promise.allSettled([
         api.rentals.overdue(),
         api.products.lowStock(),
         api.reservations.list(),
         api.titles.list({ limit: '1' }),
         api.customers.list({ limit: '1' }),
+        api.dashboard.stats(),
       ]);
 
     if (overdueResult.status === 'fulfilled') {
@@ -247,6 +254,12 @@ export function Dashboard() {
       errs.push('customers');
     }
 
+    if (statsResult.status === 'fulfilled') {
+      setTodayStats(statsResult.value);
+    } else {
+      errs.push('dashboard stats');
+    }
+
     setErrors(errs);
     setLoading(false);
   }, []);
@@ -281,30 +294,25 @@ export function Dashboard() {
         <div style={panelStyle}>
           <div style={panelHeaderStyle}>{formatPanelHeader("TODAY'S ACTIVITY")}</div>
           <div style={panelBodyStyle}>
-            {/* TODO: Wire to real-time stats from a dashboard API endpoint */}
             <div style={statRowStyle}>
               <span style={statLabelStyle}>Rentals today</span>
-              <span style={statValueStyle}>—</span>
+              <span style={statValueStyle}>{todayStats ? todayStats.rentalsToday : '—'}</span>
             </div>
             <div style={statRowStyle}>
               <span style={statLabelStyle}>Returns today</span>
-              <span style={statValueStyle}>—</span>
+              <span style={statValueStyle}>{todayStats ? todayStats.returnsToday : '—'}</span>
             </div>
             <div style={statRowStyle}>
               <span style={statLabelStyle}>Revenue</span>
-              <span style={statValueStyle}>—</span>
+              <span style={statValueStyle}>
+                {todayStats ? formatCurrency(todayStats.revenueCents) : '—'}
+              </span>
             </div>
             <div style={statRowStyle}>
               <span style={statLabelStyle}>Late fees collected</span>
-              <span style={statValueStyle}>—</span>
-            </div>
-            <div style={{
-              color: 'var(--text-muted)',
-              fontSize: 'var(--font-size-sm)',
-              fontStyle: 'italic',
-              paddingTop: 'var(--space-xs)',
-            }}>
-              Awaiting dashboard stats endpoint
+              <span style={statValueStyle}>
+                {todayStats ? formatCurrency(todayStats.lateFeesCollectedCents) : '—'}
+              </span>
             </div>
           </div>
         </div>
