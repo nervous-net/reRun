@@ -275,7 +275,7 @@ export function CustomerCard({ customerId }: CustomerCardProps) {
 
       {/* Quick actions */}
       <div style={styles.actions}>
-        <Button variant="primary" onClick={() => navigate('/pos')}>
+        <Button variant="primary" onClick={() => navigate(`/pos?customerId=${customer.id}`)}>
           New Rental
         </Button>
         <Button variant="secondary" onClick={() => setShowEdit(true)}>
