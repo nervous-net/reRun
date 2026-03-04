@@ -56,6 +56,7 @@ export const api = {
     create: (data: any) => post<any>('/api/customers', data),
     update: (id: string, data: any) => put<any>(`/api/customers/${id}`, data),
     addFamily: (id: string, data: any) => post<any>(`/api/customers/${id}/family`, data),
+    updateFamily: (id: string, familyId: string, data: any) => put<any>(`/api/customers/${id}/family/${familyId}`, data),
     removeFamily: (id: string, familyId: string) => del<any>(`/api/customers/${id}/family/${familyId}`),
     adjustBalance: (id: string, data: any) => put<any>(`/api/customers/${id}/balance`, data),
   },

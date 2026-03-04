@@ -36,6 +36,7 @@ interface FamilyMember {
   firstName: string;
   lastName: string;
   relationship: string | null;
+  birthday: string | null;
 }
 
 interface ActiveRental {
@@ -60,6 +61,12 @@ export function CustomerCard({ customerId }: CustomerCardProps) {
   const [familyFirst, setFamilyFirst] = useState('');
   const [familyLast, setFamilyLast] = useState('');
   const [familyRelation, setFamilyRelation] = useState('');
+  const [familyBirthday, setFamilyBirthday] = useState('');
+  const [editingFamily, setEditingFamily] = useState<FamilyMember | null>(null);
+  const [editFamilyFirst, setEditFamilyFirst] = useState('');
+  const [editFamilyLast, setEditFamilyLast] = useState('');
+  const [editFamilyRelation, setEditFamilyRelation] = useState('');
+  const [editFamilyBirthday, setEditFamilyBirthday] = useState('');
 
   const loadCustomer = useCallback(async () => {
     setLoading(true);
@@ -123,15 +130,51 @@ export function CustomerCard({ customerId }: CustomerCardProps) {
         firstName: familyFirst.trim(),
         lastName: familyLast.trim(),
         relationship: familyRelation.trim() || undefined,
+        birthday: familyBirthday || null,
       });
       setShowAddFamily(false);
       setFamilyFirst('');
       setFamilyLast('');
       setFamilyRelation('');
+      setFamilyBirthday('');
       loadCustomer();
     } catch {
       // silent fail for now
     }
+  }
+
+  async function handleEditFamily() {
+    if (!customer || !editingFamily) return;
+    try {
+      await api.customers.updateFamily(customer.id, editingFamily.id, {
+        firstName: editFamilyFirst,
+        lastName: editFamilyLast,
+        relationship: editFamilyRelation || null,
+        birthday: editFamilyBirthday || null,
+      });
+      setEditingFamily(null);
+      loadCustomer();
+    } catch {
+      // Error handling
+    }
+  }
+
+  async function handleDeleteFamily(familyId: string) {
+    if (!customer) return;
+    try {
+      await api.customers.removeFamily(customer.id, familyId);
+      loadCustomer();
+    } catch {
+      // Error handling
+    }
+  }
+
+  function startEditFamily(fm: FamilyMember) {
+    setEditingFamily(fm);
+    setEditFamilyFirst(fm.firstName);
+    setEditFamilyLast(fm.lastName);
+    setEditFamilyRelation(fm.relationship || '');
+    setEditFamilyBirthday(fm.birthday || '');
   }
 
   if (loading) {
@@ -253,10 +296,19 @@ export function CustomerCard({ customerId }: CustomerCardProps) {
           <div style={styles.familyList}>
             {customer.familyMembers.map((fm) => (
               <div key={fm.id} style={styles.familyItem}>
-                <span style={styles.fieldValue}>{fm.firstName} {fm.lastName}</span>
-                {fm.relationship && (
-                  <span style={styles.fieldLabel}>{fm.relationship}</span>
-                )}
+                <div>
+                  <span style={styles.fieldValue}>{fm.firstName} {fm.lastName}</span>
+                  {fm.relationship && (
+                    <span style={styles.fieldLabel}> — {fm.relationship}</span>
+                  )}
+                  {fm.birthday && (
+                    <span style={styles.fieldLabel}> — {fm.birthday}</span>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: '4px' }}>
+                  <Button variant="ghost" onClick={() => startEditFamily(fm)}>Edit</Button>
+                  <Button variant="ghost" onClick={() => handleDeleteFamily(fm.id)}>Remove</Button>
+                </div>
               </div>
             ))}
           </div>
@@ -374,6 +426,60 @@ export function CustomerCard({ customerId }: CustomerCardProps) {
             value={familyRelation}
             onChange={(e) => setFamilyRelation(e.target.value)}
             placeholder="e.g. Spouse, Child"
+          />
+          <Input
+            label="Birthday"
+            type="date"
+            value={familyBirthday}
+            onChange={(e) => setFamilyBirthday(e.target.value)}
+          />
+        </div>
+      </Modal>
+
+      {/* Edit family member modal */}
+      <Modal
+        isOpen={!!editingFamily}
+        onClose={() => setEditingFamily(null)}
+        title="Edit Family Member"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setEditingFamily(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleEditFamily}
+              disabled={!editFamilyFirst.trim() || !editFamilyLast.trim()}
+            >
+              Save
+            </Button>
+          </>
+        }
+      >
+        <div style={styles.formFields}>
+          <Input
+            label="First Name"
+            value={editFamilyFirst}
+            onChange={(e) => setEditFamilyFirst(e.target.value)}
+            required
+          />
+          <Input
+            label="Last Name"
+            value={editFamilyLast}
+            onChange={(e) => setEditFamilyLast(e.target.value)}
+            required
+          />
+          <Input
+            label="Relationship"
+            value={editFamilyRelation}
+            onChange={(e) => setEditFamilyRelation(e.target.value)}
+            placeholder="e.g. Spouse, Child"
+          />
+          <Input
+            label="Birthday"
+            type="date"
+            value={editFamilyBirthday}
+            onChange={(e) => setEditFamilyBirthday(e.target.value)}
           />
         </div>
       </Modal>
