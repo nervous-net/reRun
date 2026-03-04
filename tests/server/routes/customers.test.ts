@@ -324,6 +324,32 @@ describe('POST /api/customers/:id/family', () => {
   });
 });
 
+describe('POST /api/customers/:id/family (with birthday)', () => {
+  it('creates a family member with birthday', async () => {
+    const custRes = await app.request('/api/customers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ firstName: 'Emmett', lastName: 'Brown' }),
+    });
+    const cust = await custRes.json();
+
+    const res = await app.request(`/api/customers/${cust.id}/family`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        firstName: 'Jules',
+        lastName: 'Brown',
+        relationship: 'child',
+        birthday: '2015-06-15',
+      }),
+    });
+
+    expect(res.status).toBe(201);
+    const member = await res.json();
+    expect(member.birthday).toBe('2015-06-15');
+  });
+});
+
 describe('PUT /api/customers/:id/family/:familyId', () => {
   it('updates a family member name and relationship', async () => {
     // Create customer

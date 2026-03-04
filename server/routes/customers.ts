@@ -203,6 +203,7 @@ export function createCustomersRoutes(db: any) {
       firstName: body.firstName,
       lastName: body.lastName,
       relationship: body.relationship || null,
+      birthday: body.birthday || null,
     };
 
     await db.insert(familyMembers).values(newMember).run();
