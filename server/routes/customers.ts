@@ -216,6 +216,46 @@ export function createCustomersRoutes(db: any) {
     return c.json(created, 201);
   });
 
+  // PUT /:id/family/:familyId — update family member
+  routes.put('/:id/family/:familyId', async (c) => {
+    const customerId = c.req.param('id');
+    const familyId = c.req.param('familyId');
+    const body = await c.req.json();
+
+    const [member] = await db
+      .select()
+      .from(familyMembers)
+      .where(eq(familyMembers.id, familyId))
+      .all();
+
+    if (!member || member.customerId !== customerId) {
+      return c.json({ error: 'Family member not found' }, 404);
+    }
+
+    const updates: Record<string, any> = {};
+    const allowedFields = ['firstName', 'lastName', 'relationship', 'birthday'];
+
+    for (const field of allowedFields) {
+      if (body[field] !== undefined) {
+        updates[field] = body[field];
+      }
+    }
+
+    await db
+      .update(familyMembers)
+      .set(updates)
+      .where(eq(familyMembers.id, familyId))
+      .run();
+
+    const [updated] = await db
+      .select()
+      .from(familyMembers)
+      .where(eq(familyMembers.id, familyId))
+      .all();
+
+    return c.json(updated);
+  });
+
   // DELETE /:id/family/:familyId — remove family member
   routes.delete('/:id/family/:familyId', async (c) => {
     const familyId = c.req.param('familyId');

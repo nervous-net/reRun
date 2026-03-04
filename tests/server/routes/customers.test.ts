@@ -324,6 +324,57 @@ describe('POST /api/customers/:id/family', () => {
   });
 });
 
+describe('PUT /api/customers/:id/family/:familyId', () => {
+  it('updates a family member name and relationship', async () => {
+    // Create customer
+    const custRes = await app.request('/api/customers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ firstName: 'Doc', lastName: 'Brown' }),
+    });
+    const cust = await custRes.json();
+
+    // Add family member
+    const famRes = await app.request(`/api/customers/${cust.id}/family`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ firstName: 'Clara', lastName: 'Clayton', relationship: 'friend' }),
+    });
+    const fam = await famRes.json();
+
+    // Update family member
+    const updateRes = await app.request(`/api/customers/${cust.id}/family/${fam.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lastName: 'Brown', relationship: 'spouse', birthday: '1855-01-15' }),
+    });
+
+    expect(updateRes.status).toBe(200);
+    const updated = await updateRes.json();
+    expect(updated.lastName).toBe('Brown');
+    expect(updated.relationship).toBe('spouse');
+    expect(updated.birthday).toBe('1855-01-15');
+    expect(updated.firstName).toBe('Clara'); // unchanged
+  });
+
+  it('returns 404 if family member not found', async () => {
+    const custRes = await app.request('/api/customers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ firstName: 'Biff', lastName: 'Tannen' }),
+    });
+    const cust = await custRes.json();
+
+    const res = await app.request(`/api/customers/${cust.id}/family/nonexistent`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ firstName: 'Griff' }),
+    });
+
+    expect(res.status).toBe(404);
+  });
+});
+
 describe('DELETE /api/customers/:id/family/:familyId', () => {
   it('removes a family member', async () => {
     const customerId = nanoid();
