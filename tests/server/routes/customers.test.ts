@@ -425,6 +425,69 @@ describe('DELETE /api/customers/:id/family/:familyId', () => {
   });
 });
 
+describe('DELETE /api/customers/:id/family/:familyId (soft delete)', () => {
+  it('soft deletes a family member by setting active to 0', async () => {
+    const custRes = await app.request('/api/customers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ firstName: 'George', lastName: 'McFly' }),
+    });
+    const cust = await custRes.json();
+
+    const famRes = await app.request(`/api/customers/${cust.id}/family`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ firstName: 'Lorraine', lastName: 'McFly', relationship: 'spouse' }),
+    });
+    const fam = await famRes.json();
+
+    // Delete
+    const delRes = await app.request(`/api/customers/${cust.id}/family/${fam.id}`, {
+      method: 'DELETE',
+    });
+    expect(delRes.status).toBe(200);
+
+    // GET customer should NOT include soft-deleted member
+    const getRes = await app.request(`/api/customers/${cust.id}`);
+    const customer = await getRes.json();
+    expect(customer.familyMembers).toHaveLength(0);
+  });
+
+  it('does not count soft-deleted members toward family member limit', async () => {
+    // Insert max_family_members setting = 1
+    sqlite.exec("INSERT OR REPLACE INTO store_settings (key, value) VALUES ('max_family_members', '1')");
+
+    const custRes = await app.request('/api/customers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ firstName: 'George', lastName: 'McFly' }),
+    });
+    const cust = await custRes.json();
+
+    // Add first family member
+    const fam1Res = await app.request(`/api/customers/${cust.id}/family`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ firstName: 'Lorraine', lastName: 'McFly' }),
+    });
+    const fam1 = await fam1Res.json();
+
+    // Soft delete first
+    await app.request(`/api/customers/${cust.id}/family/${fam1.id}`, { method: 'DELETE' });
+
+    // Should be able to add another (deleted one doesn't count)
+    const fam2Res = await app.request(`/api/customers/${cust.id}/family`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ firstName: 'Dave', lastName: 'McFly' }),
+    });
+    expect(fam2Res.status).toBe(201);
+
+    // Cleanup
+    sqlite.exec("DELETE FROM store_settings WHERE key = 'max_family_members'");
+  });
+});
+
 describe('PUT /api/customers/:id/balance', () => {
   it('adds credit to balance', async () => {
     const customerId = nanoid();

@@ -2,7 +2,7 @@
 // ABOUTME: Exports a factory function that takes a db instance and returns a Hono router
 
 import { Hono } from 'hono';
-import { eq, like, or, sql, count } from 'drizzle-orm';
+import { and, eq, like, or, sql, count } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { customers, familyMembers, storeSettings } from '../db/schema.js';
 
@@ -78,7 +78,7 @@ export function createCustomersRoutes(db: any) {
     const family = await db
       .select()
       .from(familyMembers)
-      .where(eq(familyMembers.customerId, id))
+      .where(and(eq(familyMembers.customerId, id), eq(familyMembers.active, 1)))
       .all();
 
     return c.json({ ...customer, familyMembers: family });
@@ -191,7 +191,7 @@ export function createCustomersRoutes(db: any) {
     const [maxSetting] = await db.select().from(storeSettings).where(eq(storeSettings.key, 'max_family_members'));
     const parsed = maxSetting ? parseInt(maxSetting.value ?? '6', 10) : 6;
     const maxMembers = Number.isNaN(parsed) ? 6 : parsed;
-    const [memberCount] = await db.select({ count: count() }).from(familyMembers).where(eq(familyMembers.customerId, customerId));
+    const [memberCount] = await db.select({ count: count() }).from(familyMembers).where(and(eq(familyMembers.customerId, customerId), eq(familyMembers.active, 1)));
     if (memberCount.count >= maxMembers) {
       return c.json({ error: `Maximum of ${maxMembers} family members allowed` }, 400);
     }
@@ -272,7 +272,8 @@ export function createCustomersRoutes(db: any) {
     }
 
     await db
-      .delete(familyMembers)
+      .update(familyMembers)
+      .set({ active: 0 })
       .where(eq(familyMembers.id, familyId))
       .run();
 
