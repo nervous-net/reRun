@@ -210,6 +210,170 @@ describe('Rentals API', () => {
     });
   });
 
+  describe('age restriction check', () => {
+    it('returns ageRestriction warning when minor rents R-rated title', async () => {
+      const { app, db } = buildApp();
+
+      // Create minor customer (born 2015)
+      const minorCustomer = {
+        id: nanoid(),
+        firstName: 'Kid',
+        lastName: 'McFly',
+        memberBarcode: nanoid(10),
+        birthday: '2015-06-15',
+      };
+      await db.insert(customers).values(minorCustomer).run();
+
+      // Create R-rated title and copy
+      const titleId = nanoid();
+      await db.insert(titles).values({
+        id: titleId,
+        name: 'Die Hard',
+        year: 1988,
+        rating: 'R',
+      }).run();
+      const copyId = nanoid();
+      await db.insert(copies).values({
+        id: copyId,
+        titleId,
+        barcode: 'DH-001',
+        format: 'DVD',
+        status: 'in',
+      }).run();
+
+      // Create pricing rule
+      const ruleId = nanoid();
+      await db.insert(pricingRules).values({
+        id: ruleId,
+        name: '2-Day',
+        type: 'rental',
+        rate: 399,
+        durationDays: 2,
+      }).run();
+
+      // Checkout without approval — should get warning
+      const res = await app.request('/api/rentals/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerId: minorCustomer.id,
+          copyId,
+          pricingRuleId: ruleId,
+        }),
+      });
+
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.ageRestriction).toBeDefined();
+      expect(body.ageRestriction.requiresApproval).toBe(true);
+      expect(body.ageRestriction.rating).toBe('R');
+    });
+
+    it('allows checkout when parentApproved flag is set', async () => {
+      const { app, db } = buildApp();
+
+      const minorCustomer = {
+        id: nanoid(),
+        firstName: 'Kid2',
+        lastName: 'McFly',
+        memberBarcode: nanoid(10),
+        birthday: '2015-06-15',
+      };
+      await db.insert(customers).values(minorCustomer).run();
+
+      const titleId = nanoid();
+      await db.insert(titles).values({
+        id: titleId,
+        name: 'Terminator 2',
+        year: 1991,
+        rating: 'R',
+      }).run();
+      const copyId = nanoid();
+      await db.insert(copies).values({
+        id: copyId,
+        titleId,
+        barcode: 'T2-001',
+        format: 'DVD',
+        status: 'in',
+      }).run();
+
+      const ruleId = nanoid();
+      await db.insert(pricingRules).values({
+        id: ruleId,
+        name: '2-Day',
+        type: 'rental',
+        rate: 399,
+        durationDays: 2,
+      }).run();
+
+      const res = await app.request('/api/rentals/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerId: minorCustomer.id,
+          copyId,
+          pricingRuleId: ruleId,
+          parentApproved: true,
+        }),
+      });
+
+      expect(res.status).toBe(201);
+      const body = await res.json();
+      expect(body.id).toBeDefined();
+      expect(body.status).toBe('out');
+    });
+
+    it('does not warn for adult renting R-rated title', async () => {
+      const { app, db } = buildApp();
+
+      const adultCustomer = {
+        id: nanoid(),
+        firstName: 'Adult',
+        lastName: 'McFly',
+        memberBarcode: nanoid(10),
+        birthday: '1990-01-01',
+      };
+      await db.insert(customers).values(adultCustomer).run();
+
+      const titleId = nanoid();
+      await db.insert(titles).values({
+        id: titleId,
+        name: 'Aliens',
+        year: 1986,
+        rating: 'R',
+      }).run();
+      const copyId = nanoid();
+      await db.insert(copies).values({
+        id: copyId,
+        titleId,
+        barcode: 'AL-001',
+        format: 'DVD',
+        status: 'in',
+      }).run();
+
+      const ruleId = nanoid();
+      await db.insert(pricingRules).values({
+        id: ruleId,
+        name: '2-Day',
+        type: 'rental',
+        rate: 399,
+        durationDays: 2,
+      }).run();
+
+      const res = await app.request('/api/rentals/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerId: adultCustomer.id,
+          copyId,
+          pricingRuleId: ruleId,
+        }),
+      });
+
+      expect(res.status).toBe(201);
+    });
+  });
+
   describe('GET /api/rentals/customer/:id', () => {
     it('returns rental history for a customer', async () => {
       const { app, db } = buildApp();

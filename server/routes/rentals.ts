@@ -3,7 +3,8 @@
 
 import { Hono } from 'hono';
 import { eq, and, count } from 'drizzle-orm';
-import { rentals, storeSettings } from '../db/schema.js';
+import { rentals, storeSettings, customers, copies, titles } from '../db/schema.js';
+import { checkAgeRestriction } from '../services/age-check.js';
 import {
   checkoutCopy,
   returnCopy,
@@ -36,6 +37,20 @@ export function createRentalsRoutes(db: any) {
       .where(and(eq(rentals.customerId, body.customerId), eq(rentals.status, 'out')));
     if (activeCount.count >= maxRentals) {
       return c.json({ error: `Rental limit reached. Maximum ${maxRentals} active rentals allowed.` }, 400);
+    }
+
+    // Age restriction check
+    const [copy] = await db.select().from(copies).where(eq(copies.id, body.copyId));
+    if (copy) {
+      const [title] = await db.select().from(titles).where(eq(titles.id, copy.titleId));
+      if (title) {
+        const [cust] = await db.select().from(customers).where(eq(customers.id, body.customerId));
+        const warning = cust ? checkAgeRestriction(cust.birthday, title.rating) : null;
+
+        if (warning && !body.parentApproved) {
+          return c.json({ ageRestriction: warning }, 200);
+        }
+      }
     }
 
     try {
