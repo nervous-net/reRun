@@ -35,6 +35,8 @@ export function PaymentModal({ total, customer, lineItems, onComplete, onCancel 
   const [cashTendered, setCashTendered] = useState('');
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [ageWarning, setAgeWarning] = useState<{ rating: string; message: string } | null>(null);
+  const [parentApproved, setParentApproved] = useState(false);
 
   const tenderedCents = Math.round(parseFloat(cashTendered || '0') * 100);
   const changeDue = tenderedCents - total;
@@ -48,11 +50,19 @@ export function PaymentModal({ total, customer, lineItems, onComplete, onCancel 
       // Checkout rental copies first (creates rental records with due dates)
       const rentalItems = lineItems.filter((item) => item.type === 'rental' && item.copyId && item.pricingRuleId);
       for (const item of rentalItems) {
-        await api.rentals.checkout({
+        const result = await api.rentals.checkout({
           customerId: customer!.id,
           copyId: item.copyId!,
           pricingRuleId: item.pricingRuleId!,
+          parentApproved,
         });
+
+        // If age restriction warning returned, show dialog and stop
+        if (result.ageRestriction) {
+          setAgeWarning(result.ageRestriction);
+          setProcessing(false);
+          return;
+        }
       }
 
       // Determine transaction type from items
@@ -110,6 +120,25 @@ export function PaymentModal({ total, customer, lineItems, onComplete, onCancel 
           <Alert variant="error" onDismiss={() => setError(null)}>
             {error}
           </Alert>
+        )}
+
+        {ageWarning && (
+          <div style={styles.ageWarning}>
+            <div style={styles.ageWarningTitle}>
+              AGE RESTRICTION WARNING
+            </div>
+            <div style={styles.ageWarningMessage}>
+              {ageWarning.message}
+            </div>
+            <label style={styles.ageWarningCheckbox}>
+              <input
+                type="checkbox"
+                checked={parentApproved}
+                onChange={(e) => setParentApproved(e.target.checked)}
+              />
+              <span style={{ color: 'var(--text-primary)' }}>Parent/guardian has approved this rental</span>
+            </label>
+          </div>
         )}
 
         {/* Payment method selector */}
@@ -292,5 +321,29 @@ const styles: Record<string, CSSProperties> = {
   accountBalance: {
     fontSize: 'var(--font-size-lg)',
     fontWeight: 'bold',
+  },
+  ageWarning: {
+    backgroundColor: 'var(--bg-primary)',
+    border: '2px solid var(--crt-amber)',
+    padding: 'var(--space-md)',
+    borderRadius: 'var(--border-radius)',
+  },
+  ageWarningTitle: {
+    color: 'var(--crt-amber)',
+    textShadow: 'var(--glow-amber)',
+    fontWeight: 'bold',
+    marginBottom: 'var(--space-sm)',
+    textTransform: 'uppercase',
+    letterSpacing: '1px',
+  },
+  ageWarningMessage: {
+    color: 'var(--text-primary)',
+    marginBottom: 'var(--space-sm)',
+  },
+  ageWarningCheckbox: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 'var(--space-sm)',
+    cursor: 'pointer',
   },
 };
