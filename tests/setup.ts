@@ -64,7 +64,9 @@ export function migrateTestDb(sqlite: Database.Database) {
       customer_id TEXT NOT NULL REFERENCES customers(id),
       first_name TEXT NOT NULL,
       last_name TEXT NOT NULL,
-      relationship TEXT
+      relationship TEXT,
+      birthday TEXT,
+      active INTEGER DEFAULT 1
     );
 
     CREATE TABLE IF NOT EXISTS pricing_rules (

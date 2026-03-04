@@ -61,6 +61,8 @@ export const familyMembers = sqliteTable('family_members', {
   firstName: text('first_name').notNull(),
   lastName: text('last_name').notNull(),
   relationship: text('relationship'),
+  birthday: text('birthday'),
+  active: integer('active').default(1),
 }, (table) => [
   index('family_members_customer_id_idx').on(table.customerId),
 ]);
