@@ -217,6 +217,53 @@ describe('GET /api/customers/search', () => {
     expect(body.data).toHaveLength(0);
   });
 
+  it('finds customers by family member name', async () => {
+    // Create customer
+    const custRes = await app.request('/api/customers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ firstName: 'George', lastName: 'McFly' }),
+    });
+    const cust = await custRes.json();
+
+    // Add family member with distinctive name
+    await app.request(`/api/customers/${cust.id}/family`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ firstName: 'Lorraine', lastName: 'Baines' }),
+    });
+
+    // Search by family member's first name
+    const res = await app.request('/api/customers/search?q=Lorraine');
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.data.length).toBe(1);
+    expect(body.data[0].id).toBe(cust.id);
+  });
+
+  it('does not find customers by inactive family member name', async () => {
+    const custRes = await app.request('/api/customers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ firstName: 'Biff', lastName: 'Tannen' }),
+    });
+    const cust = await custRes.json();
+
+    // Add and soft-delete family member
+    const famRes = await app.request(`/api/customers/${cust.id}/family`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ firstName: 'Gertrude', lastName: 'Tannen' }),
+    });
+    const fam = await famRes.json();
+    await app.request(`/api/customers/${cust.id}/family/${fam.id}`, { method: 'DELETE' });
+
+    // Search by deleted family member name should not return customer
+    const res = await app.request('/api/customers/search?q=Gertrude');
+    const body = await res.json();
+    expect(body.data.length).toBe(0);
+  });
+
   it('returns 400 if q is missing', async () => {
     const res = await app.request('/api/customers/search');
     expect(res.status).toBe(400);

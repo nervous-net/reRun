@@ -9,7 +9,7 @@ import { customers, familyMembers, storeSettings } from '../db/schema.js';
 export function createCustomersRoutes(db: any) {
   const routes = new Hono();
 
-  // GET /search — search by name, phone, email, barcode
+  // GET /search — search by name, phone, email, barcode, or family member name
   // Defined before /:id so it doesn't get captured as an id param
   routes.get('/search', async (c) => {
     const q = c.req.query('q');
@@ -18,7 +18,9 @@ export function createCustomersRoutes(db: any) {
     }
 
     const pattern = `%${q}%`;
-    const results = await db
+
+    // Search customers by their own fields
+    const customerResults = await db
       .select()
       .from(customers)
       .where(
@@ -32,7 +34,39 @@ export function createCustomersRoutes(db: any) {
       )
       .all();
 
-    return c.json({ data: results });
+    // Search by active family member name
+    const familyMatches = await db
+      .select({ customerId: familyMembers.customerId })
+      .from(familyMembers)
+      .where(
+        and(
+          eq(familyMembers.active, 1),
+          or(
+            like(familyMembers.firstName, pattern),
+            like(familyMembers.lastName, pattern),
+          )
+        )
+      )
+      .all();
+
+    // Merge results, deduplicating by customer ID
+    const resultIds = new Set(customerResults.map((c: any) => c.id));
+    const familyCustomerIds = familyMatches
+      .map((m: any) => m.customerId)
+      .filter((id: string) => !resultIds.has(id));
+
+    let combinedResults = [...customerResults];
+
+    if (familyCustomerIds.length > 0) {
+      const familyCustomers = await db
+        .select()
+        .from(customers)
+        .where(or(...familyCustomerIds.map((id: string) => eq(customers.id, id))))
+        .all();
+      combinedResults = [...combinedResults, ...familyCustomers];
+    }
+
+    return c.json({ data: combinedResults });
   });
 
   // GET / — list customers (paginated)
