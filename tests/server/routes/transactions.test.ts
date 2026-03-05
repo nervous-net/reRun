@@ -188,6 +188,60 @@ describe('Transactions API', () => {
     });
   });
 
+  describe('GET /api/transactions?referenceCode=', () => {
+    it('returns matching transaction by reference code', async () => {
+      const { app, db } = buildApp();
+      const customerId = await seedCustomer(db);
+      const productId = await seedProduct(db);
+      await seedTaxRate(db, 0);
+
+      // Create a transaction to get its reference code
+      const createRes = await app.request('/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerId,
+          type: 'sale',
+          paymentMethod: 'cash',
+          amountTendered: 300,
+          items: [
+            { type: 'sale', productId, description: 'Candy', amount: 199 },
+          ],
+        }),
+      });
+
+      const created = await createRes.json();
+      const refCode = created.referenceCode;
+      expect(refCode).toBeDefined();
+
+      // Search by exact reference code
+      const res = await app.request(`/api/transactions?referenceCode=${refCode}`);
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.data).toHaveLength(1);
+      expect(body.data[0].id).toBe(created.id);
+      expect(body.data[0].referenceCode).toBe(refCode);
+
+      // Search is case-insensitive
+      const lowerRes = await app.request(
+        `/api/transactions?referenceCode=${refCode.toLowerCase()}`
+      );
+      expect(lowerRes.status).toBe(200);
+      const lowerBody = await lowerRes.json();
+      expect(lowerBody.data).toHaveLength(1);
+      expect(lowerBody.data[0].id).toBe(created.id);
+    });
+
+    it('returns empty array for non-matching reference code', async () => {
+      const { app } = buildApp();
+
+      const res = await app.request('/api/transactions?referenceCode=RN-ZZZZ');
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.data).toHaveLength(0);
+    });
+  });
+
   describe('hold/recall via HTTP', () => {
     it('holds and recalls a transaction', async () => {
       const { app, db } = buildApp();

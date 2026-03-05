@@ -82,6 +82,7 @@ export const api = {
     hold: (data: any) => post<any>('/api/transactions/hold', data),
     held: () => get<any>('/api/transactions/held'),
     recall: (holdId: string) => post<any>(`/api/transactions/recall/${holdId}`),
+    search: (referenceCode: string) => get<any>(`/api/transactions?referenceCode=${encodeURIComponent(referenceCode)}`),
   },
   rentals: {
     checkout: (data: any) => post<any>('/api/rentals/checkout', data),
