@@ -63,7 +63,14 @@ if (drizzleDir) {
         // Split on drizzle statement breakpoints and run each statement
         const statements = raw.split('--> statement-breakpoint').map(s => s.trim()).filter(Boolean);
         for (const stmt of statements) {
-          sqlite.exec(stmt);
+          try {
+            sqlite.exec(stmt);
+          } catch (err: any) {
+            // Drizzle migrations aren't idempotent — skip harmless "already exists" errors
+            const msg = err.message || '';
+            if (msg.includes('already exists') || msg.includes('duplicate column name')) continue;
+            throw err;
+          }
         }
         sqlite.prepare('INSERT INTO _migrations (name) VALUES (?)').run(file);
       }
