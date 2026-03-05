@@ -3,7 +3,7 @@
 
 import { Hono } from 'hono';
 import { nanoid } from 'nanoid';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { transactions, transactionItems } from '../db/schema.js';
 import {
   createTransaction,
@@ -42,6 +42,22 @@ export function createTransactionsRoutes(db: any) {
     }
 
     return c.json(data);
+  });
+
+  // GET / — search transactions by reference code
+  routes.get('/', async (c) => {
+    const referenceCode = c.req.query('referenceCode');
+
+    if (!referenceCode) {
+      return c.json({ data: [] });
+    }
+
+    const results = await db
+      .select()
+      .from(transactions)
+      .where(sql`UPPER(${transactions.referenceCode}) = UPPER(${referenceCode})`);
+
+    return c.json({ data: results });
   });
 
   // POST / — create a transaction

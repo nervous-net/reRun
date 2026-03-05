@@ -1,8 +1,8 @@
-// ABOUTME: Dashboard stats service for today's activity aggregations
-// ABOUTME: Queries rental count, return count, revenue, and collected late fees for the current day
+// ABOUTME: Dashboard stats service for today's activity aggregations and recent transaction history
+// ABOUTME: Queries rental count, return count, revenue, late fees, and recent transactions with reference codes
 
-import { sql, eq, and, gte } from 'drizzle-orm';
-import { transactions, rentals } from '../db/schema.js';
+import { sql, eq, and, gte, desc } from 'drizzle-orm';
+import { transactions, rentals, customers } from '../db/schema.js';
 
 export interface TodayStats {
   rentalsToday: number;
@@ -67,4 +67,46 @@ export async function getTodayStats(db: any): Promise<TodayStats> {
     revenueCents: revenue.total,
     lateFeesCollectedCents: lateFees.total,
   };
+}
+
+// ─── Recent Transactions ──────────────────────────────────────────
+
+export interface RecentTransaction {
+  id: string;
+  referenceCode: string | null;
+  type: string;
+  total: number;
+  voided: number;
+  customerName: string;
+  createdAt: string;
+}
+
+export async function getRecentTransactions(db: any, limit = 10): Promise<RecentTransaction[]> {
+  const rows = await db
+    .select({
+      id: transactions.id,
+      referenceCode: transactions.referenceCode,
+      type: transactions.type,
+      total: transactions.total,
+      voided: transactions.voided,
+      createdAt: transactions.createdAt,
+      customerFirstName: customers.firstName,
+      customerLastName: customers.lastName,
+    })
+    .from(transactions)
+    .leftJoin(customers, eq(transactions.customerId, customers.id))
+    .orderBy(desc(transactions.createdAt))
+    .limit(limit);
+
+  return rows.map((row: any) => ({
+    id: row.id,
+    referenceCode: row.referenceCode ?? null,
+    type: row.type,
+    total: row.total,
+    voided: row.voided ?? 0,
+    customerName: row.customerFirstName
+      ? `${row.customerFirstName} ${row.customerLastName}`
+      : 'Walk-in',
+    createdAt: row.createdAt,
+  }));
 }

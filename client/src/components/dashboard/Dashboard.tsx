@@ -189,12 +189,32 @@ function formatCurrency(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+function formatTime(dateStr: string): string {
+  const d = new Date(dateStr);
+  return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+}
+
+// --- Ref code style ---
+
+const refCodeStyle: CSSProperties = {
+  fontFamily: 'var(--font-mono)',
+  color: 'var(--crt-cyan)',
+  letterSpacing: '1px',
+  fontSize: 'var(--font-size-sm)',
+};
+
+const voidedStyle: CSSProperties = {
+  color: 'var(--crt-red)',
+  textDecoration: 'line-through',
+};
+
 // --- Component ---
 
 export function Dashboard() {
   const [overdueRentals, setOverdueRentals] = useState<any[]>([]);
   const [lowStockProducts, setLowStockProducts] = useState<any[]>([]);
   const [reservations, setReservations] = useState<any[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
   const [titleCount, setTitleCount] = useState<number | null>(null);
   const [customerCount, setCustomerCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -209,7 +229,7 @@ export function Dashboard() {
   const loadDashboard = useCallback(async () => {
     const errs: string[] = [];
 
-    const [overdueResult, lowStockResult, reservationsResult, titlesResult, customersResult, statsResult] =
+    const [overdueResult, lowStockResult, reservationsResult, titlesResult, customersResult, statsResult, recentResult] =
       await Promise.allSettled([
         api.rentals.overdue(),
         api.products.lowStock(),
@@ -217,6 +237,7 @@ export function Dashboard() {
         api.titles.list({ limit: '1' }),
         api.customers.list({ limit: '1' }),
         api.dashboard.stats(),
+        api.dashboard.recent(10),
       ]);
 
     if (overdueResult.status === 'fulfilled') {
@@ -258,6 +279,13 @@ export function Dashboard() {
       setTodayStats(statsResult.value);
     } else {
       errs.push('dashboard stats');
+    }
+
+    if (recentResult.status === 'fulfilled') {
+      const data = recentResult.value;
+      setRecentTransactions(Array.isArray(data) ? data : data?.data ?? []);
+    } else {
+      errs.push('recent transactions');
     }
 
     setErrors(errs);
@@ -423,6 +451,63 @@ export function Dashboard() {
                   </Link>
                 )}
               </>
+            )}
+          </div>
+        </div>
+
+        {/* Row 2.5, Full Width: Recent Transactions */}
+        <div style={{ ...panelStyle, ...fullWidthStyle }}>
+          <div style={panelHeaderStyle}>{formatPanelHeader('RECENT TRANSACTIONS')}</div>
+          <div style={{ padding: 0 }}>
+            {loading ? (
+              <div style={loadingStyle}>Loading transactions...</div>
+            ) : recentTransactions.length === 0 ? (
+              <div style={{
+                color: 'var(--text-muted)',
+                textAlign: 'center',
+                padding: 'var(--space-md)',
+                fontStyle: 'italic',
+              }}>
+                No transactions yet
+              </div>
+            ) : (
+              <table style={tableStyle}>
+                <thead>
+                  <tr>
+                    <th style={thStyle}>Ref Code</th>
+                    <th style={thStyle}>Customer</th>
+                    <th style={thStyle}>Type</th>
+                    <th style={{ ...thStyle, width: '90px', textAlign: 'right' }}>Total</th>
+                    <th style={{ ...thStyle, width: '90px' }}>Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentTransactions.map((txn: any, i: number) => (
+                    <tr
+                      key={txn.id ?? i}
+                      style={{
+                        backgroundColor: i % 2 === 1 ? 'var(--accent-02)' : 'transparent',
+                      }}
+                    >
+                      <td style={{ ...tdStyle, ...(txn.voided ? voidedStyle : refCodeStyle) }}>
+                        {txn.referenceCode ?? '—'}
+                      </td>
+                      <td style={{ ...tdStyle, ...(txn.voided ? voidedStyle : {}) }}>
+                        {txn.customerName ?? '—'}
+                      </td>
+                      <td style={{ ...tdStyle, ...(txn.voided ? voidedStyle : {}) }}>
+                        {txn.type}
+                      </td>
+                      <td style={{ ...tdStyle, textAlign: 'right', ...(txn.voided ? voidedStyle : {}) }}>
+                        {formatCurrency(txn.total)}
+                      </td>
+                      <td style={{ ...tdStyle, ...(txn.voided ? voidedStyle : {}) }}>
+                        {txn.createdAt ? formatTime(txn.createdAt) : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </div>
         </div>
