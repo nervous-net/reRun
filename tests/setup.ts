@@ -99,6 +99,7 @@ export function migrateTestDb(sqlite: Database.Database) {
     CREATE TABLE IF NOT EXISTS rentals (
       id TEXT PRIMARY KEY,
       customer_id TEXT NOT NULL REFERENCES customers(id),
+      family_member_id TEXT REFERENCES family_members(id),
       copy_id TEXT NOT NULL REFERENCES copies(id),
       transaction_id TEXT REFERENCES transactions(id),
       pricing_rule_id TEXT REFERENCES pricing_rules(id),

@@ -118,6 +118,29 @@ export function createCustomersRoutes(db: any) {
     return c.json({ ...customer, familyMembers: family });
   });
 
+  // GET /:id/family — list active family members for a customer
+  routes.get('/:id/family', async (c) => {
+    const id = c.req.param('id');
+
+    const [customer] = await db
+      .select()
+      .from(customers)
+      .where(eq(customers.id, id))
+      .all();
+
+    if (!customer) {
+      return c.json({ error: 'Customer not found' }, 404);
+    }
+
+    const family = await db
+      .select()
+      .from(familyMembers)
+      .where(and(eq(familyMembers.customerId, id), eq(familyMembers.active, 1)))
+      .all();
+
+    return c.json({ data: family });
+  });
+
   // POST / — create customer
   routes.post('/', async (c) => {
     const body = await c.req.json();

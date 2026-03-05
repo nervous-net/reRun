@@ -23,6 +23,7 @@ interface CustomerBarProps {
   customer: Customer | null;
   onCustomerSelect: (customer: Customer) => void;
   onClear: () => void;
+  selectedFamilyMember?: { firstName: string; lastName: string; relationship: string } | null;
 }
 
 function formatBalance(cents: number): string {
@@ -38,7 +39,7 @@ function isBirthday(dateStr: string | null): boolean {
   return now.getMonth() + 1 === month && now.getDate() === day;
 }
 
-export function CustomerBar({ customer, onCustomerSelect, onClear }: CustomerBarProps) {
+export function CustomerBar({ customer, onCustomerSelect, onClear, selectedFamilyMember }: CustomerBarProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Customer[]>([]);
   const [showResults, setShowResults] = useState(false);
@@ -106,6 +107,16 @@ export function CustomerBar({ customer, onCustomerSelect, onClear }: CustomerBar
           )}
           {isBirthday(customer.birthday) && (
             <Badge variant="warning">BIRTHDAY</Badge>
+          )}
+          {selectedFamilyMember && (
+            <span style={styles.familyMemberInfo}>
+              <span style={styles.familyMemberName}>
+                {selectedFamilyMember.firstName} {selectedFamilyMember.lastName} ({selectedFamilyMember.relationship})
+              </span>
+              <span style={styles.familyMemberAccount}>
+                on {customer.firstName} {customer.lastName}&apos;s account
+              </span>
+            </span>
           )}
         </div>
         <Button variant="ghost" onClick={onClear}>
@@ -244,6 +255,25 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 'var(--font-size-md)',
   },
   dropdownMeta: {
+    color: 'var(--text-secondary)',
+    fontSize: 'var(--font-size-sm)',
+  },
+  familyMemberInfo: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 'var(--space-xs)',
+    marginLeft: 'var(--space-sm)',
+    borderLeft: '1px solid var(--crt-green-dim)',
+    paddingLeft: 'var(--space-sm)',
+  },
+  familyMemberName: {
+    color: 'var(--crt-amber)',
+    fontSize: 'var(--font-size-md)',
+    textTransform: 'uppercase',
+    letterSpacing: '1px',
+    textShadow: '0 0 8px var(--crt-amber)',
+  },
+  familyMemberAccount: {
     color: 'var(--text-secondary)',
     fontSize: 'var(--font-size-sm)',
   },

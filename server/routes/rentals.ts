@@ -3,7 +3,7 @@
 
 import { Hono } from 'hono';
 import { eq, and, count } from 'drizzle-orm';
-import { rentals, storeSettings, customers, copies, titles } from '../db/schema.js';
+import { rentals, storeSettings, customers, copies, titles, familyMembers } from '../db/schema.js';
 import { checkAgeRestriction } from '../services/age-check.js';
 import {
   checkoutCopy,
@@ -44,9 +44,19 @@ export function createRentalsRoutes(db: any) {
     if (copy) {
       const [title] = await db.select().from(titles).where(eq(titles.id, copy.titleId));
       if (title) {
-        const [cust] = await db.select().from(customers).where(eq(customers.id, body.customerId));
-        const warning = cust ? checkAgeRestriction(cust.birthday, title.rating) : null;
+        let birthdayToCheck: string | null = null;
 
+        if (body.familyMemberId) {
+          const [fm] = await db.select().from(familyMembers)
+            .where(eq(familyMembers.id, body.familyMemberId));
+          birthdayToCheck = fm?.birthday ?? null;
+        } else {
+          const [cust] = await db.select().from(customers)
+            .where(eq(customers.id, body.customerId));
+          birthdayToCheck = cust?.birthday ?? null;
+        }
+
+        const warning = checkAgeRestriction(birthdayToCheck, title.rating);
         if (warning && !body.parentApproved) {
           return c.json({ ageRestriction: warning }, 200);
         }
@@ -58,6 +68,7 @@ export function createRentalsRoutes(db: any) {
         customerId: body.customerId,
         copyId: body.copyId,
         pricingRuleId: body.pricingRuleId,
+        familyMemberId: body.familyMemberId,
       });
       return c.json(rental, 201);
     } catch (err: any) {

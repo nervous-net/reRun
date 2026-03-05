@@ -9,6 +9,7 @@ import {
   customers,
   pricingRules,
   titles,
+  familyMembers,
 } from '../db/schema.js';
 
 // ─── Types ──────────────────────────────────────────────────────────
@@ -17,6 +18,7 @@ export interface CheckoutInput {
   customerId: string;
   copyId: string;
   pricingRuleId: string;
+  familyMemberId?: string;
 }
 
 export interface ReturnInput {
@@ -27,7 +29,7 @@ export interface ReturnInput {
 // ─── Checkout ───────────────────────────────────────────────────────
 
 export async function checkoutCopy(db: any, input: CheckoutInput) {
-  const { customerId, copyId, pricingRuleId } = input;
+  const { customerId, copyId, pricingRuleId, familyMemberId } = input;
 
   // Fetch pricing rule for duration (immutable lookup, safe outside transaction)
   const [rule] = await db
@@ -59,6 +61,7 @@ export async function checkoutCopy(db: any, input: CheckoutInput) {
         customerId,
         copyId,
         pricingRuleId,
+        familyMemberId: familyMemberId ?? null,
         checkedOutAt: now.toISOString(),
         dueAt: dueDate.toISOString(),
         status: 'out',
@@ -188,11 +191,15 @@ export async function getOverdueRentals(db: any) {
       customerFirstName: customers.firstName,
       customerLastName: customers.lastName,
       titleName: titles.name,
+      familyMemberFirstName: familyMembers.firstName,
+      familyMemberLastName: familyMembers.lastName,
+      familyMemberRelationship: familyMembers.relationship,
     })
     .from(rentals)
     .innerJoin(customers, eq(rentals.customerId, customers.id))
     .innerJoin(copies, eq(rentals.copyId, copies.id))
     .innerJoin(titles, eq(copies.titleId, titles.id))
+    .leftJoin(familyMembers, eq(rentals.familyMemberId, familyMembers.id))
     .where(and(eq(rentals.status, 'out'), lt(rentals.dueAt, now)));
 
   return results;
@@ -215,10 +222,14 @@ export async function getCustomerRentals(db: any, customerId: string) {
       status: rentals.status,
       titleName: titles.name,
       copyBarcode: copies.barcode,
+      familyMemberFirstName: familyMembers.firstName,
+      familyMemberLastName: familyMembers.lastName,
+      familyMemberRelationship: familyMembers.relationship,
     })
     .from(rentals)
     .innerJoin(copies, eq(rentals.copyId, copies.id))
     .innerJoin(titles, eq(copies.titleId, titles.id))
+    .leftJoin(familyMembers, eq(rentals.familyMemberId, familyMembers.id))
     .where(eq(rentals.customerId, customerId));
 
   return results;
@@ -228,8 +239,27 @@ export async function getCustomerRentals(db: any, customerId: string) {
 
 export async function getActiveRentals(db: any) {
   const results = await db
-    .select()
+    .select({
+      id: rentals.id,
+      customerId: rentals.customerId,
+      copyId: rentals.copyId,
+      pricingRuleId: rentals.pricingRuleId,
+      familyMemberId: rentals.familyMemberId,
+      checkedOutAt: rentals.checkedOutAt,
+      dueAt: rentals.dueAt,
+      returnedAt: rentals.returnedAt,
+      lateFee: rentals.lateFee,
+      lateFeeStatus: rentals.lateFeeStatus,
+      status: rentals.status,
+      customerFirstName: customers.firstName,
+      customerLastName: customers.lastName,
+      familyMemberFirstName: familyMembers.firstName,
+      familyMemberLastName: familyMembers.lastName,
+      familyMemberRelationship: familyMembers.relationship,
+    })
     .from(rentals)
+    .innerJoin(customers, eq(rentals.customerId, customers.id))
+    .leftJoin(familyMembers, eq(rentals.familyMemberId, familyMembers.id))
     .where(eq(rentals.status, 'out'));
 
   return results;

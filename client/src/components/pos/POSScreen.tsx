@@ -12,6 +12,7 @@ import { TransactionPanel, type LineItem } from './TransactionPanel';
 import { ConfirmationModal } from './ConfirmationModal';
 import { ReferenceCodeScreen } from './ReferenceCodeScreen';
 import { HeldTransactions } from './HeldTransactions';
+import { FamilyMemberPicker } from './FamilyMemberPicker';
 
 interface Customer {
   id: string;
@@ -48,6 +49,9 @@ export function POSScreen() {
   const [processing, setProcessing] = useState(false);
   const [ageWarning, setAgeWarning] = useState<{ rating: string; message: string } | null>(null);
   const [parentApproved, setParentApproved] = useState(false);
+  const [familyMembers, setFamilyMembers] = useState<any[]>([]);
+  const [selectedFamilyMember, setSelectedFamilyMember] = useState<any | null>(null);
+  const [showFamilyPicker, setShowFamilyPicker] = useState(false);
   const scanRef = useRef<HTMLInputElement>(null);
   const holdRef = useRef<() => void>(() => {});
 
@@ -65,6 +69,28 @@ export function POSScreen() {
   useEffect(() => {
     focusScanInput();
   }, [focusScanInput, lineItems]);
+
+  // Fetch family members when a customer is selected
+  async function handleCustomerSelected(cust: Customer) {
+    setCustomer(cust);
+    setSelectedFamilyMember(null);
+    try {
+      const res = await api.customers.getFamily(cust.id);
+      const members = res.data || [];
+      setFamilyMembers(members);
+      if (members.length > 0) {
+        setShowFamilyPicker(true);
+      }
+    } catch {
+      setFamilyMembers([]);
+    }
+  }
+
+  function handleFamilyMemberSelect(member: any | null) {
+    setSelectedFamilyMember(member);
+    setShowFamilyPicker(false);
+    focusScanInput();
+  }
 
   // Fetch pricing rules on mount
   useEffect(() => {
@@ -91,7 +117,7 @@ export function POSScreen() {
     const customerId = searchParams.get('customerId');
     if (customerId && !customer) {
       api.customers.get(customerId).then((c) => {
-        setCustomer(c);
+        handleCustomerSelected(c);
         setSearchParams({}, { replace: true });
       }).catch(() => {});
     }
@@ -182,7 +208,7 @@ export function POSScreen() {
         (c: Customer) => c.memberBarcode === barcode
       );
       if (match) {
-        setCustomer(match);
+        handleCustomerSelected(match);
         focusScanInput();
         return;
       }
@@ -292,6 +318,7 @@ export function POSScreen() {
           copyId: item.copyId!,
           pricingRuleId: item.pricingRuleId!,
           parentApproved,
+          familyMemberId: selectedFamilyMember?.id,
         });
 
         // If age restriction warning returned, show dialog and stop
@@ -342,6 +369,9 @@ export function POSScreen() {
     setLineItems([]);
     setScanValue('');
     setError(null);
+    setFamilyMembers([]);
+    setSelectedFamilyMember(null);
+    setShowFamilyPicker(false);
     focusScanInput();
   }
 
@@ -350,8 +380,14 @@ export function POSScreen() {
       {/* Customer Bar */}
       <CustomerBar
         customer={customer}
-        onCustomerSelect={setCustomer}
-        onClear={() => setCustomer(null)}
+        onCustomerSelect={handleCustomerSelected}
+        onClear={() => {
+          setCustomer(null);
+          setFamilyMembers([]);
+          setSelectedFamilyMember(null);
+          setShowFamilyPicker(false);
+        }}
+        selectedFamilyMember={selectedFamilyMember}
       />
 
       {/* Scan input bar */}
@@ -467,6 +503,19 @@ export function POSScreen() {
             <div style={{ textAlign: 'right', marginTop: 'var(--space-sm)' }}>
               <Button variant="ghost" onClick={() => setPendingScan(null)}>Cancel</Button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Family Member Picker */}
+      {showFamilyPicker && customer && (
+        <div style={styles.pricingOverlay} onClick={() => handleFamilyMemberSelect(null)}>
+          <div style={styles.pricingPanel} onClick={(e) => e.stopPropagation()}>
+            <FamilyMemberPicker
+              customerName={`${customer.firstName} ${customer.lastName}`}
+              familyMembers={familyMembers}
+              onSelect={handleFamilyMemberSelect}
+            />
           </div>
         </div>
       )}

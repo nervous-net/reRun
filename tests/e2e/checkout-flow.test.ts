@@ -16,6 +16,7 @@ import {
   transactions,
   transactionItems,
   storeSettings,
+  familyMembers,
 } from '../../server/db/schema.js';
 
 let db: any;
@@ -274,6 +275,46 @@ describe('Checkout Flow E2E', () => {
     expect(item1.rentalId).toBe(rental1.id);
     expect(item2).toBeDefined();
     expect(item2.rentalId).toBe(rental2.id);
+  });
+
+  it('stores familyMemberId on the rental when provided', async () => {
+    const customerId = await seedCustomer(db);
+    const { copyId } = await seedTitleAndCopy(db);
+    const pricingRuleId = await seedPricingRule(db);
+
+    const familyMemberId = nanoid();
+    await db.insert(familyMembers).values({
+      id: familyMemberId,
+      customerId,
+      firstName: 'Junior',
+      lastName: 'Test',
+      relationship: 'child',
+      birthday: '2015-06-15',
+      active: 1,
+    });
+
+    const rental = await checkoutCopy(db, {
+      customerId,
+      copyId,
+      pricingRuleId,
+      familyMemberId,
+    });
+
+    expect(rental.familyMemberId).toBe(familyMemberId);
+  });
+
+  it('sets familyMemberId to null when not provided', async () => {
+    const customerId = await seedCustomer(db);
+    const { copyId } = await seedTitleAndCopy(db);
+    const pricingRuleId = await seedPricingRule(db);
+
+    const rental = await checkoutCopy(db, {
+      customerId,
+      copyId,
+      pricingRuleId,
+    });
+
+    expect(rental.familyMemberId).toBeNull();
   });
 
   it('prevents double-checkout of the same copy', async () => {

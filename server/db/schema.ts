@@ -100,6 +100,7 @@ export const transactions = sqliteTable('transactions', {
 export const rentals = sqliteTable('rentals', {
   id: text('id').primaryKey(),
   customerId: text('customer_id').notNull().references(() => customers.id),
+  familyMemberId: text('family_member_id').references(() => familyMembers.id),
   copyId: text('copy_id').notNull().references(() => copies.id),
   transactionId: text('transaction_id').references(() => transactions.id),
   pricingRuleId: text('pricing_rule_id').references(() => pricingRules.id),
