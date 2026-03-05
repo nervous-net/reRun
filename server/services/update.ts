@@ -1,7 +1,7 @@
 // ABOUTME: Service for checking GitHub releases for app updates
 // ABOUTME: Polls periodically, compares semver, caches update status in memory
 
-const GITHUB_REPO = 'nervous-net/CRTvideo';
+const GITHUB_REPO = 'nervous-net/reRun';
 const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
 
 interface UpdateInfo {
