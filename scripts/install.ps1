@@ -75,8 +75,10 @@ if (!(Test-Path $DataDir)) {
 }
 Write-Host "  Data directory ready." -ForegroundColor Green
 
-# Step 6: Database will be initialized automatically on first server start
-Write-Host "[6/8] Database will initialize on first start..." -ForegroundColor Cyan
+# Step 6: Rebuild native modules for this platform and initialize database
+Write-Host "[6/8] Building native modules..." -ForegroundColor Cyan
+Set-Location $InstallDir
+npm rebuild better-sqlite3
 Write-Host "  Ready." -ForegroundColor Green
 
 # Step 7: Start with PM2

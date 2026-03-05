@@ -54,9 +54,10 @@ echo -e "${CYAN}[5/8] Setting up data directory...${NC}"
 mkdir -p "$INSTALL_DIR/data"
 echo -e "  Data directory ready."
 
-# Step 6: Database will be initialized automatically on first server start
-echo -e "${CYAN}[6/8] Database will initialize on first start...${NC}"
+# Step 6: Rebuild native modules for this platform
+echo -e "${CYAN}[6/8] Building native modules...${NC}"
 cd "$INSTALL_DIR"
+npm rebuild better-sqlite3
 echo -e "  Ready."
 
 # Step 7: Start with PM2
