@@ -9,7 +9,7 @@ const BOOT_LINES = [
   { text: '> LOADING DATABASE......... OK', delay: 400 },
   { text: '> CHECKING INVENTORY....... OK', delay: 350 },
   { text: '> SCANNING BARCODES........ OK', delay: 300 },
-  { text: '> STARTING reRun v0.1.0... OK', delay: 400 },
+  { text: '> STARTING reRun........... OK', delay: 400 },
   { text: '> READY.', delay: 200 },
 ];
 

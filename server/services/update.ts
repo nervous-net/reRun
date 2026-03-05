@@ -50,17 +50,26 @@ export function parseGitHubRelease(release: any): UpdateInfo | null {
 
 export async function checkForUpdates(currentVersion: string): Promise<UpdateInfo | null> {
   try {
-    const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`, {
+    const url = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
+    const res = await fetch(url, {
       headers: { Accept: 'application/vnd.github.v3+json', 'User-Agent': 'reRun-updater' },
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.warn(`[UPDATE] GitHub API returned ${res.status} for ${url}`);
+      return null;
+    }
 
     const release = await res.json();
     const info = parseGitHubRelease(release);
-    if (!info) return null;
+    if (!info) {
+      console.warn('[UPDATE] No .zip asset found in latest release');
+      return null;
+    }
 
+    console.log(`[UPDATE] Current: v${currentVersion}, Latest: v${info.version}, Update available: ${isNewerVersion(currentVersion, info.version)}`);
     return isNewerVersion(currentVersion, info.version) ? info : null;
-  } catch {
+  } catch (err) {
+    console.warn('[UPDATE] Failed to check for updates:', err instanceof Error ? err.message : err);
     return null;
   }
 }

@@ -29,6 +29,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const time = useCurrentTime();
   const [storeName, setStoreName] = useState('reRun Video');
+  const [appVersion, setAppVersion] = useState('');
 
   useEffect(() => {
     api.settings.list().then((data) => {
@@ -45,6 +46,11 @@ export function Layout({ children }: { children: ReactNode }) {
     }).catch((err) => {
       console.error('Failed to load settings:', err);
     });
+    api.update.status().then((data) => {
+      if (data?.currentVersion) {
+        setAppVersion(data.currentVersion);
+      }
+    }).catch(() => {});
     return () => {
       document.documentElement.className = '';
     };
@@ -112,7 +118,7 @@ export function Layout({ children }: { children: ReactNode }) {
       <div style={styles.topBar}>
         <div style={styles.logo}>{storeName}</div>
         <div style={styles.clock}>{formattedTime}</div>
-        <div style={styles.version}>v0.1.0</div>
+        <div style={styles.version}>{appVersion ? `v${appVersion}` : ''}</div>
       </div>
 
       {/* Body: Sidebar + Content */}
@@ -155,7 +161,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
       {/* Status Bar */}
       <div style={styles.statusBar} role="status">
-        <span>Powered by reRun v0.1.0</span>
+        <span>Powered by reRun{appVersion ? ` v${appVersion}` : ''}</span>
         <span>{formattedDate}</span>
       </div>
     </div>
