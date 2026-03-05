@@ -52,6 +52,7 @@ export const api = {
   customers: {
     list: (params?: Record<string, string>) => get<any>('/api/customers', params),
     get: (id: string) => get<any>(`/api/customers/${id}`),
+    getFamily: (customerId: string) => get<any>(`/api/customers/${customerId}/family`),
     search: (q: string) => get<any>('/api/customers/search', { q }),
     create: (data: any) => post<any>('/api/customers', data),
     update: (id: string, data: any) => put<any>(`/api/customers/${id}`, data),

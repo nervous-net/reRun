@@ -272,6 +272,96 @@ describe('GET /api/customers/search', () => {
   });
 });
 
+describe('GET /api/customers/:id/family', () => {
+  it('returns active family members for a customer', async () => {
+    const customerId = nanoid();
+    db.insert(customers).values({
+      id: customerId,
+      firstName: 'Doc',
+      lastName: 'Brown',
+      memberBarcode: nanoid(10),
+    }).run();
+
+    db.insert(familyMembers).values({
+      id: nanoid(),
+      customerId,
+      firstName: 'Clara',
+      lastName: 'Brown',
+      relationship: 'spouse',
+    }).run();
+
+    db.insert(familyMembers).values({
+      id: nanoid(),
+      customerId,
+      firstName: 'Jules',
+      lastName: 'Brown',
+      relationship: 'son',
+    }).run();
+
+    const res = await app.request(`/api/customers/${customerId}/family`);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.data).toHaveLength(2);
+    expect(body.data[0].customerId).toBe(customerId);
+  });
+
+  it('excludes inactive family members', async () => {
+    const customerId = nanoid();
+    db.insert(customers).values({
+      id: customerId,
+      firstName: 'George',
+      lastName: 'McFly',
+      memberBarcode: nanoid(10),
+    }).run();
+
+    db.insert(familyMembers).values({
+      id: nanoid(),
+      customerId,
+      firstName: 'Lorraine',
+      lastName: 'McFly',
+      relationship: 'spouse',
+      active: 1,
+    }).run();
+
+    db.insert(familyMembers).values({
+      id: nanoid(),
+      customerId,
+      firstName: 'Dave',
+      lastName: 'McFly',
+      relationship: 'son',
+      active: 0,
+    }).run();
+
+    const res = await app.request(`/api/customers/${customerId}/family`);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.data).toHaveLength(1);
+    expect(body.data[0].firstName).toBe('Lorraine');
+  });
+
+  it('returns 404 for non-existent customer', async () => {
+    const res = await app.request('/api/customers/nonexistent-id/family');
+    expect(res.status).toBe(404);
+    const body = await res.json();
+    expect(body.error).toBeDefined();
+  });
+
+  it('returns empty array when customer has no family members', async () => {
+    const customerId = nanoid();
+    db.insert(customers).values({
+      id: customerId,
+      firstName: 'Biff',
+      lastName: 'Tannen',
+      memberBarcode: nanoid(10),
+    }).run();
+
+    const res = await app.request(`/api/customers/${customerId}/family`);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.data).toHaveLength(0);
+  });
+});
+
 describe('PUT /api/customers/:id', () => {
   it('updates a customer', async () => {
     const customerId = nanoid();
