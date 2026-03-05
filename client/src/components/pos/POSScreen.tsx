@@ -52,6 +52,10 @@ export function POSScreen() {
   const [familyMembers, setFamilyMembers] = useState<any[]>([]);
   const [selectedFamilyMember, setSelectedFamilyMember] = useState<any | null>(null);
   const [showFamilyPicker, setShowFamilyPicker] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [selectedSearchTitle, setSelectedSearchTitle] = useState<any | null>(null);
+  const [titleCopies, setTitleCopies] = useState<any[]>([]);
   const scanRef = useRef<HTMLInputElement>(null);
   const holdRef = useRef<() => void>(() => {});
 
@@ -61,10 +65,10 @@ export function POSScreen() {
 
   // Keep scan input focused
   const focusScanInput = useCallback(() => {
-    if (!showConfirmation && !showHeld && !referenceCode) {
+    if (!showConfirmation && !showHeld && !referenceCode && !showSearchResults) {
       setTimeout(() => scanRef.current?.focus(), 50);
     }
-  }, [showConfirmation, showHeld, referenceCode]);
+  }, [showConfirmation, showHeld, referenceCode, showSearchResults]);
 
   useEffect(() => {
     focusScanInput();
@@ -216,6 +220,19 @@ export function POSScreen() {
       // Search failed
     }
 
+    // Try as title name search
+    try {
+      const searchData = await api.search.query({ q: barcode, available: 'true', limit: '10' });
+      const titles = searchData.titles ?? [];
+      if (titles.length > 0) {
+        setSearchResults(titles);
+        setShowSearchResults(true);
+        return;
+      }
+    } catch {
+      // Search failed
+    }
+
     setError(`Barcode not recognized: ${barcode}`);
     focusScanInput();
   }
@@ -235,6 +252,54 @@ export function POSScreen() {
     ]);
     setPendingScan(null);
     focusScanInput();
+  }
+
+  function dismissSearchResults() {
+    setShowSearchResults(false);
+    setSearchResults([]);
+    setSelectedSearchTitle(null);
+    setTitleCopies([]);
+    focusScanInput();
+  }
+
+  async function handleSelectSearchTitle(title: any) {
+    try {
+      const titleData = await api.titles.get(title.id);
+      const copies = (titleData.copies ?? []).filter((c: any) => c.status === 'in');
+      if (copies.length === 1) {
+        // Only one available copy — go straight to pricing picker
+        setPendingScan({
+          copyId: copies[0].id,
+          titleId: title.id,
+          titleName: title.name,
+          format: copies[0].format,
+        });
+        setShowSearchResults(false);
+        setSearchResults([]);
+        setSelectedSearchTitle(null);
+      } else if (copies.length === 0) {
+        setError(`No available copies for "${title.name}"`);
+        dismissSearchResults();
+      } else {
+        setSelectedSearchTitle(title);
+        setTitleCopies(copies);
+      }
+    } catch {
+      setError('Failed to load copies');
+    }
+  }
+
+  function handleSelectCopy(copy: any) {
+    setPendingScan({
+      copyId: copy.id,
+      titleId: selectedSearchTitle.id,
+      titleName: selectedSearchTitle.name,
+      format: copy.format,
+    });
+    setShowSearchResults(false);
+    setSearchResults([]);
+    setSelectedSearchTitle(null);
+    setTitleCopies([]);
   }
 
   function handleRemoveItem(index: number) {
@@ -372,6 +437,10 @@ export function POSScreen() {
     setFamilyMembers([]);
     setSelectedFamilyMember(null);
     setShowFamilyPicker(false);
+    setSearchResults([]);
+    setShowSearchResults(false);
+    setSelectedSearchTitle(null);
+    setTitleCopies([]);
     focusScanInput();
   }
 
@@ -405,7 +474,7 @@ export function POSScreen() {
                 handleScan();
               }
             }}
-            placeholder="Scan barcode or type item code..."
+            placeholder="Scan barcode or search by title..."
             autoFocus
           />
         </div>
@@ -516,6 +585,91 @@ export function POSScreen() {
               familyMembers={familyMembers}
               onSelect={handleFamilyMemberSelect}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Title Search Results Modal */}
+      {showSearchResults && (
+        <div style={styles.pricingOverlay} onClick={dismissSearchResults}>
+          <div style={styles.searchPanel} onClick={(e) => e.stopPropagation()}>
+            {!selectedSearchTitle ? (
+              <>
+                <div style={styles.pricingHeader}>
+                  Search Results
+                </div>
+                <div style={styles.searchList}>
+                  {searchResults.map((title) => (
+                    <button
+                      key={title.id}
+                      style={styles.searchRow}
+                      onClick={() => handleSelectSearchTitle(title)}
+                      onMouseOver={(e) => {
+                        (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--bg-hover)';
+                      }}
+                      onMouseOut={(e) => {
+                        (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                      }}
+                    >
+                      <div style={styles.searchTitleRow}>
+                        <span style={styles.searchTitleName}>{title.name}</span>
+                        {title.year && (
+                          <span style={styles.searchTitleYear}>({title.year})</span>
+                        )}
+                        {title.rating && (
+                          <span style={styles.ratingBadge}>{title.rating}</span>
+                        )}
+                      </div>
+                      <div style={styles.searchTitleMeta}>
+                        <span>{title.availableCopies} available</span>
+                        {title.formats?.length > 0 && (
+                          <span>{title.formats.join(', ')}</span>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                <div style={{ textAlign: 'right', marginTop: 'var(--space-sm)' }}>
+                  <Button variant="ghost" onClick={dismissSearchResults}>Cancel</Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={styles.pricingHeader}>
+                  {selectedSearchTitle.name} ({selectedSearchTitle.year}) — Available Copies
+                </div>
+                <div style={styles.searchList}>
+                  {titleCopies.map((copy) => (
+                    <button
+                      key={copy.id}
+                      style={styles.searchRow}
+                      onClick={() => handleSelectCopy(copy)}
+                      onMouseOver={(e) => {
+                        (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--bg-hover)';
+                      }}
+                      onMouseOut={(e) => {
+                        (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                      }}
+                    >
+                      <div style={styles.searchTitleRow}>
+                        <span style={styles.searchTitleName}>{copy.barcode}</span>
+                        <span style={styles.ratingBadge}>{copy.format}</span>
+                      </div>
+                      <div style={styles.searchTitleMeta}>
+                        <span>Condition: {copy.condition ?? 'Unknown'}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 'var(--space-sm)' }}>
+                  <Button variant="ghost" onClick={() => {
+                    setSelectedSearchTitle(null);
+                    setTitleCopies([]);
+                  }}>Back</Button>
+                  <Button variant="ghost" onClick={dismissSearchResults}>Cancel</Button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -710,5 +864,68 @@ const styles: Record<string, CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     gap: 'var(--space-xs)',
+  },
+  searchPanel: {
+    backgroundColor: 'var(--bg-panel)',
+    border: '1px solid var(--crt-green)',
+    borderRadius: 'var(--border-radius)',
+    padding: 'var(--space-md)',
+    minWidth: '400px',
+    maxWidth: '550px',
+    maxHeight: '70vh',
+    display: 'flex',
+    flexDirection: 'column',
+    boxShadow: '0 0 20px var(--accent-15)',
+  },
+  searchList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px',
+    overflowY: 'auto',
+    flex: 1,
+    minHeight: 0,
+  },
+  searchRow: {
+    display: 'block',
+    width: '100%',
+    padding: '8px 10px',
+    backgroundColor: 'transparent',
+    border: '1px solid transparent',
+    borderRadius: 'var(--border-radius)',
+    cursor: 'pointer',
+    textAlign: 'left',
+    fontFamily: 'inherit',
+    transition: 'background-color 0.1s ease',
+  },
+  searchTitleRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 'var(--space-sm)',
+    marginBottom: '2px',
+  },
+  searchTitleName: {
+    color: 'var(--crt-green)',
+    fontSize: 'var(--font-size-md)',
+    textShadow: '0 0 5px var(--accent-30)',
+  },
+  searchTitleYear: {
+    color: 'var(--text-secondary)',
+    fontSize: 'var(--font-size-sm)',
+  },
+  ratingBadge: {
+    color: 'var(--crt-amber, var(--crt-green))',
+    fontSize: 'var(--font-size-xs)',
+    border: '1px solid var(--crt-amber, var(--crt-green))',
+    borderRadius: '3px',
+    padding: '1px 5px',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+    whiteSpace: 'nowrap',
+  },
+  searchTitleMeta: {
+    display: 'flex',
+    gap: 'var(--space-md)',
+    color: 'var(--text-secondary)',
+    fontSize: 'var(--font-size-sm)',
   },
 };
