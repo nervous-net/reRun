@@ -61,6 +61,7 @@ echo -e "  Ready."
 
 # Step 7: Start with PM2
 echo -e "${CYAN}[7/8] Starting reRun...${NC}"
+pm2 delete rerun 2>/dev/null || true
 pm2 start ecosystem.config.cjs
 pm2 save
 echo -e "  reRun is running!"

@@ -82,6 +82,7 @@ Write-Host "  Ready." -ForegroundColor Green
 # Step 7: Start with PM2
 Write-Host "[7/8] Starting reRun..." -ForegroundColor Cyan
 Set-Location $InstallDir
+pm2 delete rerun 2>$null
 pm2 start ecosystem.config.cjs
 pm2 save
 Write-Host "  reRun is running!" -ForegroundColor Green
