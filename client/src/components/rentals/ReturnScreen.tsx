@@ -38,6 +38,9 @@ interface ActiveRental {
   status: string;
   customerFirstName?: string;
   customerLastName?: string;
+  familyMemberFirstName?: string | null;
+  familyMemberLastName?: string | null;
+  familyMemberRelationship?: string | null;
 }
 
 interface ReturnQueueItem {
@@ -149,6 +152,13 @@ export function ReturnScreen() {
         } catch {
           // Use fallback name
         }
+      }
+      if (rental.familyMemberFirstName) {
+        const fmName = `${rental.familyMemberFirstName} ${rental.familyMemberLastName ?? ''}`.trim();
+        const fmLabel = rental.familyMemberRelationship
+          ? `${fmName} (${rental.familyMemberRelationship})`
+          : fmName;
+        customerName = `${customerName} — ${fmLabel}`;
       }
 
       const { daysOverdue } = calculateOverdue(rental.dueAt);

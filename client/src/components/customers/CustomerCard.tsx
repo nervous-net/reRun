@@ -44,6 +44,9 @@ interface ActiveRental {
   titleName?: string;
   copyBarcode?: string;
   dueAt: string;
+  familyMemberFirstName?: string | null;
+  familyMemberLastName?: string | null;
+  familyMemberRelationship?: string | null;
 }
 
 export function CustomerCard({ customerId }: CustomerCardProps) {
@@ -187,8 +190,16 @@ export function CustomerCard({ customerId }: CustomerCardProps) {
 
   const rentalTableData = rentals.map((r) => {
     const days = daysRemaining(r.dueAt);
+    let titleDisplay = r.titleName ?? r.copyBarcode ?? 'Unknown';
+    if (r.familyMemberFirstName) {
+      const fmName = `${r.familyMemberFirstName} ${r.familyMemberLastName ?? ''}`.trim();
+      const fmLabel = r.familyMemberRelationship
+        ? `${fmName} (${r.familyMemberRelationship})`
+        : fmName;
+      titleDisplay = `${titleDisplay} — ${fmLabel}`;
+    }
     return {
-      title: r.titleName ?? r.copyBarcode ?? 'Unknown',
+      title: titleDisplay,
       due: new Date(r.dueAt).toLocaleDateString(),
       remaining: (
         <span style={{ color: days < 0 ? 'var(--crt-red)' : 'var(--text-primary)' }}>

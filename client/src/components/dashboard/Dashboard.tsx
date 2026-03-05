@@ -420,9 +420,16 @@ export function Dashboard() {
                   </thead>
                   <tbody>
                     {limitedOverdue.map((rental: any, i: number) => {
-                      const customerName = rental.customerFirstName
+                      let customerName = rental.customerFirstName
                         ? `${rental.customerFirstName} ${rental.customerLastName}`
                         : rental.customerName ?? '—';
+                      if (rental.familyMemberFirstName) {
+                        const fmName = `${rental.familyMemberFirstName} ${rental.familyMemberLastName ?? ''}`.trim();
+                        const fmLabel = rental.familyMemberRelationship
+                          ? `${fmName} (${rental.familyMemberRelationship})`
+                          : fmName;
+                        customerName = `${customerName} — ${fmLabel}`;
+                      }
                       const titleName = rental.titleName ?? '—';
                       const dueDate = rental.dueAt ?? '';
                       const late = dueDate ? daysLate(dueDate) : 0;

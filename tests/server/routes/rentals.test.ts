@@ -586,5 +586,137 @@ describe('Rentals API', () => {
       expect(body.data).toHaveLength(1);
       expect(body.data[0].status).toBe('returned');
     });
+
+    it('includes family member info in rental history', async () => {
+      const { app, db } = buildApp();
+      const customerId = await seedCustomer(db);
+      const { copyId } = await seedTitleAndCopy(db);
+      const pricingRuleId = await seedPricingRule(db, { durationDays: 7 });
+
+      // Create a family member
+      const fmId = nanoid();
+      await db.insert(familyMembers).values({
+        id: fmId,
+        customerId,
+        firstName: 'Junior',
+        lastName: 'Hicks',
+        relationship: 'son',
+      });
+
+      // Checkout with family member
+      await app.request('/api/rentals/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId, copyId, pricingRuleId, familyMemberId: fmId }),
+      });
+
+      const res = await app.request(`/api/rentals/customer/${customerId}`);
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.data).toHaveLength(1);
+      expect(body.data[0].familyMemberFirstName).toBe('Junior');
+      expect(body.data[0].familyMemberLastName).toBe('Hicks');
+      expect(body.data[0].familyMemberRelationship).toBe('son');
+    });
+
+    it('returns null family member fields when no family member on rental', async () => {
+      const { app, db } = buildApp();
+      const customerId = await seedCustomer(db);
+      const { copyId } = await seedTitleAndCopy(db);
+      const pricingRuleId = await seedPricingRule(db, { durationDays: 7 });
+
+      // Checkout without family member
+      await app.request('/api/rentals/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId, copyId, pricingRuleId }),
+      });
+
+      const res = await app.request(`/api/rentals/customer/${customerId}`);
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.data).toHaveLength(1);
+      expect(body.data[0].familyMemberFirstName).toBeNull();
+      expect(body.data[0].familyMemberLastName).toBeNull();
+    });
+  });
+
+  describe('GET /api/rentals/active', () => {
+    it('includes family member info in active rentals', async () => {
+      const { app, db } = buildApp();
+      const customerId = await seedCustomer(db);
+      const { copyId } = await seedTitleAndCopy(db);
+      const pricingRuleId = await seedPricingRule(db, { durationDays: 14 });
+
+      // Create a family member
+      const fmId = nanoid();
+      await db.insert(familyMembers).values({
+        id: fmId,
+        customerId,
+        firstName: 'Spouse',
+        lastName: 'Hicks',
+        relationship: 'wife',
+      });
+
+      // Checkout with family member
+      await app.request('/api/rentals/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId, copyId, pricingRuleId, familyMemberId: fmId }),
+      });
+
+      const res = await app.request('/api/rentals/active');
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.data.length).toBeGreaterThanOrEqual(1);
+      const rental = body.data.find((r: any) => r.copyId === copyId);
+      expect(rental.familyMemberFirstName).toBe('Spouse');
+      expect(rental.familyMemberLastName).toBe('Hicks');
+      expect(rental.familyMemberRelationship).toBe('wife');
+      expect(rental.customerFirstName).toBe('Dante');
+      expect(rental.customerLastName).toBe('Hicks');
+    });
+  });
+
+  describe('GET /api/rentals/overdue', () => {
+    it('includes family member info in overdue rentals', async () => {
+      const { app, db } = buildApp();
+      const customerId = await seedCustomer(db);
+      const { copyId } = await seedTitleAndCopy(db);
+      const pricingRuleId = await seedPricingRule(db);
+
+      // Create a family member
+      const fmId = nanoid();
+      await db.insert(familyMembers).values({
+        id: fmId,
+        customerId,
+        firstName: 'Kid',
+        lastName: 'Hicks',
+        relationship: 'daughter',
+      });
+
+      // Create an overdue rental with family member
+      const rentalId = nanoid();
+      await db.insert(rentals).values({
+        id: rentalId,
+        customerId,
+        copyId,
+        pricingRuleId,
+        familyMemberId: fmId,
+        checkedOutAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+        dueAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'out',
+      });
+      await db.update(copies).set({ status: 'out' }).where(eq(copies.id, copyId));
+
+      const res = await app.request('/api/rentals/overdue');
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      const overdueRental = body.data.find((r: any) => r.id === rentalId);
+      expect(overdueRental).toBeDefined();
+      expect(overdueRental.familyMemberFirstName).toBe('Kid');
+      expect(overdueRental.familyMemberLastName).toBe('Hicks');
+      expect(overdueRental.familyMemberRelationship).toBe('daughter');
+    });
   });
 });
