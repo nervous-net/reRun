@@ -21,8 +21,11 @@ import { createDashboardRoutes } from './routes/dashboard.js';
 import { createSettingsRoutes } from './routes/settings.js';
 import { createBackupRoutes } from './routes/backup.js';
 import { createTmdbRoutes } from './routes/tmdb.js';
+import { createUpdateRoutes } from './routes/update.js';
+import { startUpdateChecker } from './services/update.js';
 import { createAutoBackupMiddleware } from './middleware/auto-backup.js';
 import { DB_PATH } from './db/index.js';
+import { createRequire } from 'module';
 import path from 'path';
 import fs from 'fs';
 
@@ -64,6 +67,12 @@ app.route('/api/backup', createBackupRoutes(db, {
   dbPath: DB_PATH,
   backupDir,
 }));
+app.route('/api/update', createUpdateRoutes(DB_PATH, backupDir));
+
+// Start update checker with current version from package.json
+const esmRequire = createRequire(import.meta.url);
+const pkg = esmRequire('../package.json');
+startUpdateChecker(pkg.version);
 
 // In production, serve the built frontend
 if (process.env.NODE_ENV === 'production') {
