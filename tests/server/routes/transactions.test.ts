@@ -80,6 +80,7 @@ describe('Transactions API', () => {
       expect(body.tax).toBe(16);
       expect(body.total).toBe(215);
       expect(body.items).toHaveLength(1);
+      expect(body.referenceCode).toMatch(/^RN-[0-9A-HJ-NP-Z]{4}$/);
     });
 
     it('returns 400 when required fields are missing', async () => {
@@ -124,6 +125,8 @@ describe('Transactions API', () => {
       expect(res.status).toBe(200);
       const body = await res.json();
       expect(body.id).toBe(created.id);
+      expect(body.referenceCode).toBe(created.referenceCode);
+      expect(body.referenceCode).toMatch(/^RN-[0-9A-HJ-NP-Z]{4}$/);
       expect(body.items).toHaveLength(1);
       expect(body.items[0].amount).toBe(199);
     });
