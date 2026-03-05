@@ -228,6 +228,9 @@ export function SettingsPage() {
   const [backups, setBackups] = useState<BackupEntry[]>([]);
   const [backupsLoading, setBackupsLoading] = useState(false);
   const [backupAction, setBackupAction] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState<any>(null);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [installingUpdate, setInstallingUpdate] = useState(false);
 
   // Tax rate is displayed as percentage but stored as basis points
   const [taxDisplay, setTaxDisplay] = useState('');
@@ -268,6 +271,10 @@ export function SettingsPage() {
   useEffect(() => {
     loadBackups();
   }, [loadBackups]);
+
+  useEffect(() => {
+    api.update.status().then(setUpdateStatus).catch(() => {});
+  }, []);
 
   // Clear feedback after 4 seconds
   useEffect(() => {
@@ -357,6 +364,34 @@ export function SettingsPage() {
       setFeedback({ type: 'error', message });
     } finally {
       setBackupAction(false);
+    }
+  }
+
+  async function handleCheckUpdate() {
+    setCheckingUpdate(true);
+    try {
+      const status = await api.update.status();
+      setUpdateStatus(status);
+    } catch {}
+    setCheckingUpdate(false);
+  }
+
+  async function handleInstallUpdate() {
+    setInstallingUpdate(true);
+    try {
+      await api.update.install();
+      // Poll health endpoint until server comes back
+      const poll = setInterval(async () => {
+        try {
+          const res = await fetch('/api/health');
+          if (res.ok) {
+            clearInterval(poll);
+            window.location.reload();
+          }
+        } catch {}
+      }, 3000);
+    } catch {
+      setInstallingUpdate(false);
     }
   }
 
@@ -585,11 +620,41 @@ export function SettingsPage() {
 
       <div style={styles.systemRow}>
         <span style={styles.systemLabel}>Version</span>
-        <span style={styles.systemValue}>v0.1.0</span>
+        <span style={styles.systemValue}>v{updateStatus?.currentVersion ?? '...'}</span>
       </div>
       <div style={styles.systemRow}>
         <span style={styles.systemLabel}>Database</span>
         <span style={styles.systemValue}>SQLite (local)</span>
+      </div>
+      <div style={styles.systemRow}>
+        <span style={styles.systemLabel}>Update Status</span>
+        <span style={styles.systemValue}>
+          {updateStatus?.availableUpdate
+            ? `v${updateStatus.availableUpdate.version} available`
+            : 'Up to date'}
+        </span>
+      </div>
+      {updateStatus?.lastChecked && (
+        <div style={styles.systemRow}>
+          <span style={styles.systemLabel}>Last Checked</span>
+          <span style={{ ...styles.systemValue, fontSize: 'var(--font-size-sm)' }}>
+            {new Date(updateStatus.lastChecked).toLocaleString()}
+          </span>
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 'var(--space-sm)', marginTop: 'var(--space-sm)' }}>
+        <button onClick={handleCheckUpdate} disabled={checkingUpdate} style={styles.toggleButton}>
+          {checkingUpdate ? 'Checking...' : 'Check for Updates'}
+        </button>
+        {updateStatus?.availableUpdate && (
+          <button onClick={handleInstallUpdate} disabled={installingUpdate} style={{
+            ...styles.toggleButton,
+            color: 'var(--crt-amber)',
+            borderColor: 'var(--crt-amber)',
+          }}>
+            {installingUpdate ? 'Installing...' : 'Install Update'}
+          </button>
+        )}
       </div>
 
       {/* Backup */}
