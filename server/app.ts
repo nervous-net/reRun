@@ -25,7 +25,6 @@ import { createUpdateRoutes } from './routes/update.js';
 import { startUpdateChecker } from './services/update.js';
 import { createAutoBackupMiddleware } from './middleware/auto-backup.js';
 import { DB_PATH } from './db/index.js';
-import { createRequire } from 'module';
 import path from 'path';
 import fs from 'fs';
 
@@ -37,9 +36,8 @@ app.onError((err, c) => {
   return c.json({ error: err.message }, 500);
 });
 
-// Read version from package.json
-const esmRequire = createRequire(import.meta.url);
-const pkg = esmRequire('../package.json');
+// Read version from package.json (resolve from CWD, works in both dev and production)
+const pkg = JSON.parse(fs.readFileSync(path.resolve('package.json'), 'utf-8'));
 
 // Health check
 app.get('/api/health', (c) => c.json({ status: 'ok', name: 'reRun', version: pkg.version }));
