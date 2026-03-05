@@ -7,130 +7,175 @@ customers, rentals, returns, and transactions with a retro CRT terminal interfac
 
 ## Table of Contents
 
-1. [What You Need](#what-you-need)
-2. [Installation](#installation)
-3. [Starting the App](#starting-the-app)
-4. [First-Time Configuration](#first-time-configuration)
-5. [Navigating the App](#navigating-the-app)
-6. [How to Check Out a Rental](#how-to-check-out-a-rental)
-7. [How to Process a Return](#how-to-process-a-return)
-8. [How to Add New Customers](#how-to-add-new-customers)
-9. [How to Import Your Movie Collection](#how-to-import-your-movie-collection)
-10. [How to Browse and Manage Inventory](#how-to-browse-and-manage-inventory)
-11. [Settings and Store Configuration](#settings-and-store-configuration)
-12. [Backing Up Your Data](#backing-up-your-data)
+1. [Installation (First Time)](#installation-first-time)
+2. [Opening the App](#opening-the-app)
+3. [Updating the App](#updating-the-app)
+4. [Backing Up Your Data](#backing-up-your-data)
+5. [First-Time Configuration](#first-time-configuration)
+6. [Navigating the App](#navigating-the-app)
+7. [How to Check Out a Rental](#how-to-check-out-a-rental)
+8. [How to Process a Return](#how-to-process-a-return)
+9. [How to Add New Customers](#how-to-add-new-customers)
+10. [How to Import Your Movie Collection](#how-to-import-your-movie-collection)
+11. [How to Browse and Manage Inventory](#how-to-browse-and-manage-inventory)
+12. [Settings and Store Configuration](#settings-and-store-configuration)
 13. [Keyboard Shortcuts](#keyboard-shortcuts)
 14. [Troubleshooting](#troubleshooting)
 
 ---
 
-## What You Need
+## Installation (First Time)
 
-Before you start, make sure you have:
+You only need to do this once. After that, the app starts automatically when
+you turn on the computer.
 
-- **A computer** running Windows, Mac, or Linux
-- **Node.js version 18 or higher** — this is the engine that runs the app
-  - Download it free from https://nodejs.org (choose the "LTS" version)
-  - After installing, open a terminal and type `node --version` to confirm
-- **A web browser** — Chrome, Firefox, Safari, or Edge all work
-- **A TMDb API key** (optional but recommended) — this lets the app automatically
-  look up movie posters, descriptions, and cast info when you import your inventory
-  - Create a free account at https://www.themoviedb.org
-  - Go to Settings > API and copy your "API Read Access Token"
-  - You can skip this during setup and add it later
+### On Windows
 
----
+1. Go to https://github.com/nervous-net/reRun/releases
+2. Download the latest **rerun-vX.Y.Z.zip** file
+3. Find the downloaded ZIP file (usually in your Downloads folder)
+4. Right-click it and choose **"Extract All..."**
+5. Open the extracted folder
+6. Find the file called **install.ps1**
+7. Right-click it and choose **"Run with PowerShell"**
+8. If Windows asks "Do you want to allow this?", click **Yes**
+9. The installer will set everything up automatically. You'll see progress
+   messages as it works. When it's done, it will open your web browser to the
+   app.
 
-## Installation
+> **If the installer says "Node.js not found":** It will download and install
+> Node.js for you. Follow any prompts that appear. After that finishes, the
+> installer continues automatically.
 
-### Step 1: Download the project
+### On Mac
 
-**Option A — Download as a ZIP (easiest):**
+1. Go to https://github.com/nervous-net/reRun/releases
+2. Download the latest **rerun-vX.Y.Z.zip** file
+3. Double-click the ZIP to unzip it
+4. Open the **Terminal** app (find it in Applications > Utilities, or search
+   for "Terminal" using Spotlight)
+5. Type `cd ` (with a space after it), then drag the unzipped folder onto the
+   Terminal window — this fills in the folder path for you. Press Enter.
+6. Type `bash scripts/install.sh` and press Enter
+7. The installer will set everything up. When it's done, it opens the app in
+   your browser.
 
-1. Go to https://github.com/nervous-net/CRTvideo
-2. Click the green **"Code"** button near the top right
-3. Click **"Download ZIP"**
-4. Find the downloaded ZIP file (usually in your Downloads folder) and unzip it
-5. Move the unzipped folder anywhere you like — Desktop, Documents, wherever
+> **If the installer says "Node.js not found":** You need to install it first.
+> The easiest way on Mac is to download it from https://nodejs.org — choose the
+> **LTS** version. Run the installer, then try step 6 again.
 
-**Option B — Clone with Git (if you have Git installed):**
+### What the installer does
 
-```
-git clone https://github.com/nervous-net/CRTvideo.git
-```
+You don't need to understand this, but in case you're curious:
 
-This creates a `CRTvideo` folder with all the files.
-
-### Step 2: Open a terminal
-
-- **On Mac**: Open the "Terminal" app (find it in Applications > Utilities)
-- **On Windows**: Open "Command Prompt" or "PowerShell" from the Start menu
-- **On Linux**: Open your terminal emulator
-
-Navigate to the folder where you put reRun. For example, if it's on your Desktop:
-
-```
-cd Desktop/CRTvideo
-```
-
-### Step 3: Install dependencies
-
-Type this command and press Enter:
-
-```
-npm install
-```
-
-This downloads all the software libraries the app needs. It may take a minute or
-two. You'll see a progress bar and some output — that's normal. Wait until it
-finishes and you see your command prompt again.
-
-### Step 4: Run first-time setup
-
-```
-npm run setup
-```
-
-The setup wizard will:
-
-1. Check that your Node.js version is new enough
-2. Create a `data` folder for your database
-3. Ask for your TMDb API key (press Enter to skip if you don't have one yet)
-4. Create the database with all the tables it needs
-5. Set up default pricing rules and store settings
-
-You'll see a "Setup complete!" message with a nice little box when it's done.
-**You only need to run setup once.**
+- Installs PM2 (a program that keeps reRun running in the background)
+- Copies the app files to a permanent location on your computer
+- Creates the database where your store's data will live
+- Sets up reRun to start automatically when you turn on your computer
 
 ---
 
-## Starting the App
+## Opening the App
 
-Every time you want to use the app, open a terminal in the reRun folder and type:
-
-```
-npm run dev
-```
-
-You'll see some output scroll by. Once you see lines about both the server and
-client running, open your web browser and go to:
+After installation, reRun starts automatically whenever your computer turns on.
+To use it, just open your web browser and go to:
 
 ```
-http://localhost:5173
+http://localhost:1987
 ```
 
-That's it — you should see the reRun dashboard with the retro green-on-black
-terminal look.
+That's it. Bookmark this page so you can get to it quickly.
 
-> **Why port 5173?** In development mode, the app runs two processes: a backend
-> server (port 1987) and a frontend dev server (port 5173). You always access the
-> app through port 5173 — it handles everything automatically.
+> **Tip:** You can create a desktop shortcut to this address. On Windows,
+> right-click the desktop, choose New > Shortcut, and paste
+> `http://localhost:1987` as the location. On Mac, open the page in Safari or
+> Chrome, then drag the URL from the address bar to your desktop.
 
-**To stop the app**, go back to the terminal and press `Ctrl+C`.
+### If the app isn't running
 
-> **Note:** The app runs entirely on your computer. Your data never leaves your
-> machine. No internet connection is needed after setup (unless you want to use
-> the TMDb movie lookup feature during imports).
+If you visit the address and see "This site can't be reached," reRun may have
+stopped. To restart it:
+
+**On Windows:**
+1. Open PowerShell (search for "PowerShell" in the Start menu)
+2. Type `cd C:\reRun` and press Enter
+3. Type `npx pm2 start ecosystem.config.cjs` and press Enter
+
+**On Mac:**
+1. Open Terminal
+2. Type `cd ~/rerun` and press Enter
+3. Type `npx pm2 start ecosystem.config.cjs` and press Enter
+
+---
+
+## Updating the App
+
+reRun checks for updates automatically. When a new version is available, you'll
+see a yellow banner at the top of the Dashboard that says something like:
+
+> **Update available: v0.2.0** [INSTALL UPDATE]
+
+To update:
+
+1. Click the **"Install Update"** button
+2. The screen will say **"Updating... please wait"**
+3. Wait about 30 seconds. The page will refresh automatically when the update
+   is done.
+
+That's it. Your data is safe — the app creates a backup before every update.
+
+You can also check for and install updates from the **Settings** page under the
+**System** section.
+
+> **What happens during an update:** The app backs up your database, downloads
+> the new version, replaces the program files (not your data), and restarts.
+> Your customers, rentals, inventory — everything — stays exactly where it is.
+
+---
+
+## Backing Up Your Data
+
+Your data is the most important thing. reRun protects it in three ways:
+
+### Automatic daily backups
+
+The app automatically creates a backup of your database once per day. It keeps
+the last 30 days of backups. You don't need to do anything — this happens in
+the background.
+
+### Automatic pre-update backups
+
+Every time you install an update, the app creates a backup first. If anything
+goes wrong with an update, your data from right before the update is saved.
+
+### Manual backups
+
+You can create a backup at any time:
+
+1. Go to **Settings** (press F10 or click it in the sidebar)
+2. Scroll down to the **Backup & Restore** section
+3. Click **"Create Backup"**
+4. You'll see the backup appear in the list below with its date and size
+
+### Restoring from a backup
+
+If something goes wrong and you need to go back to an earlier version of your
+data:
+
+1. Go to **Settings** > **Backup & Restore**
+2. Find the backup you want in the list
+3. Click the **"Restore"** button next to it
+4. Confirm that you want to restore (this replaces your current data)
+5. Close the browser tab and reopen it after a few seconds
+
+> **Important:** Restoring a backup replaces all current data with the data from
+> that backup. Any changes made after that backup was created will be lost.
+
+### Where backups are stored
+
+Backups are saved on this computer in the `data/backups` folder inside the reRun
+installation directory. If you want extra protection, you can copy this folder
+to a USB drive or another computer periodically.
 
 ---
 
@@ -139,29 +184,26 @@ terminal look.
 Before your first day of business, go to **Settings** (press F10 or click
 "Settings" in the sidebar) and configure:
 
-1. **Store Name** — Replace "Way Cool Video" with your store's name. This appears
-   on receipts and throughout the app.
-2. **Store Phone** — Your store's phone number for receipts.
-3. **Store Address** — Your store's address for receipts.
-4. **Tax Rate** — Enter your local sales tax rate as a whole number. For example,
-   enter `800` for 8.00% tax, or `875` for 8.75% tax. The default is 800 (8%).
-5. **Max Active Rentals** — How many movies a single customer can have checked out
-   at once. The default is 6.
+1. **Store Name** — Your store's name. This appears throughout the app.
+2. **Store Phone** — Your store's phone number.
+3. **Store Address** — Your store's address.
+4. **Tax Rate** — Enter your local sales tax as a percentage. For example, type
+   `8.00` for 8% tax or `8.75` for 8.75% tax.
+5. **Max Active Rentals** — How many movies one customer (or family) can have
+   checked out at once. The default is 6.
 
 You can also:
 
 - Add or edit **Pricing Rules** (rental rates and late fees)
 - Choose a **Theme** to change the look of the interface
-- Enter your **TMDb API Key** if you skipped it during setup
+- Enter your **TMDb API Key** to enable automatic movie poster and info lookup
 
 ---
 
 ## Navigating the App
 
 The app has a sidebar on the left with all the main sections. You can click on
-them or use keyboard shortcuts (function keys) to jump between screens instantly.
-
-The main sections are:
+them or use keyboard shortcuts (function keys) to jump between screens.
 
 | Section     | What it's for                                    |
 |-------------|--------------------------------------------------|
@@ -171,7 +213,7 @@ The main sections are:
 | Returns     | Process returned movies                           |
 | Inventory   | Browse, search, and manage your movie collection  |
 | Import      | Bulk-add movies from a spreadsheet (CSV file)     |
-| Settings    | Configure your store, pricing, and appearance     |
+| Settings    | Configure your store, pricing, backups, updates   |
 
 ---
 
@@ -185,30 +227,36 @@ This is the main thing you'll do every day.
    Pick them from the results that appear. If they're a new customer, see
    "How to Add New Customers" below.
 
-3. **Scan or search for the movie.** Type the barcode number or movie title in
-   the item search box. The movie will appear in the list.
+3. **Pick who's renting.** If the customer has family members on their account,
+   a picker will appear asking who is renting. Choose the account holder or the
+   family member who will be watching the movie.
 
-4. **Pick a rental period.** A panel will pop up asking you to choose a pricing
+4. **Scan or search for the movie.** Type the barcode number or movie title in
+   the scan box. If you type a title, matching movies will appear in a dropdown
+   — click the one you want, then pick which copy to rent.
+
+5. **Pick a rental period.** A panel will pop up asking you to choose a pricing
    option — for example, "New Release - 1 Night ($4.99)" or "Catalog - 7 Night
    ($3.99)". Click the one the customer wants.
 
-5. **Add more items** if the customer is renting multiple movies. Repeat steps
-   3-4 for each one.
+6. **Add more items** if the customer is renting multiple movies. Repeat steps
+   4-5 for each one.
 
-6. **Review the transaction.** The right side of the screen shows everything in
-   the cart with the subtotal, tax, and total.
+7. **Complete the transaction.** Click the **"Complete"** button. The app will
+   show you a **reference code** (like RN-A4K9). This is the code you type into
+   Lightspeed to tie this rental to the payment.
 
-7. **Complete the sale.** Click the "Complete" button. Choose how the customer is
-   paying:
-   - **Cash** — Enter the amount they hand you. The app calculates change.
-   - **Card** — Process the card on your card reader and confirm.
-   - **Account** — Charge to the customer's store account balance.
+8. **Process the payment in Lightspeed.** Ring up the total shown in reRun on
+   Lightspeed, and enter the reference code so the two systems match up.
 
-8. **Done!** A receipt appears that you can print.
+**Holding a transaction:** If a customer needs to step away, press **F5** to
+hold the transaction. Their items are saved. When they come back, click "View
+Held" to pull it back up.
 
-**Holding a transaction:** If a customer needs to step away, press **F5** to hold
-the transaction. Their items are saved. When they come back, click "View Held" to
-pull it back up.
+> **Age restrictions:** If someone under 17 is renting an R or NC-17 rated
+> movie, the app will show a warning. This checks the birthday of whoever is
+> listed as the renter (the account holder or the family member selected in
+> step 3).
 
 ---
 
@@ -230,8 +278,8 @@ pull it back up.
 4. **Click "Process Returns"** to complete the return. The movie goes back into
    your available inventory automatically.
 
-You can scan multiple movies before processing — they'll all queue up and you can
-handle them together.
+You can scan multiple movies before processing — they'll all queue up and you
+can handle them together.
 
 ---
 
@@ -245,21 +293,21 @@ handle them together.
    - **First Name** and **Last Name** (required)
    - **Phone number** (recommended — makes it easy to look them up later)
    - **Email** (optional)
-   - **Birthday** (optional — the app will show a birthday alert on their special day)
+   - **Birthday** (optional — used for age checks on R/NC-17 rentals)
 
 4. Click **Save**. The app automatically generates a member barcode for them.
 
-**Family members:** You can link family members to a customer's account. On a
+**Family members:** You can add family members to a customer's account. On a
 customer's detail page, click "Add Family Member." Family members share the
 account's rental limit — so if the limit is 6, the whole family shares those 6
-slots.
+slots. Each family member's birthday is tracked separately for age restriction
+checks.
 
 ---
 
 ## How to Import Your Movie Collection
 
-If you have a spreadsheet of your movies, you can import them all at once instead
-of typing each one in by hand.
+If you have a spreadsheet of your movies, you can import them all at once.
 
 ### Preparing your spreadsheet
 
@@ -283,19 +331,17 @@ quantity, genre, and rating are helpful but optional.
 2. **Step 1 — Upload:** Click "Choose File" and select your CSV file.
 
 3. **Step 2 — Map Columns:** The app will show your CSV's column headers. For
-   each one, tell it what that column represents (title name, year, format, etc.).
-   The app tries to guess automatically.
+   each one, tell it what that column represents (title name, year, format,
+   etc.). The app tries to guess automatically.
 
 4. **Step 3 — Match with TMDb:** If you have a TMDb API key configured, the app
-   will search for each movie in the TMDb database. This adds cover art,
-   descriptions, full cast info, and other metadata automatically. Movies with a
-   strong match are auto-linked. For others, you can manually pick the right one.
+   will search for each movie online. This adds cover art, descriptions, cast
+   info, and other details automatically.
 
-5. **Step 4 — Review:** Look over everything before importing. Make sure the
-   titles, years, and formats look right.
+5. **Step 4 — Review:** Look over everything before importing.
 
-6. **Step 5 — Import:** Click "Import" and the movies are added to your database.
-   Barcodes are generated automatically for each copy.
+6. **Step 5 — Import:** Click "Import" and the movies are added to your
+   database. Barcodes are generated automatically for each copy.
 
 After importing, go to **Inventory (F4)** to see your new movies.
 
@@ -345,22 +391,22 @@ Press **F10** or click **Settings** in the sidebar.
 
 | Setting        | What it does                                          |
 |----------------|-------------------------------------------------------|
-| Store Name     | Appears on receipts and the app header                |
-| Store Phone    | Printed on receipts                                   |
-| Store Address  | Printed on receipts                                   |
-| Receipt Footer | Custom message at the bottom of receipts              |
+| Store Name     | Appears throughout the app                            |
+| Store Phone    | Your store's phone number                             |
+| Store Address  | Your store's address                                  |
 
 ### Rental Policies
 
 | Setting             | What it does                                             |
 |---------------------|----------------------------------------------------------|
-| Tax Rate            | Sales tax in basis points (800 = 8.00%, 875 = 8.75%)    |
+| Tax Rate            | Your local sales tax percentage (e.g. 8.00 for 8%)      |
 | Max Active Rentals  | Most movies one customer/family can have out at once     |
 | Max Family Members  | Most people that can share one account                   |
+| Age Check           | Warn when minors rent R or NC-17 movies (on by default)  |
 
 ### Pricing Rules
 
-This is where you set up your rental rates. The app comes with five defaults:
+This is where you set up your rental rates. The app comes with defaults like:
 
 | Rule                    | Rate   | Duration | Late Fee       |
 |-------------------------|--------|----------|----------------|
@@ -370,8 +416,7 @@ This is where you set up your rental rates. The app comes with five defaults:
 | Catalog - 7 Night       | $3.99  | 7 days   | $0.99/day      |
 | Weekend Special         | $3.49  | 3 days   | $0.99/day      |
 
-You can add, edit, or deactivate pricing rules at any time. Deactivated rules
-won't appear during checkout but are kept for records.
+You can add, edit, or deactivate pricing rules at any time.
 
 ### Themes
 
@@ -384,38 +429,20 @@ Pick from six retro computer themes to customize the look:
 - **Classic Terminal** — Plain green phosphor CRT
 - **Hybrid CRT** — The default modern-retro mix
 
-Click a theme to preview it, then save your choice.
+### Backup & Restore
+
+Create, view, and restore backups of your database. See
+[Backing Up Your Data](#backing-up-your-data) for details.
+
+### System
+
+Shows the current app version, update status, and lets you check for or install
+updates. See [Updating the App](#updating-the-app) for details.
 
 ### TMDb Integration
 
-Enter your TMDb API key here to enable automatic movie metadata lookup during
-imports. The key is saved in your settings and used whenever you run an import.
-
----
-
-## Backing Up Your Data
-
-All your data lives in one file: `data/rerun.db` inside the app folder.
-
-### Manual backup
-
-Copy the `data` folder to a safe location (USB drive, cloud storage, another
-computer). Do this regularly — at least once a day if you're actively using the
-system.
-
-### What to back up
-
-The only critical file is `data/rerun.db`. Everything else can be reinstalled.
-But copying the entire `data` folder is easiest and also captures any automatic
-backups the system has made.
-
-### Restoring from backup
-
-If something goes wrong:
-
-1. Stop the app (Ctrl+C in the terminal)
-2. Replace `data/rerun.db` with your backup copy
-3. Start the app again with `npm run dev`
+Enter your TMDb API key here to enable automatic movie info lookup during
+imports. Get a free key at https://www.themoviedb.org (Settings > API).
 
 ---
 
@@ -423,109 +450,83 @@ If something goes wrong:
 
 These function keys work from any screen in the app:
 
-| Key  | Goes to     |
-|------|-------------|
-| F1   | POS (Checkout) |
-| F2   | Customers   |
-| F3   | Returns     |
-| F4   | Inventory   |
-| F5   | Import      |
-| F6   | Dashboard   |
-| F10  | Settings    |
-
-On the **POS screen**, there are additional shortcuts:
-
-| Key  | Action                      |
-|------|-----------------------------|
-| F5   | Hold current transaction    |
+| Key  | Goes to         |
+|------|-----------------|
+| F1   | POS (Checkout)  |
+| F2   | Customers       |
+| F3   | Returns         |
+| F4   | Inventory       |
+| F5   | Import          |
+| F6   | Dashboard       |
+| F10  | Settings        |
 
 ---
 
 ## Troubleshooting
 
-### "command not found: node" or "node is not recognized"
+### The app won't open / "This site can't be reached"
 
-Node.js isn't installed or isn't in your system path. Download it from
-https://nodejs.org and install it. Choose the LTS version. After installing,
-close and reopen your terminal, then try again.
+The app may have stopped running. See [If the app isn't running](#if-the-app-isnt-running)
+above for how to restart it.
 
-### "npm ERR!" during install
+### The update button doesn't do anything
 
-Try deleting the `node_modules` folder and running `npm install` again.
-On Mac/Linux:
+Make sure the computer is connected to the internet. The app needs internet
+access to check for and download updates. If you're connected and it still
+doesn't work, try closing the browser tab and reopening it.
 
-```
-rm -rf node_modules
-npm install
-```
+### I accidentally restored the wrong backup
 
-On Windows, either delete the `node_modules` folder in File Explorer, or run:
+If you restore a backup and realize it was the wrong one, go back to
+Settings > Backup & Restore and restore a different one. The automatic daily
+backups and pre-update backups are all listed there.
 
-```
-rmdir /s /q node_modules
-npm install
-```
+### "Do you want to allow Node.js through the firewall?" (Windows)
 
-**Windows users:** If you see errors about `node-gyp`, `prebuild-install`, or
-`better-sqlite3` during install, you may need to install Windows build tools.
-Open PowerShell as Administrator and run:
+If Windows shows a firewall dialog when the app starts, click **Allow**. The
+app only runs on your local computer — it does not accept connections from the
+internet.
 
-```
-npm install -g windows-build-tools
-```
+### The app is slow or the database has errors (Windows)
 
-Then try `npm install` again.
-
-### The app won't start / "port already in use"
-
-Something else is using port 5173 or 1987. Either close that other program, or
-try stopping the app (Ctrl+C) and starting it again. If the problem persists,
-check for other terminal windows that might be running the app.
-
-### The browser shows a blank page
-
-Make sure you're going to `http://localhost:5173` (not `https`, not port 1987).
-Check the terminal for error messages. If you see errors, try stopping the app
-(Ctrl+C) and starting it again.
+If you installed reRun inside a cloud-synced folder (OneDrive, Dropbox, Google
+Drive), the sync service can conflict with the database. The default install
+location (`C:\reRun`) avoids this problem. If you moved the app into a synced
+folder, move it back.
 
 ### Movies aren't matching during import
 
 - Double-check that titles and years are spelled correctly in your CSV
-- Make sure your TMDb API key is entered in Settings > TMDb Integration
-- Some very obscure titles may not be in the TMDb database — you can edit them
-  manually after import
+- Make sure your TMDb API key is entered in Settings
+- Some very obscure titles may not be in the online database — you can edit
+  them manually after import
 
 ### Late fees aren't being charged
 
-- Check that your pricing rules have a late fee amount set (Settings > Pricing Rules)
-- Late fees are calculated per calendar day overdue — returning a movie the same
-  day it's due (even late in the day) has no fee
+- Check that your pricing rules have a late fee amount set (Settings > Pricing
+  Rules)
+- Late fees are calculated per calendar day overdue
 
 ### I messed up a transaction
 
-You can void a transaction from the transaction history. This will reverse any
-inventory changes (copies go back to "in" status, product stock is restored) and
-mark the transaction as voided for your records.
-
-### Windows: "Do you want to allow Node.js through the firewall?"
-
-If Windows shows a firewall dialog when you start the app, click **Allow**.
-The app only listens on your local machine (localhost) — it does not accept
-connections from the internet or other computers on your network.
-
-### Windows: app is slow, crashes, or database errors
-
-If you installed reRun inside a cloud-synced folder (OneDrive, Dropbox, Google
-Drive, iCloud), the sync service can conflict with the database. Move the reRun
-folder to a location that is **not** synced to the cloud — for example,
-`C:\rerun` or `C:\Users\YourName\rerun`.
+You can void a transaction from the transaction history. This reverses any
+inventory changes and marks the transaction as voided for your records.
 
 ### I need to reset everything and start over
 
-1. Stop the app
-2. Delete the `data` folder
-3. Delete the `.env` file
-4. Run `npm run setup` again
+> **Warning:** This deletes all your data permanently. Make a backup first if
+> you need to keep anything.
 
-This gives you a completely fresh database. **All your data will be lost** — make
-sure you have a backup first if you need to keep anything.
+**On Windows:**
+1. Open PowerShell
+2. Type `cd C:\reRun` and press Enter
+3. Delete the data folder: type `Remove-Item -Recurse -Force data` and press Enter
+4. Run setup again: type `npx drizzle-kit push` and press Enter
+5. Restart: type `npx pm2 restart rerun` and press Enter
+
+**On Mac:**
+1. Open Terminal
+2. Type `cd ~/rerun` and press Enter
+3. Delete the data folder: type `rm -rf data` and press Enter
+4. Run setup again: type `npx drizzle-kit push` and press Enter
+5. Restart: type `npx pm2 restart rerun` and press Enter
