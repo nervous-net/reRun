@@ -17,6 +17,7 @@ export interface CheckoutInput {
   customerId: string;
   copyId: string;
   pricingRuleId: string;
+  familyMemberId?: string;
 }
 
 export interface ReturnInput {
@@ -27,7 +28,7 @@ export interface ReturnInput {
 // ─── Checkout ───────────────────────────────────────────────────────
 
 export async function checkoutCopy(db: any, input: CheckoutInput) {
-  const { customerId, copyId, pricingRuleId } = input;
+  const { customerId, copyId, pricingRuleId, familyMemberId } = input;
 
   // Fetch pricing rule for duration (immutable lookup, safe outside transaction)
   const [rule] = await db
@@ -59,6 +60,7 @@ export async function checkoutCopy(db: any, input: CheckoutInput) {
         customerId,
         copyId,
         pricingRuleId,
+        familyMemberId: familyMemberId ?? null,
         checkedOutAt: now.toISOString(),
         dueAt: dueDate.toISOString(),
         status: 'out',
