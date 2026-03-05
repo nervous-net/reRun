@@ -11,6 +11,10 @@ NC='\033[0m'
 
 INSTALL_DIR="$HOME/rerun"
 
+# Determine the project root (parent of the scripts/ directory this file lives in)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
 echo -e "${GREEN}================================${NC}"
 echo -e "${GREEN}  reRun Video - Installer${NC}"
 echo -e "${GREEN}================================${NC}"
@@ -41,8 +45,8 @@ echo -e "  PM2 startup configured."
 # Step 4: Install reRun
 echo -e "${CYAN}[4/8] Installing reRun to $INSTALL_DIR...${NC}"
 mkdir -p "$INSTALL_DIR"
-# Copy everything except the install script
-rsync -a --exclude='install.sh' ./ "$INSTALL_DIR/"
+# Copy everything from project root except the scripts folder
+rsync -a --exclude='scripts' "$PROJECT_ROOT/" "$INSTALL_DIR/"
 echo -e "  Files copied."
 
 # Step 5: Create data directory
