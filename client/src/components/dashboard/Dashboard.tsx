@@ -208,6 +208,51 @@ const voidedStyle: CSSProperties = {
   textDecoration: 'line-through',
 };
 
+// --- Update banner ---
+
+const updateBannerStyle: CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  padding: 'var(--space-sm) var(--space-md)',
+  marginBottom: 'var(--space-md)',
+  backgroundColor: 'var(--warning-08)',
+  border: '1px solid var(--crt-amber)',
+  borderRadius: 'var(--border-radius)',
+  color: 'var(--crt-amber)',
+  textShadow: 'var(--glow-amber)',
+  fontFamily: 'var(--font-mono)',
+  fontSize: 'var(--font-size-md)',
+  letterSpacing: '1px',
+};
+
+const updateButtonStyle: CSSProperties = {
+  fontFamily: 'var(--font-mono)',
+  fontSize: 'var(--font-size-sm)',
+  padding: '4px 12px',
+  backgroundColor: 'transparent',
+  color: 'var(--crt-amber)',
+  border: '1px solid var(--crt-amber)',
+  borderRadius: 'var(--border-radius)',
+  cursor: 'pointer',
+  textTransform: 'uppercase',
+  letterSpacing: '1px',
+};
+
+const updatingBannerStyle: CSSProperties = {
+  padding: 'var(--space-sm) var(--space-md)',
+  marginBottom: 'var(--space-md)',
+  backgroundColor: 'var(--warning-08)',
+  border: '1px solid var(--crt-amber)',
+  borderRadius: 'var(--border-radius)',
+  color: 'var(--crt-amber)',
+  textShadow: 'var(--glow-amber)',
+  fontFamily: 'var(--font-mono)',
+  fontSize: 'var(--font-size-md)',
+  letterSpacing: '1px',
+  textAlign: 'center',
+};
+
 // --- Component ---
 
 export function Dashboard() {
@@ -225,6 +270,8 @@ export function Dashboard() {
     revenueCents: number;
     lateFeesCollectedCents: number;
   } | null>(null);
+  const [updateStatus, setUpdateStatus] = useState<any>(null);
+  const [installing, setInstalling] = useState(false);
 
   const loadDashboard = useCallback(async () => {
     const errs: string[] = [];
@@ -288,9 +335,34 @@ export function Dashboard() {
       errs.push('recent transactions');
     }
 
+    // Fetch update status separately (non-critical)
+    try {
+      const updateRes = await api.update.status();
+      setUpdateStatus(updateRes);
+    } catch {
+      // Update check is non-critical, ignore failures
+    }
+
     setErrors(errs);
     setLoading(false);
   }, []);
+
+  async function handleInstallUpdate() {
+    setInstalling(true);
+    await api.update.install();
+    // Poll health endpoint until server comes back up
+    const poll = setInterval(async () => {
+      try {
+        const res = await fetch('/api/health');
+        if (res.ok) {
+          clearInterval(poll);
+          window.location.reload();
+        }
+      } catch {
+        // Server still restarting, keep polling
+      }
+    }, 3000);
+  }
 
   // Load on mount + refresh every 30s + refetch on window focus
   useEffect(() => {
@@ -314,6 +386,20 @@ export function Dashboard() {
       {errors.length > 0 && (
         <div style={{ ...errorStyle, marginBottom: 'var(--space-sm)' }}>
           Failed to load: {errors.join(', ')}
+        </div>
+      )}
+
+      {updateStatus?.availableUpdate && !installing && (
+        <div style={updateBannerStyle}>
+          <span>Update available: v{updateStatus.availableUpdate.version}</span>
+          <button onClick={handleInstallUpdate} style={updateButtonStyle}>
+            INSTALL UPDATE
+          </button>
+        </div>
+      )}
+      {installing && (
+        <div style={updatingBannerStyle}>
+          Updating... please wait. The page will refresh automatically.
         </div>
       )}
 

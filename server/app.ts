@@ -21,7 +21,11 @@ import { createDashboardRoutes } from './routes/dashboard.js';
 import { createSettingsRoutes } from './routes/settings.js';
 import { createBackupRoutes } from './routes/backup.js';
 import { createTmdbRoutes } from './routes/tmdb.js';
+import { createUpdateRoutes } from './routes/update.js';
+import { startUpdateChecker } from './services/update.js';
+import { createAutoBackupMiddleware } from './middleware/auto-backup.js';
 import { DB_PATH } from './db/index.js';
+import { createRequire } from 'module';
 import path from 'path';
 import fs from 'fs';
 
@@ -33,8 +37,16 @@ app.onError((err, c) => {
   return c.json({ error: err.message }, 500);
 });
 
+// Read version from package.json
+const esmRequire = createRequire(import.meta.url);
+const pkg = esmRequire('../package.json');
+
 // Health check
-app.get('/api/health', (c) => c.json({ status: 'ok', name: 'reRun', version: '0.1.0' }));
+app.get('/api/health', (c) => c.json({ status: 'ok', name: 'reRun', version: pkg.version }));
+
+// Auto daily backup middleware
+const backupDir = path.join(path.dirname(DB_PATH), 'backups');
+app.use('/api/*', createAutoBackupMiddleware(db, DB_PATH, backupDir));
 
 // API routes
 app.route('/api/titles', createTitlesRoutes(db));
@@ -57,8 +69,12 @@ app.route('/api/dashboard', createDashboardRoutes(db));
 app.route('/api/settings', createSettingsRoutes(db));
 app.route('/api/backup', createBackupRoutes(db, {
   dbPath: DB_PATH,
-  backupDir: path.join(path.dirname(DB_PATH), 'backups'),
+  backupDir,
 }));
+app.route('/api/update', createUpdateRoutes(DB_PATH, backupDir));
+
+// Start update checker
+startUpdateChecker(pkg.version);
 
 // In production, serve the built frontend
 if (process.env.NODE_ENV === 'production') {

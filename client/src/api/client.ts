@@ -127,4 +127,14 @@ export const api = {
     stats: () => get<any>('/api/dashboard/stats'),
     recent: (limit?: number) => get<any>('/api/dashboard/recent', limit ? { limit: String(limit) } : undefined),
   },
+  backup: {
+    create: () => post<any>('/api/backup'),
+    list: () => get<any>('/api/backup/list'),
+    restore: (filename: string) => post<any>(`/api/backup/restore/${encodeURIComponent(filename)}`),
+    exportTable: (table: string) => `/api/backup/export/${encodeURIComponent(table)}`,
+  },
+  update: {
+    status: () => get<any>('/api/update/status'),
+    install: () => post<any>('/api/update/install'),
+  },
 };

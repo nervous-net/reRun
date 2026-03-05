@@ -166,6 +166,18 @@ function percentToBasisPoints(pct: string): string {
   return Math.round(num * 100).toString();
 }
 
+interface BackupEntry {
+  filename: string;
+  size: number;
+  createdAt: string;
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 function handleInputFocus(e: React.FocusEvent<HTMLInputElement>) {
   e.currentTarget.style.borderColor = 'var(--crt-green)';
   e.currentTarget.style.boxShadow = '0 0 10px var(--accent-30), 0 0 20px var(--accent-10)';
@@ -213,6 +225,12 @@ export function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [showApiKey, setShowApiKey] = useState(false);
+  const [backups, setBackups] = useState<BackupEntry[]>([]);
+  const [backupsLoading, setBackupsLoading] = useState(false);
+  const [backupAction, setBackupAction] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState<any>(null);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [installingUpdate, setInstallingUpdate] = useState(false);
 
   // Tax rate is displayed as percentage but stored as basis points
   const [taxDisplay, setTaxDisplay] = useState('');
@@ -234,9 +252,29 @@ export function SettingsPage() {
     }
   }, []);
 
+  const loadBackups = useCallback(async () => {
+    setBackupsLoading(true);
+    try {
+      const response = await api.backup.list();
+      setBackups(response?.backups ?? []);
+    } catch {
+      // Silently fail — backup list is non-critical
+    } finally {
+      setBackupsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadSettings();
   }, [loadSettings]);
+
+  useEffect(() => {
+    loadBackups();
+  }, [loadBackups]);
+
+  useEffect(() => {
+    api.update.status().then(setUpdateStatus).catch(() => {});
+  }, []);
 
   // Clear feedback after 4 seconds
   useEffect(() => {
@@ -292,6 +330,68 @@ export function SettingsPage() {
       setFeedback({ type: 'error', message });
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleCreateBackup() {
+    setBackupAction(true);
+    setFeedback(null);
+    try {
+      await api.backup.create();
+      await loadBackups();
+      setFeedback({ type: 'success', message: 'Backup created successfully.' });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to create backup';
+      setFeedback({ type: 'error', message });
+    } finally {
+      setBackupAction(false);
+    }
+  }
+
+  async function handleRestore(filename: string) {
+    const confirmed = window.confirm(
+      'This will replace the current database and require a restart. Are you sure?'
+    );
+    if (!confirmed) return;
+
+    setBackupAction(true);
+    setFeedback(null);
+    try {
+      await api.backup.restore(filename);
+      setFeedback({ type: 'success', message: 'Backup restored. A restart is required for changes to take effect.' });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to restore backup';
+      setFeedback({ type: 'error', message });
+    } finally {
+      setBackupAction(false);
+    }
+  }
+
+  async function handleCheckUpdate() {
+    setCheckingUpdate(true);
+    try {
+      const status = await api.update.status();
+      setUpdateStatus(status);
+    } catch {}
+    setCheckingUpdate(false);
+  }
+
+  async function handleInstallUpdate() {
+    setInstallingUpdate(true);
+    try {
+      await api.update.install();
+      // Poll health endpoint until server comes back
+      const poll = setInterval(async () => {
+        try {
+          const res = await fetch('/api/health');
+          if (res.ok) {
+            clearInterval(poll);
+            window.location.reload();
+          }
+        } catch {}
+      }, 3000);
+    } catch {
+      setInstallingUpdate(false);
     }
   }
 
@@ -520,12 +620,103 @@ export function SettingsPage() {
 
       <div style={styles.systemRow}>
         <span style={styles.systemLabel}>Version</span>
-        <span style={styles.systemValue}>v0.1.0</span>
+        <span style={styles.systemValue}>v{updateStatus?.currentVersion ?? '...'}</span>
       </div>
       <div style={styles.systemRow}>
         <span style={styles.systemLabel}>Database</span>
         <span style={styles.systemValue}>SQLite (local)</span>
       </div>
+      <div style={styles.systemRow}>
+        <span style={styles.systemLabel}>Update Status</span>
+        <span style={styles.systemValue}>
+          {updateStatus?.availableUpdate
+            ? `v${updateStatus.availableUpdate.version} available`
+            : 'Up to date'}
+        </span>
+      </div>
+      {updateStatus?.lastChecked && (
+        <div style={styles.systemRow}>
+          <span style={styles.systemLabel}>Last Checked</span>
+          <span style={{ ...styles.systemValue, fontSize: 'var(--font-size-sm)' }}>
+            {new Date(updateStatus.lastChecked).toLocaleString()}
+          </span>
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 'var(--space-sm)', marginTop: 'var(--space-sm)' }}>
+        <button onClick={handleCheckUpdate} disabled={checkingUpdate} style={styles.toggleButton}>
+          {checkingUpdate ? 'Checking...' : 'Check for Updates'}
+        </button>
+        {updateStatus?.availableUpdate && (
+          <button onClick={handleInstallUpdate} disabled={installingUpdate} style={{
+            ...styles.toggleButton,
+            color: 'var(--crt-amber)',
+            borderColor: 'var(--crt-amber)',
+          }}>
+            {installingUpdate ? 'Installing...' : 'Install Update'}
+          </button>
+        )}
+      </div>
+
+      {/* Backup */}
+      <div style={styles.sectionHeader}>Backup &amp; Restore</div>
+
+      <div style={{ marginBottom: 'var(--space-md)' }}>
+        <button
+          type="button"
+          style={{
+            ...styles.saveButton,
+            marginTop: 0,
+            ...(backupAction ? styles.saveButtonDisabled : {}),
+          }}
+          disabled={backupAction}
+          onClick={handleCreateBackup}
+          onMouseEnter={e => {
+            if (!backupAction) {
+              e.currentTarget.style.boxShadow = '0 0 10px var(--accent-30), 0 0 20px var(--accent-10)';
+              e.currentTarget.style.borderColor = 'var(--crt-green-bright)';
+              e.currentTarget.style.color = 'var(--crt-green-bright)';
+            }
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.boxShadow = '';
+            e.currentTarget.style.borderColor = '';
+            e.currentTarget.style.color = '';
+          }}
+        >
+          {backupAction ? 'Working...' : 'Create Backup'}
+        </button>
+      </div>
+
+      {backupsLoading && (
+        <div style={styles.hint}>Loading backups...</div>
+      )}
+
+      {!backupsLoading && backups.length === 0 && (
+        <div style={styles.hint}>No backups found.</div>
+      )}
+
+      {!backupsLoading && backups.map(backup => (
+        <div key={backup.filename} style={styles.systemRow}>
+          <div>
+            <span style={styles.systemLabel}>{backup.filename}</span>
+            <span style={{ ...styles.hint, marginLeft: 'var(--space-sm)' }}>
+              {formatFileSize(backup.size)} &mdash; {new Date(backup.createdAt).toLocaleString()}
+            </span>
+          </div>
+          <button
+            type="button"
+            style={{
+              ...styles.toggleButton,
+              color: 'var(--crt-amber)',
+              borderColor: 'var(--crt-amber)',
+            }}
+            disabled={backupAction}
+            onClick={() => handleRestore(backup.filename)}
+          >
+            Restore
+          </button>
+        </div>
+      ))}
 
       {/* Save Button */}
       <button
