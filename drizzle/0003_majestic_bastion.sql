@@ -1,0 +1,1 @@
+ALTER TABLE `rentals` ADD `family_member_id` text REFERENCES family_members(id);
