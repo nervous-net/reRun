@@ -12,7 +12,7 @@ import {
   pricingRules,
   transactions,
 } from '../../../server/db/schema.js';
-import { getTodayStats } from '../../../server/services/dashboard.js';
+import { getTodayStats, getRecentTransactions } from '../../../server/services/dashboard.js';
 
 function buildDb() {
   const { db, sqlite } = createTestDb();
@@ -298,6 +298,96 @@ describe('Dashboard Service', () => {
 
       const stats = await getTodayStats(db);
       expect(stats.lateFeesCollectedCents).toBe(0);
+    });
+  });
+
+  describe('getRecentTransactions', () => {
+    it('returns empty array when no transactions', async () => {
+      const { db } = buildDb();
+      const result = await getRecentTransactions(db);
+      expect(result).toEqual([]);
+    });
+
+    it('returns transactions with reference codes and customer names', async () => {
+      const { db } = buildDb();
+      const customerId = await seedCustomer(db);
+
+      await db.insert(transactions).values({
+        id: 'txn-1',
+        customerId,
+        type: 'rental',
+        subtotal: 499,
+        tax: 40,
+        total: 539,
+        paymentMethod: 'cash',
+        voided: 0,
+        referenceCode: 'RN-ABCD',
+        createdAt: new Date().toISOString(),
+      });
+
+      const result = await getRecentTransactions(db);
+      expect(result).toHaveLength(1);
+      expect(result[0].referenceCode).toBe('RN-ABCD');
+      expect(result[0].customerName).toBe('Test Customer');
+      expect(result[0].total).toBe(539);
+    });
+
+    it('orders by most recent first', async () => {
+      const { db } = buildDb();
+      const customerId = await seedCustomer(db);
+
+      await db.insert(transactions).values({
+        id: 'txn-old',
+        customerId,
+        type: 'rental',
+        subtotal: 100,
+        tax: 0,
+        total: 100,
+        paymentMethod: 'cash',
+        voided: 0,
+        referenceCode: 'RN-OLD1',
+        createdAt: new Date(Date.now() - 60_000).toISOString(),
+      });
+
+      await db.insert(transactions).values({
+        id: 'txn-new',
+        customerId,
+        type: 'sale',
+        subtotal: 200,
+        tax: 0,
+        total: 200,
+        paymentMethod: 'cash',
+        voided: 0,
+        referenceCode: 'RN-NEW1',
+        createdAt: new Date().toISOString(),
+      });
+
+      const result = await getRecentTransactions(db);
+      expect(result[0].referenceCode).toBe('RN-NEW1');
+      expect(result[1].referenceCode).toBe('RN-OLD1');
+    });
+
+    it('respects limit parameter', async () => {
+      const { db } = buildDb();
+      const customerId = await seedCustomer(db);
+
+      for (let i = 0; i < 5; i++) {
+        await db.insert(transactions).values({
+          id: `txn-${i}`,
+          customerId,
+          type: 'rental',
+          subtotal: 100,
+          tax: 0,
+          total: 100,
+          paymentMethod: 'cash',
+          voided: 0,
+          referenceCode: `RN-LIM${i}`,
+          createdAt: new Date(Date.now() - i * 1000).toISOString(),
+        });
+      }
+
+      const result = await getRecentTransactions(db, 3);
+      expect(result).toHaveLength(3);
     });
   });
 });

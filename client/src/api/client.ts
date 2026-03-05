@@ -124,5 +124,6 @@ export const api = {
   },
   dashboard: {
     stats: () => get<any>('/api/dashboard/stats'),
+    recent: (limit?: number) => get<any>('/api/dashboard/recent', limit ? { limit: String(limit) } : undefined),
   },
 };
