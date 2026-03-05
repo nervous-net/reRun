@@ -9,6 +9,27 @@ Write-Host ""
 $InstallDir = "C:\reRun"
 $ErrorActionPreference = "Stop"
 
+# Determine the project root (parent of the scripts/ directory this file lives in)
+$ProjectRoot = Split-Path -Parent $PSScriptRoot
+if (-not $PSScriptRoot) {
+    # Fallback if PSScriptRoot is empty (e.g. running via paste)
+    $ProjectRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
+}
+Write-Host "  Installing from: $ProjectRoot" -ForegroundColor Gray
+
+# Wrap everything in a try/catch so the window stays open on errors
+trap {
+    Write-Host ""
+    Write-Host "================================" -ForegroundColor Red
+    Write-Host "  ERROR: Installation failed!" -ForegroundColor Red
+    Write-Host "  $_" -ForegroundColor Red
+    Write-Host "================================" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "Press any key to exit..."
+    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    exit 1
+}
+
 # Step 1: Check for Node.js
 Write-Host "[1/8] Checking for Node.js..." -ForegroundColor Cyan
 try {
@@ -42,8 +63,8 @@ Write-Host "[4/8] Installing reRun to $InstallDir..." -ForegroundColor Cyan
 if (!(Test-Path $InstallDir)) {
     New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
 }
-# Copy everything from current directory except the install script itself
-Get-ChildItem -Path . -Exclude "install.ps1" | Copy-Item -Destination $InstallDir -Recurse -Force
+# Copy everything from project root except the scripts folder
+Get-ChildItem -Path $ProjectRoot -Exclude "scripts" | Copy-Item -Destination $InstallDir -Recurse -Force
 Write-Host "  Files copied." -ForegroundColor Green
 
 # Step 5: Create data directory

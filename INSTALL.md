@@ -35,17 +35,19 @@ you turn on the computer.
 2. Download the latest **rerun-vX.Y.Z.zip** file
 3. Find the downloaded ZIP file (usually in your Downloads folder)
 4. Right-click it and choose **"Extract All..."**
-5. Open the extracted folder
-6. Find the file called **install.ps1**
-7. Right-click it and choose **"Run with PowerShell"**
-8. If Windows asks "Do you want to allow this?", click **Yes**
-9. The installer will set everything up automatically. You'll see progress
-   messages as it works. When it's done, it will open your web browser to the
-   app.
+5. Open the extracted folder, then open the **scripts** folder inside it
+6. Double-click **install.bat**
+7. If Windows asks "Do you want to allow this?", click **Yes**
+8. A command window will open and show progress messages as it installs.
+   When it's done, it will open your web browser to the app.
 
 > **If the installer says "Node.js not found":** It will download and install
 > Node.js for you. Follow any prompts that appear. After that finishes, the
 > installer continues automatically.
+
+> **If the window closes immediately:** See [PowerShell won't run the
+> installer](#powershell-wont-run-the-installer-windows) in Troubleshooting
+> below.
 
 ### On Mac
 
@@ -480,6 +482,48 @@ doesn't work, try closing the browser tab and reopening it.
 If you restore a backup and realize it was the wrong one, go back to
 Settings > Backup & Restore and restore a different one. The automatic daily
 backups and pre-update backups are all listed there.
+
+### PowerShell won't run the installer (Windows)
+
+If the install window opens and closes instantly, or you see a red error about
+"execution policy" or "scripts is disabled," Windows is blocking the script.
+
+**Easiest fix — use the .bat file:** Instead of running `install.ps1` directly,
+double-click **install.bat** in the scripts folder. This launches the installer
+with the right permissions automatically.
+
+**If install.bat also doesn't work:** Open PowerShell manually and run the
+installer with a one-time bypass:
+
+1. Press the **Windows key**, type **PowerShell**, and click **Windows
+   PowerShell**
+2. Navigate to the extracted folder. Type `cd ` (with a space), then drag
+   the **scripts** folder onto the PowerShell window and press Enter
+3. Type this command and press Enter:
+   ```
+   powershell -ExecutionPolicy Bypass -File .\install.ps1
+   ```
+
+**If you see "not digitally signed":** Files downloaded from the internet get
+marked by Windows as untrusted. Even changing the execution policy won't help
+because the file itself is flagged. To fix this:
+
+1. In PowerShell, navigate to the **extracted folder** (the parent folder above
+   scripts). Type `cd ` then drag the folder onto the window and press Enter.
+2. Type this command to unblock all the files:
+   ```
+   Get-ChildItem -Recurse | Unblock-File
+   ```
+3. Now try running install.bat again, or run:
+   ```
+   powershell -ExecutionPolicy Bypass -File scripts\install.ps1
+   ```
+
+> **What's happening:** Windows marks files downloaded from the internet as
+> untrusted. Even if you allow scripts to run, Windows still blocks "internet"
+> files unless they are digitally signed. The `Unblock-File` command removes
+> this mark. The `install.bat` wrapper tries to bypass this automatically, but
+> some Windows configurations need the manual unblock step above.
 
 ### "Do you want to allow Node.js through the firewall?" (Windows)
 
