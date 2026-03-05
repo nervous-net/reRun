@@ -58,8 +58,10 @@ npm install -g pm2-windows-startup 2>$null
 pm2-startup install 2>$null
 Write-Host "  PM2 startup configured." -ForegroundColor Green
 
-# Step 4: Create install directory and copy files
+# Step 4: Stop existing reRun process (if running) before copying files
 Write-Host "[4/8] Installing reRun to $InstallDir..." -ForegroundColor Cyan
+try { pm2 stop rerun 2>$null } catch { }
+try { pm2 delete rerun 2>$null } catch { }
 if (!(Test-Path $InstallDir)) {
     New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
 }
@@ -84,7 +86,6 @@ Write-Host "  Ready." -ForegroundColor Green
 # Step 7: Start with PM2
 Write-Host "[7/8] Starting reRun..." -ForegroundColor Cyan
 Set-Location $InstallDir
-try { pm2 delete rerun 2>$null } catch { }
 pm2 start ecosystem.config.cjs
 pm2 save
 Write-Host "  reRun is running!" -ForegroundColor Green

@@ -42,8 +42,10 @@ echo -e "${CYAN}[3/8] Configuring PM2 startup...${NC}"
 pm2 startup 2>/dev/null || true
 echo -e "  PM2 startup configured."
 
-# Step 4: Install reRun
+# Step 4: Stop existing reRun process (if running) before copying files
 echo -e "${CYAN}[4/8] Installing reRun to $INSTALL_DIR...${NC}"
+pm2 stop rerun 2>/dev/null || true
+pm2 delete rerun 2>/dev/null || true
 mkdir -p "$INSTALL_DIR"
 # Copy everything from project root except the scripts folder
 rsync -a --exclude='scripts' "$PROJECT_ROOT/" "$INSTALL_DIR/"
@@ -62,7 +64,6 @@ echo -e "  Ready."
 
 # Step 7: Start with PM2
 echo -e "${CYAN}[7/8] Starting reRun...${NC}"
-pm2 delete rerun 2>/dev/null || true
 pm2 start ecosystem.config.cjs
 pm2 save
 echo -e "  reRun is running!"
