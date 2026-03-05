@@ -37,8 +37,12 @@ app.onError((err, c) => {
   return c.json({ error: err.message }, 500);
 });
 
+// Read version from package.json
+const esmRequire = createRequire(import.meta.url);
+const pkg = esmRequire('../package.json');
+
 // Health check
-app.get('/api/health', (c) => c.json({ status: 'ok', name: 'reRun', version: '0.1.0' }));
+app.get('/api/health', (c) => c.json({ status: 'ok', name: 'reRun', version: pkg.version }));
 
 // Auto daily backup middleware
 const backupDir = path.join(path.dirname(DB_PATH), 'backups');
@@ -69,9 +73,7 @@ app.route('/api/backup', createBackupRoutes(db, {
 }));
 app.route('/api/update', createUpdateRoutes(DB_PATH, backupDir));
 
-// Start update checker with current version from package.json
-const esmRequire = createRequire(import.meta.url);
-const pkg = esmRequire('../package.json');
+// Start update checker
 startUpdateChecker(pkg.version);
 
 // In production, serve the built frontend
