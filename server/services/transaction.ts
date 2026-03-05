@@ -27,7 +27,7 @@ export interface TransactionItemInput {
 export interface CreateTransactionInput {
   customerId: string;
   type: string;
-  paymentMethod: string;
+  paymentMethod?: string;
   amountTendered?: number;
   notes?: string;
   items: TransactionItemInput[];
@@ -125,7 +125,7 @@ export async function createTransaction(db: any, data: CreateTransactionInput) {
         subtotal,
         tax,
         total,
-        paymentMethod: data.paymentMethod,
+        paymentMethod: data.paymentMethod ?? null,
         amountTendered: data.amountTendered ?? null,
         changeGiven,
         notes: data.notes ?? null,

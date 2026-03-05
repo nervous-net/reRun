@@ -86,7 +86,7 @@ export function migrateTestDb(sqlite: Database.Database) {
       subtotal INTEGER NOT NULL,
       tax INTEGER DEFAULT 0,
       total INTEGER NOT NULL,
-      payment_method TEXT NOT NULL,
+      payment_method TEXT,
       amount_tendered INTEGER,
       change_given INTEGER,
       voided INTEGER DEFAULT 0,

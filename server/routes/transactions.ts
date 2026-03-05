@@ -64,9 +64,9 @@ export function createTransactionsRoutes(db: any) {
   routes.post('/', async (c) => {
     const body = await c.req.json();
 
-    if (!body.customerId || !body.type || !body.paymentMethod || !body.items) {
+    if (!body.customerId || !body.type || !body.items) {
       return c.json(
-        { error: 'Missing required fields: customerId, type, paymentMethod, items' },
+        { error: 'Missing required fields: customerId, type, items' },
         400
       );
     }

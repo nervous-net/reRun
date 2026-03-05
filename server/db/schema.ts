@@ -86,7 +86,7 @@ export const transactions = sqliteTable('transactions', {
   subtotal: integer('subtotal').notNull(),
   tax: integer('tax').default(0),
   total: integer('total').notNull(),
-  paymentMethod: text('payment_method').notNull(),
+  paymentMethod: text('payment_method'),
   amountTendered: integer('amount_tendered'),
   changeGiven: integer('change_given'),
   voided: integer('voided').default(0),
