@@ -22,6 +22,25 @@ function mockFetch(settingsData: Record<string, string> = {}) {
         json: () => Promise.resolve({ data: [] }),
       });
     }
+    if (url.includes('/api/update/status')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({
+          currentVersion: '0.1.0',
+          availableUpdate: null,
+          lastChecked: null,
+          updating: false,
+        }),
+      });
+    }
+    if (url.includes('/api/backup/list')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ backups: [] }),
+      });
+    }
     // Default: settings endpoint
     return Promise.resolve({
       ok: true,
