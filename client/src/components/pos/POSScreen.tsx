@@ -9,6 +9,7 @@ import { Alert } from '../common/Alert';
 import { api } from '../../api/client';
 import { CustomerBar } from './CustomerBar';
 import { TransactionPanel, type LineItem } from './TransactionPanel';
+import { Modal } from '../common/Modal';
 import { ConfirmationModal } from './ConfirmationModal';
 import { ReferenceCodeScreen } from './ReferenceCodeScreen';
 import { HeldTransactions } from './HeldTransactions';
@@ -56,6 +57,7 @@ export function POSScreen() {
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [selectedSearchTitle, setSelectedSearchTitle] = useState<any | null>(null);
   const [titleCopies, setTitleCopies] = useState<any[]>([]);
+  const [confirmClear, setConfirmClear] = useState(false);
   const scanRef = useRef<HTMLInputElement>(null);
   const holdRef = useRef<() => void>(() => {});
 
@@ -141,6 +143,27 @@ export function POSScreen() {
   useEffect(() => {
     refreshHeldCount();
   }, [refreshHeldCount]);
+
+  // Escape key closes active overlays (priority: search > family > pricing)
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showSearchResults) {
+          dismissSearchResults();
+        } else if (showFamilyPicker) {
+          setShowFamilyPicker(false);
+        } else if (pendingScan) {
+          setPendingScan(null);
+        }
+      }
+    };
+
+    const anyOverlay = showSearchResults || showFamilyPicker || pendingScan;
+    if (anyOverlay) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [showSearchResults, showFamilyPicker, pendingScan]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -475,6 +498,7 @@ export function POSScreen() {
               }
             }}
             placeholder="Scan barcode or search by title..."
+            aria-label="Scan barcode or search by title"
             autoFocus
           />
         </div>
@@ -527,7 +551,7 @@ export function POSScreen() {
               Recall Held {heldCount > 0 ? `(${heldCount})` : ''}
             </Button>
             <div style={styles.sidebarDivider} />
-            <Button variant="danger" onClick={resetTransaction} disabled={lineItems.length === 0 && !customer}>
+            <Button variant="danger" onClick={() => setConfirmClear(true)} disabled={lineItems.length === 0 && !customer}>
               Clear All
             </Button>
           </div>
@@ -551,7 +575,7 @@ export function POSScreen() {
 
       {/* Pricing Rule Picker */}
       {pendingScan && (
-        <div style={styles.pricingOverlay} onClick={() => setPendingScan(null)}>
+        <div style={styles.pricingOverlay} onClick={() => setPendingScan(null)} role="dialog" aria-modal="true" aria-label="Select pricing rule">
           <div style={styles.pricingPanel} onClick={(e) => e.stopPropagation()}>
             <div style={styles.pricingHeader}>
               Select Rental Period — {pendingScan.titleName} ({pendingScan.format})
@@ -578,7 +602,7 @@ export function POSScreen() {
 
       {/* Family Member Picker */}
       {showFamilyPicker && customer && (
-        <div style={styles.pricingOverlay} onClick={() => handleFamilyMemberSelect(null)}>
+        <div style={styles.pricingOverlay} onClick={() => handleFamilyMemberSelect(null)} role="dialog" aria-modal="true" aria-label="Select family member">
           <div style={styles.pricingPanel} onClick={(e) => e.stopPropagation()}>
             <FamilyMemberPicker
               customerName={`${customer.firstName} ${customer.lastName}`}
@@ -591,7 +615,7 @@ export function POSScreen() {
 
       {/* Title Search Results Modal */}
       {showSearchResults && (
-        <div style={styles.pricingOverlay} onClick={dismissSearchResults}>
+        <div style={styles.pricingOverlay} onClick={dismissSearchResults} role="dialog" aria-modal="true" aria-label="Search results">
           <div style={styles.searchPanel} onClick={(e) => e.stopPropagation()}>
             {!selectedSearchTitle ? (
               <>
@@ -708,6 +732,17 @@ export function POSScreen() {
           onDone={handleReferenceCodeDone}
         />
       )}
+
+      {/* Clear All Confirmation */}
+      <Modal isOpen={confirmClear} onClose={() => setConfirmClear(false)} title="Confirm Action">
+        <p style={{ color: 'var(--text-primary)', margin: 0 }}>
+          Clear the entire transaction? All items will be removed.
+        </p>
+        <div style={{ display: 'flex', gap: 'var(--space-sm)', justifyContent: 'flex-end', marginTop: 'var(--space-md)' }}>
+          <Button variant="secondary" onClick={() => setConfirmClear(false)}>Cancel</Button>
+          <Button variant="danger" onClick={() => { resetTransaction(); setConfirmClear(false); }}>Clear All</Button>
+        </div>
+      </Modal>
     </div>
   );
 }

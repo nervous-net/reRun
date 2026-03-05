@@ -408,8 +408,10 @@ export function InventoryBrowser() {
             <div
               style={toggleRowStyle}
               onClick={() => setAvailableOnly(!availableOnly)}
+              onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); setAvailableOnly(!availableOnly); } }}
               role="checkbox"
               aria-checked={availableOnly}
+              tabIndex={0}
             >
               <span>In stock only</span>
               <span style={toggleIndicatorStyle(availableOnly)} />

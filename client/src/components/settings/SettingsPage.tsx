@@ -3,6 +3,8 @@
 
 import { type CSSProperties, useEffect, useState, useCallback } from 'react';
 import { api } from '../../api/client';
+import { Button } from '../common/Button';
+import { Modal } from '../common/Modal';
 import { PricingRulesManager } from './PricingRulesManager';
 import { PromotionsManager } from './PromotionsManager';
 
@@ -231,6 +233,9 @@ export function SettingsPage() {
   const [updateStatus, setUpdateStatus] = useState<any>(null);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [installingUpdate, setInstallingUpdate] = useState(false);
+  const [confirmUpdate, setConfirmUpdate] = useState(false);
+  const [confirmRestore, setConfirmRestore] = useState(false);
+  const [restoreTarget, setRestoreTarget] = useState<string | null>(null);
 
   // Tax rate is displayed as percentage but stored as basis points
   const [taxDisplay, setTaxDisplay] = useState('');
@@ -349,11 +354,6 @@ export function SettingsPage() {
   }
 
   async function handleRestore(filename: string) {
-    const confirmed = window.confirm(
-      'This will replace the current database and require a restart. Are you sure?'
-    );
-    if (!confirmed) return;
-
     setBackupAction(true);
     setFeedback(null);
     try {
@@ -609,6 +609,7 @@ export function SettingsPage() {
             type="button"
             style={styles.toggleButton}
             onClick={() => setShowApiKey(prev => !prev)}
+            aria-label={showApiKey ? 'Hide API key' : 'Show API key'}
           >
             {showApiKey ? 'HIDE' : 'SHOW'}
           </button>
@@ -647,7 +648,7 @@ export function SettingsPage() {
           {checkingUpdate ? 'Checking...' : 'Check for Updates'}
         </button>
         {updateStatus?.availableUpdate && (
-          <button onClick={handleInstallUpdate} disabled={installingUpdate} style={{
+          <button onClick={() => setConfirmUpdate(true)} disabled={installingUpdate} style={{
             ...styles.toggleButton,
             color: 'var(--crt-amber)',
             borderColor: 'var(--crt-amber)',
@@ -711,7 +712,7 @@ export function SettingsPage() {
               borderColor: 'var(--crt-amber)',
             }}
             disabled={backupAction}
-            onClick={() => handleRestore(backup.filename)}
+            onClick={() => { setRestoreTarget(backup.filename); setConfirmRestore(true); }}
           >
             Restore
           </button>
@@ -755,6 +756,28 @@ export function SettingsPage() {
           {feedback.message}
         </div>
       )}
+
+      {/* Install Update Confirmation */}
+      <Modal isOpen={confirmUpdate} onClose={() => setConfirmUpdate(false)} title="Confirm Action">
+        <p style={{ color: 'var(--text-primary)', margin: 0 }}>
+          Install update and restart the system? The app will reload.
+        </p>
+        <div style={{ display: 'flex', gap: 'var(--space-sm)', justifyContent: 'flex-end', marginTop: 'var(--space-md)' }}>
+          <Button variant="secondary" onClick={() => setConfirmUpdate(false)}>Cancel</Button>
+          <Button variant="danger" onClick={() => { handleInstallUpdate(); setConfirmUpdate(false); }}>Install Update</Button>
+        </div>
+      </Modal>
+
+      {/* Restore Backup Confirmation */}
+      <Modal isOpen={confirmRestore} onClose={() => setConfirmRestore(false)} title="Confirm Action">
+        <p style={{ color: 'var(--text-primary)', margin: 0 }}>
+          Restore from this backup? Current data will be replaced.
+        </p>
+        <div style={{ display: 'flex', gap: 'var(--space-sm)', justifyContent: 'flex-end', marginTop: 'var(--space-md)' }}>
+          <Button variant="secondary" onClick={() => setConfirmRestore(false)}>Cancel</Button>
+          <Button variant="danger" onClick={() => { if (restoreTarget) handleRestore(restoreTarget); setConfirmRestore(false); setRestoreTarget(null); }}>Restore</Button>
+        </div>
+      </Modal>
     </div>
   );
 }

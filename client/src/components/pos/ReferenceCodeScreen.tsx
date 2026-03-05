@@ -57,7 +57,7 @@ const styles: Record<string, CSSProperties> = {
     margin: 0,
   },
   code: {
-    fontFamily: "'Courier New', monospace",
+    fontFamily: 'var(--font-mono)',
     fontSize: '48px',
     color: 'var(--crt-green-bright, var(--crt-green))',
     letterSpacing: '4px',

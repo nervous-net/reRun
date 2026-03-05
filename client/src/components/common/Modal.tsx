@@ -1,7 +1,10 @@
 // ABOUTME: Modal dialog component with CRT-styled overlay and panel
 // ABOUTME: Supports keyboard dismiss (Esc), click-outside-to-close, title, and footer
 
-import { type CSSProperties, type ReactNode, useCallback, useEffect, useRef } from 'react';
+import { type CSSProperties, type ReactNode, useCallback, useEffect, useId, useRef } from 'react';
+
+const focusableSelector =
+  'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
 interface ModalProps {
   isOpen: boolean;
@@ -80,11 +83,34 @@ const footerStyle: CSSProperties = {
 
 export function Modal({ isOpen, onClose, title, children, footer }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const titleId = useId();
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose();
+      }
+
+      if (e.key === 'Tab' && panelRef.current) {
+        const focusableElements =
+          panelRef.current.querySelectorAll<HTMLElement>(focusableSelector);
+        if (focusableElements.length === 0) return;
+
+        const first = focusableElements[0];
+        const last = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
       }
     },
     [onClose],
@@ -92,8 +118,27 @@ export function Modal({ isOpen, onClose, title, children, footer }: ModalProps) 
 
   useEffect(() => {
     if (isOpen) {
+      previousFocusRef.current = document.activeElement as HTMLElement;
+
+      const timer = setTimeout(() => {
+        if (panelRef.current) {
+          const firstFocusable =
+            panelRef.current.querySelector<HTMLElement>(focusableSelector);
+          if (firstFocusable) {
+            firstFocusable.focus();
+          } else {
+            panelRef.current.setAttribute('tabindex', '-1');
+            panelRef.current.focus();
+          }
+        }
+      }, 0);
+
       document.addEventListener('keydown', handleKeyDown);
-      return () => document.removeEventListener('keydown', handleKeyDown);
+      return () => {
+        clearTimeout(timer);
+        document.removeEventListener('keydown', handleKeyDown);
+        previousFocusRef.current?.focus();
+      };
     }
   }, [isOpen, handleKeyDown]);
 
@@ -107,10 +152,16 @@ export function Modal({ isOpen, onClose, title, children, footer }: ModalProps) 
 
   return (
     <div style={overlayStyle} onClick={handleOverlayClick}>
-      <div ref={panelRef} style={panelStyle} role="dialog" aria-modal="true" aria-label={title}>
+      <div
+        ref={panelRef}
+        style={panelStyle}
+        role="dialog"
+        aria-modal="true"
+        {...(title ? { 'aria-labelledby': titleId } : {})}
+      >
         {title && (
           <div style={headerStyle}>
-            <h2 style={titleStyle}>{title}</h2>
+            <h2 id={titleId} style={titleStyle}>{title}</h2>
             <button style={closeButtonStyle} onClick={onClose} aria-label="Close">
               X
             </button>

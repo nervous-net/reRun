@@ -56,5 +56,5 @@ export function AsciiDisplay({ art, color, glow, fontSize }: AsciiDisplayProps) 
     userSelect: 'none',
   };
 
-  return <pre style={style}>{art}</pre>;
+  return <pre style={style} role="img" aria-label="reRun Video logo">{art}</pre>;
 }

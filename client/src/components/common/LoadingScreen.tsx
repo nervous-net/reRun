@@ -48,7 +48,7 @@ export function LoadingScreen({ onComplete }: { onComplete: () => void }) {
       <div style={styles.content}>
         <AsciiDisplay art={LOGO_LARGE} glow fontSize="var(--font-size-sm)" />
 
-        <div style={styles.bootSequence}>
+        <div style={styles.bootSequence} aria-live="polite">
           {BOOT_LINES.slice(0, visibleLines).map((line, index) => (
             <div key={index} style={styles.bootLine}>
               {line.text}

@@ -68,7 +68,18 @@ export function HeldTransactions({ isOpen, onClose, onRecall }: HeldTransactions
           <div style={styles.emptyState}>No held transactions</div>
         )}
         {held.map((tx) => (
-          <div key={tx.id} style={styles.row}>
+          <div
+            key={tx.id}
+            style={styles.row}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--accent-06)';
+              e.currentTarget.style.textShadow = 'var(--glow-green)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.textShadow = 'none';
+            }}
+          >
             <div style={styles.rowInfo}>
               <span style={styles.customerName}>
                 {tx.customerName ?? 'Walk-in'}

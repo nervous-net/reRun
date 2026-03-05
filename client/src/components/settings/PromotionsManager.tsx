@@ -3,6 +3,7 @@
 
 import { type CSSProperties, useCallback, useEffect, useState } from 'react';
 import { Button } from '../common/Button';
+import { Modal } from '../common/Modal';
 import { Input } from '../common/Input';
 import { Badge } from '../common/Badge';
 import { api } from '../../api/client';
@@ -52,6 +53,8 @@ export function PromotionsManager() {
   const [showAdd, setShowAdd] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmDeactivate, setConfirmDeactivate] = useState(false);
+  const [deactivateTarget, setDeactivateTarget] = useState<string | null>(null);
 
   const loadPromos = useCallback(async () => {
     try {
@@ -172,7 +175,14 @@ export function PromotionsManager() {
             <div style={styles.ruleActions}>
               {!promo.active && <Badge variant="danger">Inactive</Badge>}
               <Button variant="secondary" onClick={() => startEditing(promo)}>Edit</Button>
-              <Button variant="ghost" onClick={() => toggleActive(promo)}>
+              <Button variant="ghost" onClick={() => {
+                if (promo.active) {
+                  setDeactivateTarget(promo.id);
+                  setConfirmDeactivate(true);
+                } else {
+                  toggleActive(promo);
+                }
+              }}>
                 {promo.active ? 'Deactivate' : 'Reactivate'}
               </Button>
             </div>
@@ -201,6 +211,24 @@ export function PromotionsManager() {
       ) : (
         <Button variant="secondary" onClick={startAdding}>+ Add Promotion</Button>
       )}
+
+      {/* Deactivate Confirmation */}
+      <Modal isOpen={confirmDeactivate} onClose={() => setConfirmDeactivate(false)} title="Confirm Action">
+        <p style={{ color: 'var(--text-primary)', margin: 0 }}>
+          Deactivate this promotion?
+        </p>
+        <div style={{ display: 'flex', gap: 'var(--space-sm)', justifyContent: 'flex-end', marginTop: 'var(--space-md)' }}>
+          <Button variant="secondary" onClick={() => setConfirmDeactivate(false)}>Cancel</Button>
+          <Button variant="danger" onClick={() => {
+            if (deactivateTarget) {
+              const promo = promos.find((p) => p.id === deactivateTarget);
+              if (promo) toggleActive(promo);
+            }
+            setConfirmDeactivate(false);
+            setDeactivateTarget(null);
+          }}>Deactivate</Button>
+        </div>
+      </Modal>
     </div>
   );
 }

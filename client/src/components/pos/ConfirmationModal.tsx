@@ -85,7 +85,7 @@ const styles: Record<string, CSSProperties> = {
   lineAmount: {
     color: 'var(--text-primary)',
     fontSize: 'var(--font-size-md)',
-    fontFamily: 'monospace',
+    fontFamily: 'var(--font-mono)',
   },
   taxRow: {
     display: 'flex',
@@ -103,7 +103,7 @@ const styles: Record<string, CSSProperties> = {
   taxAmount: {
     color: 'var(--text-secondary)',
     fontSize: 'var(--font-size-md)',
-    fontFamily: 'monospace',
+    fontFamily: 'var(--font-mono)',
   },
   totalDisplay: {
     display: 'flex',

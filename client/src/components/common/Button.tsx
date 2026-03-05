@@ -55,11 +55,11 @@ export function Button({
   disabled,
   onMouseEnter,
   onMouseLeave,
+  onFocus: onFocusProp,
+  onBlur: onBlurProp,
   ...rest
 }: ButtonProps) {
-  const handleMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (disabled) return;
-    const target = e.currentTarget;
+  const applyGlow = (target: HTMLButtonElement) => {
     if (variant === 'primary') {
       target.style.boxShadow = 'var(--glow-green)';
       target.style.borderColor = 'var(--crt-green-bright)';
@@ -68,22 +68,41 @@ export function Button({
       target.style.boxShadow = '0 0 8px var(--accent-15)';
       target.style.color = 'var(--crt-green)';
     } else if (variant === 'danger') {
-      target.style.boxShadow = '0 0 10px var(--error-30)';
-      target.style.borderColor = '#ff5555';
-      target.style.color = '#ff5555';
+      target.style.boxShadow = 'var(--glow-red)';
+      target.style.borderColor = 'var(--crt-red)';
+      target.style.color = 'var(--crt-red)';
     } else if (variant === 'ghost') {
       target.style.color = 'var(--crt-green)';
     }
-    onMouseEnter?.(e);
   };
 
-  const handleMouseLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
-    const target = e.currentTarget;
+  const resetGlow = (target: HTMLButtonElement) => {
     const vs = variantStyles[variant];
     target.style.boxShadow = '';
     target.style.borderColor = (vs.border ? vs.border.toString().replace(/^1px solid /, '') : '');
     target.style.color = (vs.color as string) || '';
+  };
+
+  const handleMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (disabled) return;
+    applyGlow(e.currentTarget);
+    onMouseEnter?.(e);
+  };
+
+  const handleMouseLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
+    resetGlow(e.currentTarget);
     onMouseLeave?.(e);
+  };
+
+  const handleFocus = (e: React.FocusEvent<HTMLButtonElement>) => {
+    if (disabled) return;
+    applyGlow(e.currentTarget);
+    onFocusProp?.(e);
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLButtonElement>) => {
+    resetGlow(e.currentTarget);
+    onBlurProp?.(e);
   };
 
   const style: CSSProperties = {
@@ -99,6 +118,8 @@ export function Button({
       disabled={disabled}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
       {...rest}
     >
       {children}

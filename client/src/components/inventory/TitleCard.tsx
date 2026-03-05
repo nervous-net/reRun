@@ -23,7 +23,7 @@ interface TitleCardProps {
 
 const cardStyle: CSSProperties = {
   width: '200px',
-  border: '1px solid var(--crt-green-dim)',
+  border: '1px solid var(--border-color)',
   borderRadius: 'var(--border-radius)',
   backgroundColor: 'var(--bg-panel)',
   cursor: 'pointer',
@@ -60,6 +60,7 @@ const placeholderStyle: CSSProperties = {
   letterSpacing: '2px',
   textAlign: 'center',
   lineHeight: 1.8,
+  textShadow: 'var(--glow-green)',
 };
 
 const bodyStyle: CSSProperties = {
@@ -88,7 +89,7 @@ const yearStyle: CSSProperties = {
 const badgeRowStyle: CSSProperties = {
   display: 'flex',
   flexWrap: 'wrap',
-  gap: '4px',
+  gap: 'var(--space-xs)',
   marginTop: 'auto',
 };
 
@@ -110,9 +111,14 @@ export function TitleCard({ title, onClick }: TitleCardProps) {
   return (
     <div
       style={{ ...cardStyle, ...(hovered ? cardHoverStyle : {}) }}
+      role="button"
+      tabIndex={0}
       onClick={() => onClick(title.id)}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(title.id); } }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onFocus={() => setHovered(true)}
+      onBlur={() => setHovered(false)}
     >
       {title.coverUrl ? (
         <img src={title.coverUrl} alt={title.name} style={coverStyle} />

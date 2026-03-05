@@ -14,9 +14,13 @@
     --crt-amber: #ffff55;
     --crt-amber-dim: #aa5500;
     --text-primary: #ffffff;
-    --text-secondary: #55ffff;
-    --text-muted: #aaaaaa;
-    --border-color: #00aaaa;
+    --text-secondary: #004444;
+    --text-muted: #555555;
+    --crt-red: #800000;
+    --crt-cyan: #004444;
+    --text-error: #800000;
+    --text-warning: #FFFF55;
+    --border-color: #004444;
     --glow-green:
         0 0 8px rgba(255, 255, 255, 0.3), 0 0 16px rgba(255, 255, 255, 0.1);
     --glow-amber:
@@ -43,6 +47,10 @@
     --text-primary: #55ffff;
     --text-secondary: #ffffff;
     --text-muted: #aaaaaa;
+    --crt-red: #FF5555;
+    --crt-cyan: #55FFFF;
+    --text-error: #FF6666;
+    --text-warning: #FFFF55;
     --border-color: #55ffff;
     --glow-green:
         0 0 8px rgba(85, 255, 255, 0.3), 0 0 16px rgba(85, 255, 255, 0.1);
@@ -70,6 +78,10 @@
     --text-primary: #ffffff;
     --text-secondary: #ffffff;
     --text-muted: #aaaaaa;
+    --crt-red: #FF5555;
+    --crt-cyan: #55FFFF;
+    --text-error: #FF6666;
+    --text-warning: #FFFF55;
     --border-color: #ffff55;
     --glow-green: none;
     --glow-amber: none;
@@ -95,6 +107,10 @@
     --text-primary: #55ff55;
     --text-secondary: #ffffff;
     --text-muted: #aaaaaa;
+    --crt-red: #FF5555;
+    --crt-cyan: #55FFFF;
+    --text-error: #FF5555;
+    --text-warning: #FFFF55;
     --border-color: #00aa00;
     --glow-green:
         0 0 8px rgba(85, 255, 85, 0.3), 0 0 16px rgba(85, 255, 85, 0.1);
@@ -108,30 +124,43 @@
 }
 
 /* ─── Theme E: Classic POS Terminal ─────────────────────── */
-/* Retail terminal: dark bg, green/cyan data, amber labels   */
+/* Retail terminal: light background, dark text, retail feel  */
 .theme-e {
-    --bg-primary: #555555;
-    --bg-secondary: #aaaaaa;
-    --bg-panel: #aaaaaa;
-    --bg-input: #aaaaaa;
-    --crt-green: #000000;
-    --crt-green-dim: #000000;
-    --crt-green-bright: #ffffff;
-    --crt-amber: #ffff55;
-    --crt-amber-dim: #ff5555;
-    --text-primary: #000000;
-    --text-secondary: #000000;
-    --text-muted: #000000;
-    --border-color: #000000;
-    --glow-green:
-        0 0 8px rgba(85, 255, 85, 0.3), 0 0 16px rgba(85, 255, 85, 0.1);
-    --glow-amber:
-        0 0 8px rgba(255, 255, 85, 0.3), 0 0 16px rgba(255, 255, 85, 0.1);
-    --accent-02: rgba(85, 255, 85, 0.02);
-    --accent-05: rgba(85, 255, 85, 0.05);
-    --accent-08: rgba(85, 255, 85, 0.08);
-    --accent-10: rgba(85, 255, 85, 0.1);
-    --accent-30: rgba(85, 255, 85, 0.3);
+    --bg-primary: #c0c0c0;
+    --bg-secondary: #e0e0e0;
+    --bg-panel: #d4d4d4;
+    --bg-input: #ffffff;
+    --crt-green: #005500;
+    --crt-green-dim: #003d00;
+    --crt-green-bright: #007700;
+    --crt-amber: #7a5c00;
+    --crt-amber-dim: #5a4400;
+    --crt-red: #990000;
+    --crt-cyan: #006666;
+    --text-primary: #1a1a1a;
+    --text-secondary: #333333;
+    --text-muted: #555555;
+    --text-error: #990000;
+    --text-warning: #7a5c00;
+    --border-color: #888888;
+    --glow-green: none;
+    --glow-amber: none;
+    --focus-outline: 2px solid #006600;
+    --focus-glow: 0 0 6px rgba(0, 102, 0, 0.4);
+    --accent-02: rgba(0, 102, 0, 0.04);
+    --accent-06: rgba(0, 102, 0, 0.08);
+    --accent-10: rgba(0, 102, 0, 0.12);
+    --accent-15: rgba(0, 102, 0, 0.18);
+    --accent-30: rgba(0, 102, 0, 0.25);
+    --accent-50: rgba(0, 102, 0, 0.40);
+    --error-05: rgba(153, 0, 0, 0.05);
+    --error-10: rgba(153, 0, 0, 0.10);
+    --error-30: rgba(153, 0, 0, 0.30);
+    --error-50: rgba(153, 0, 0, 0.50);
+    --warning-08: rgba(122, 92, 0, 0.08);
+    --overlay-50: rgba(0, 0, 0, 0.50);
+    --overlay-60: rgba(0, 0, 0, 0.60);
+    --overlay-80: rgba(0, 0, 0, 0.80);
 }
 
 /* ─── Theme F: Hybrid CRT ──────────────────────────────── */
@@ -147,8 +176,12 @@
     --crt-amber: #ffff55;
     --crt-amber-dim: #aa5500;
     --text-primary: #ffffff;
-    --text-secondary: #aaaaaa;
-    --text-muted: #aaaaaa;
+    --text-secondary: #d4d4d4;
+    --text-muted: #cccccc;
+    --crt-red: #FFBBBB;
+    --crt-cyan: #55FFFF;
+    --text-error: #FFBBBB;
+    --text-warning: #FFFF55;
     --border-color: #0000aa;
     --glow-green:
         0 0 8px rgba(85, 255, 85, 0.3), 0 0 16px rgba(85, 255, 85, 0.1);

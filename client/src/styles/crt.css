@@ -62,7 +62,7 @@
 
 /* Optional flicker animation */
 .crt-flicker {
-  animation: flicker 0.15s infinite;
+  animation: flicker 0.5s infinite;
 }
 
 @keyframes flicker {
@@ -81,4 +81,15 @@
   overflow: hidden;
   white-space: nowrap;
   animation: typeIn 0.5s steps(20) forwards;
+}
+
+/* Accessibility: respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .crt-flicker {
+    animation: none;
+  }
+  .type-in {
+    animation: none;
+    width: 100%;
+  }
 }

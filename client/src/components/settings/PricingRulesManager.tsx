@@ -3,6 +3,7 @@
 
 import { type CSSProperties, useCallback, useEffect, useState } from 'react';
 import { Button } from '../common/Button';
+import { Modal } from '../common/Modal';
 import { Input } from '../common/Input';
 import { Badge } from '../common/Badge';
 import { api } from '../../api/client';
@@ -45,6 +46,8 @@ export function PricingRulesManager() {
   const [showAdd, setShowAdd] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmDeactivate, setConfirmDeactivate] = useState(false);
+  const [deactivateTarget, setDeactivateTarget] = useState<string | null>(null);
 
   const loadRules = useCallback(async () => {
     try {
@@ -171,7 +174,7 @@ export function PricingRulesManager() {
             </div>
             <div style={styles.ruleActions}>
               <Button variant="secondary" onClick={() => startEditing(rule)}>Edit</Button>
-              <Button variant="ghost" onClick={() => toggleActive(rule)}>Deactivate</Button>
+              <Button variant="ghost" onClick={() => { setDeactivateTarget(rule.id); setConfirmDeactivate(true); }}>Deactivate</Button>
             </div>
           </div>
         )
@@ -210,6 +213,24 @@ export function PricingRulesManager() {
       ) : (
         <Button variant="secondary" onClick={startAdding}>+ Add Pricing Rule</Button>
       )}
+
+      {/* Deactivate Confirmation */}
+      <Modal isOpen={confirmDeactivate} onClose={() => setConfirmDeactivate(false)} title="Confirm Action">
+        <p style={{ color: 'var(--text-primary)', margin: 0 }}>
+          Deactivate this pricing rule?
+        </p>
+        <div style={{ display: 'flex', gap: 'var(--space-sm)', justifyContent: 'flex-end', marginTop: 'var(--space-md)' }}>
+          <Button variant="secondary" onClick={() => setConfirmDeactivate(false)}>Cancel</Button>
+          <Button variant="danger" onClick={() => {
+            if (deactivateTarget) {
+              const rule = rules.find((r) => r.id === deactivateTarget);
+              if (rule) toggleActive(rule);
+            }
+            setConfirmDeactivate(false);
+            setDeactivateTarget(null);
+          }}>Deactivate</Button>
+        </div>
+      </Modal>
     </div>
   );
 }

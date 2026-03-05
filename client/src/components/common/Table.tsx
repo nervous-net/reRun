@@ -15,6 +15,7 @@ interface TableProps {
   onRowClick?: (row: Record<string, ReactNode>, index: number) => void;
   emptyMessage?: string;
   className?: string;
+  caption?: string;
 }
 
 const tableStyle: CSSProperties = {
@@ -59,7 +60,7 @@ function getRowStyle(index: number, clickable: boolean): CSSProperties {
   };
 }
 
-export function Table({ columns, data, onRowClick, emptyMessage = 'No data', className }: TableProps) {
+export function Table({ columns, data, onRowClick, emptyMessage = 'No data', className, caption }: TableProps) {
   const handleRowMouseEnter = (e: React.MouseEvent<HTMLTableRowElement>) => {
     if (onRowClick) {
       e.currentTarget.style.backgroundColor = 'var(--accent-06)';
@@ -71,12 +72,33 @@ export function Table({ columns, data, onRowClick, emptyMessage = 'No data', cla
       index % 2 === 1 ? 'var(--accent-02)' : 'transparent';
   };
 
+  const handleRowFocus = (e: React.FocusEvent<HTMLTableRowElement>) => {
+    e.currentTarget.style.backgroundColor = 'var(--accent-06)';
+  };
+
+  const handleRowBlur = (e: React.FocusEvent<HTMLTableRowElement>, index: number) => {
+    e.currentTarget.style.backgroundColor =
+      index % 2 === 1 ? 'var(--accent-02)' : 'transparent';
+  };
+
+  const handleRowKeyDown = (
+    e: React.KeyboardEvent<HTMLTableRowElement>,
+    row: Record<string, ReactNode>,
+    index: number
+  ) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onRowClick?.(row, index);
+    }
+  };
+
   return (
     <table style={tableStyle} className={className}>
+      {caption && <caption className="sr-only">{caption}</caption>}
       <thead>
         <tr>
           {columns.map((col) => (
-            <th key={col.key} style={{ ...thStyle, width: col.width }}>
+            <th key={col.key} style={{ ...thStyle, width: col.width }} scope="col">
               {col.label}
             </th>
           ))}
@@ -97,6 +119,17 @@ export function Table({ columns, data, onRowClick, emptyMessage = 'No data', cla
               onClick={onRowClick ? () => onRowClick(row, index) : undefined}
               onMouseEnter={handleRowMouseEnter}
               onMouseLeave={(e) => handleRowMouseLeave(e, index)}
+              {...(onRowClick
+                ? {
+                    tabIndex: 0,
+                    role: 'button' as const,
+                    onKeyDown: (e: React.KeyboardEvent<HTMLTableRowElement>) =>
+                      handleRowKeyDown(e, row, index),
+                    onFocus: handleRowFocus,
+                    onBlur: (e: React.FocusEvent<HTMLTableRowElement>) =>
+                      handleRowBlur(e, index),
+                  }
+                : {})}
             >
               {columns.map((col) => (
                 <td key={col.key} style={tdStyle}>

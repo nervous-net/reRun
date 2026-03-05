@@ -3,6 +3,7 @@
 
 import { type CSSProperties, useCallback, useEffect, useState } from 'react';
 import { Button } from '../common/Button';
+import { Modal } from '../common/Modal';
 import { Input } from '../common/Input';
 import { Select } from '../common/Select';
 import { Badge } from '../common/Badge';
@@ -96,6 +97,8 @@ export function ReturnScreen() {
   const [scanning, setScanning] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [results, setResults] = useState<ReturnResult[] | null>(null);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [confirmProcess, setConfirmProcess] = useState(false);
 
   // Re-focus the scan input after processing results are dismissed
   const focusScanInput = useCallback(() => {
@@ -280,6 +283,7 @@ export function ReturnScreen() {
             disabled={scanning}
             autoFocus
             data-scan-input
+            aria-label="Scan copy barcode to return"
           />
         </div>
         <Button variant="primary" onClick={handleScan} disabled={scanning || !barcodeInput.trim()}>
@@ -382,6 +386,7 @@ export function ReturnScreen() {
                         onChange={(e) =>
                           updateLateFeeAction(item.copy.barcode, e.target.value as LateFeeAction)
                         }
+                        aria-label="Late fee action"
                       />
                     ) : (
                       <span style={styles.noFee}>—</span>
@@ -392,6 +397,7 @@ export function ReturnScreen() {
                     <Button
                       variant="ghost"
                       onClick={() => removeFromQueue(item.copy.barcode)}
+                      aria-label="Remove from queue"
                     >
                       X
                     </Button>
@@ -403,12 +409,12 @@ export function ReturnScreen() {
 
           {/* Batch actions */}
           <div style={styles.batchActions}>
-            <Button variant="secondary" onClick={clearQueue}>
+            <Button variant="secondary" onClick={() => setConfirmClear(true)}>
               Clear
             </Button>
             <Button
               variant="primary"
-              onClick={processAllReturns}
+              onClick={() => setConfirmProcess(true)}
               disabled={processing}
             >
               {processing ? 'Processing...' : 'Process All Returns'}
@@ -424,6 +430,28 @@ export function ReturnScreen() {
           <div>Scan a copy barcode to start processing returns</div>
         </div>
       )}
+
+      {/* Clear Queue Confirmation */}
+      <Modal isOpen={confirmClear} onClose={() => setConfirmClear(false)} title="Confirm Action">
+        <p style={{ color: 'var(--text-primary)', margin: 0 }}>
+          Clear all items from the return queue?
+        </p>
+        <div style={{ display: 'flex', gap: 'var(--space-sm)', justifyContent: 'flex-end', marginTop: 'var(--space-md)' }}>
+          <Button variant="secondary" onClick={() => setConfirmClear(false)}>Cancel</Button>
+          <Button variant="danger" onClick={() => { clearQueue(); setConfirmClear(false); }}>Clear</Button>
+        </div>
+      </Modal>
+
+      {/* Process All Returns Confirmation */}
+      <Modal isOpen={confirmProcess} onClose={() => setConfirmProcess(false)} title="Confirm Action">
+        <p style={{ color: 'var(--text-primary)', margin: 0 }}>
+          Process all returns? This will finalize them.
+        </p>
+        <div style={{ display: 'flex', gap: 'var(--space-sm)', justifyContent: 'flex-end', marginTop: 'var(--space-md)' }}>
+          <Button variant="secondary" onClick={() => setConfirmProcess(false)}>Cancel</Button>
+          <Button variant="danger" onClick={() => { processAllReturns(); setConfirmProcess(false); }}>Process Returns</Button>
+        </div>
+      </Modal>
     </div>
   );
 }

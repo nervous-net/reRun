@@ -137,7 +137,7 @@ export function CustomerBar({ customer, onCustomerSelect, onClear, selectedFamil
     <div style={styles.bar} ref={containerRef}>
       <div style={styles.searchRow}>
         <span style={styles.label}>CUSTOMER:</span>
-        <div style={styles.searchInput}>
+        <div style={styles.searchInput} aria-expanded={showResults}>
           <Input
             placeholder="Search or scan member barcode..."
             value={query}
@@ -150,17 +150,30 @@ export function CustomerBar({ customer, onCustomerSelect, onClear, selectedFamil
         </div>
       </div>
       {showResults && results.length > 0 && (
-        <div style={styles.dropdown}>
+        <div style={styles.dropdown} role="listbox">
           {results.map((c) => (
             <div
               key={c.id}
               style={styles.dropdownItem}
+              role="option"
+              tabIndex={0}
               onClick={() => handleSelect(c)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelect(c); } }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = 'var(--accent-10)';
+                e.currentTarget.style.textShadow = 'var(--glow-green)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.textShadow = 'none';
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--accent-10)';
+                e.currentTarget.style.textShadow = 'var(--glow-green)';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.textShadow = 'none';
               }}
             >
               <span style={styles.dropdownName}>

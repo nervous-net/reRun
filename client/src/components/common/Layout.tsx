@@ -83,6 +83,31 @@ export function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div style={styles.container}>
+      <a
+        href="#main-content"
+        className="sr-only"
+        onFocus={(e) => {
+          e.currentTarget.style.position = 'fixed';
+          e.currentTarget.style.top = '0';
+          e.currentTarget.style.left = '0';
+          e.currentTarget.style.zIndex = '9999';
+          e.currentTarget.style.padding = 'var(--space-sm) var(--space-md)';
+          e.currentTarget.style.backgroundColor = 'var(--bg-primary)';
+          e.currentTarget.style.color = 'var(--crt-green)';
+          e.currentTarget.style.clip = 'auto';
+          e.currentTarget.style.width = 'auto';
+          e.currentTarget.style.height = 'auto';
+        }}
+        onBlur={(e) => {
+          e.currentTarget.style.position = 'absolute';
+          e.currentTarget.style.clip = 'rect(0, 0, 0, 0)';
+          e.currentTarget.style.width = '1px';
+          e.currentTarget.style.height = '1px';
+        }}
+      >
+        Skip to content
+      </a>
+
       {/* Top Bar */}
       <div style={styles.topBar}>
         <div style={styles.logo}>{storeName}</div>
@@ -102,6 +127,7 @@ export function Layout({ children }: { children: ReactNode }) {
               <Link
                 key={item.path}
                 to={item.path}
+                aria-current={isActive ? 'page' : undefined}
                 style={{
                   ...styles.navLink,
                   ...(isActive ? styles.navLinkActive : {}),
@@ -114,6 +140,7 @@ export function Layout({ children }: { children: ReactNode }) {
           <div style={styles.sidebarSpacer} />
           <Link
             to="/settings"
+            aria-current={location.pathname === '/settings' ? 'page' : undefined}
             style={{
               ...styles.navLink,
               ...(location.pathname === '/settings' ? styles.navLinkActive : {}),
@@ -123,11 +150,11 @@ export function Layout({ children }: { children: ReactNode }) {
           </Link>
         </nav>
 
-        <main style={styles.content}>{children}</main>
+        <main id="main-content" style={styles.content}>{children}</main>
       </div>
 
       {/* Status Bar */}
-      <div style={styles.statusBar}>
+      <div style={styles.statusBar} role="status">
         <span>Powered by reRun v0.1.0</span>
         <span>{formattedDate}</span>
       </div>

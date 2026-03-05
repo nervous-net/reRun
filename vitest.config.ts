@@ -12,7 +12,7 @@ export default defineConfig({
     environmentMatchGlobs: [
       ['tests/client/**', 'jsdom'],
     ],
-    setupFiles: ['tests/setup.ts'],
+    setupFiles: ['tests/setup.ts', 'tests/client/setup.ts'],
   },
   resolve: {
     alias: {

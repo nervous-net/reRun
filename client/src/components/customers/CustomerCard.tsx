@@ -269,6 +269,9 @@ export function CustomerCard({ customerId }: CustomerCardProps) {
             }}
           >
             {formatBalance(customer.balance)}
+            <span style={{ fontSize: 'var(--font-size-sm)', marginLeft: 'var(--space-xs)' }}>
+              {customer.balance < 0 ? 'owed' : customer.balance > 0 ? 'credit' : ''}
+            </span>
           </span>
           <Button variant="secondary" onClick={() => setShowBalanceAdjust(true)}>
             Adjust

@@ -311,6 +311,14 @@ export function TitleDetail({ titleId, onClose, onEdit }: TitleDetailProps) {
                 e.currentTarget.style.color = 'var(--text-secondary)';
                 e.currentTarget.style.borderColor = 'var(--border-color)';
               }}
+              onFocus={(e) => {
+                e.currentTarget.style.color = 'var(--crt-green)';
+                e.currentTarget.style.borderColor = 'var(--crt-green)';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.color = 'var(--text-secondary)';
+                e.currentTarget.style.borderColor = 'var(--border-color)';
+              }}
             >
               [X]
             </button>
@@ -383,6 +391,7 @@ export function TitleDetail({ titleId, onClose, onEdit }: TitleDetailProps) {
                       value={addFormat}
                       onChange={(e) => setAddFormat(e.target.value)}
                       style={selectStyle}
+                      aria-label="Copy format"
                     >
                       <option value="VHS">VHS</option>
                       <option value="DVD">DVD</option>
@@ -395,6 +404,7 @@ export function TitleDetail({ titleId, onClose, onEdit }: TitleDetailProps) {
                       max="50"
                       value={addQty}
                       onChange={(e) => setAddQty(e.target.value)}
+                      aria-label="Number of copies"
                       style={{ width: '60px', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: 'var(--border-radius)', padding: '4px 8px' }}
                     />
                     <Button variant="primary" onClick={handleAddCopies} disabled={addingCopies}>

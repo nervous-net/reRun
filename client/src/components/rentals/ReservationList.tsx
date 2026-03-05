@@ -3,6 +3,7 @@
 
 import { type CSSProperties, useCallback, useEffect, useState } from 'react';
 import { Button } from '../common/Button';
+import { Modal } from '../common/Modal';
 import { Badge } from '../common/Badge';
 import { Table } from '../common/Table';
 import { Alert } from '../common/Alert';
@@ -51,6 +52,8 @@ export function ReservationList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState<string | null>(null);
 
   const fetchReservations = useCallback(async () => {
     setLoading(true);
@@ -110,7 +113,7 @@ export function ReservationList() {
         <Button variant="primary" onClick={() => handleFulfill(r.id)}>
           Fulfill
         </Button>
-        <Button variant="danger" onClick={() => handleCancel(r.id)}>
+        <Button variant="danger" onClick={() => { setCancelTarget(r.id); setConfirmCancel(true); }}>
           Cancel
         </Button>
       </div>
@@ -147,6 +150,17 @@ export function ReservationList() {
           emptyMessage="No pending reservations"
         />
       )}
+
+      {/* Cancel Reservation Confirmation */}
+      <Modal isOpen={confirmCancel} onClose={() => setConfirmCancel(false)} title="Confirm Action">
+        <p style={{ color: 'var(--text-primary)', margin: 0 }}>
+          Cancel this reservation? This cannot be undone.
+        </p>
+        <div style={{ display: 'flex', gap: 'var(--space-sm)', justifyContent: 'flex-end', marginTop: 'var(--space-md)' }}>
+          <Button variant="secondary" onClick={() => setConfirmCancel(false)}>Cancel</Button>
+          <Button variant="danger" onClick={() => { if (cancelTarget) handleCancel(cancelTarget); setConfirmCancel(false); setCancelTarget(null); }}>Cancel Reservation</Button>
+        </div>
+      </Modal>
     </div>
   );
 }

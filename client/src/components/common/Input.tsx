@@ -1,7 +1,7 @@
 // ABOUTME: Text input component styled for the CRT theme
 // ABOUTME: Supports label, focus glow, and standard input props
 
-import { type CSSProperties, type InputHTMLAttributes } from 'react';
+import { type CSSProperties, type InputHTMLAttributes, useId } from 'react';
 
 interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'style'> {
   label?: string;
@@ -49,6 +49,9 @@ export function Input({
   onBlur,
   ...rest
 }: InputProps) {
+  const autoId = useId();
+  const inputId = rest.id || autoId;
+
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     e.currentTarget.style.borderColor = 'var(--crt-green)';
     e.currentTarget.style.boxShadow = 'var(--glow-green)';
@@ -63,8 +66,13 @@ export function Input({
 
   return (
     <div style={wrapperStyle} className={className}>
-      {label && <label style={labelStyle}>{label}</label>}
+      {label && (
+        <label htmlFor={inputId} style={labelStyle}>
+          {label}
+        </label>
+      )}
       <input
+        id={inputId}
         style={{
           ...inputStyle,
           ...(disabled ? disabledInputStyle : {}),
@@ -72,6 +80,7 @@ export function Input({
         disabled={disabled}
         onFocus={handleFocus}
         onBlur={handleBlur}
+        {...(!label && rest.placeholder ? { 'aria-label': rest.placeholder } : {})}
         {...rest}
       />
     </div>

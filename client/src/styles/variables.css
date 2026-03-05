@@ -94,4 +94,13 @@
   /* ─── Glow (text-shadow values) ────────────────── */
   --glow-green: 0 0 8px var(--accent-30), 0 0 16px var(--accent-10);
   --glow-amber: 0 0 8px rgba(255, 255, 85, 0.3), 0 0 16px rgba(255, 255, 85, 0.1);
+
+  /* Focus indicators */
+  --focus-outline: 2px solid var(--crt-green);
+  --focus-outline-offset: 2px;
+  --focus-glow: 0 0 8px var(--accent-30), 0 0 16px var(--accent-10);
+
+  /* Missing glow variants */
+  --glow-red: 0 0 8px var(--error-30), 0 0 16px var(--error-10);
+  --glow-cyan: 0 0 8px rgba(85, 255, 255, 0.3), 0 0 16px rgba(85, 255, 255, 0.1);
 }

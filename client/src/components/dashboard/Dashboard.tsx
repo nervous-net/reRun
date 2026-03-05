@@ -5,6 +5,8 @@ import { type CSSProperties, useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
 import { Badge } from '../common/Badge';
+import { Modal } from '../common/Modal';
+import { Button } from '../common/Button';
 
 // --- Grid layout ---
 
@@ -272,6 +274,7 @@ export function Dashboard() {
   } | null>(null);
   const [updateStatus, setUpdateStatus] = useState<any>(null);
   const [installing, setInstalling] = useState(false);
+  const [confirmUpdate, setConfirmUpdate] = useState(false);
 
   const loadDashboard = useCallback(async () => {
     const errs: string[] = [];
@@ -392,7 +395,7 @@ export function Dashboard() {
       {updateStatus?.availableUpdate && !installing && (
         <div style={updateBannerStyle}>
           <span>Update available: v{updateStatus.availableUpdate.version}</span>
-          <button onClick={handleInstallUpdate} style={updateButtonStyle}>
+          <button onClick={() => setConfirmUpdate(true)} style={updateButtonStyle}>
             INSTALL UPDATE
           </button>
         </div>
@@ -448,6 +451,12 @@ export function Dashboard() {
                   onMouseLeave={(e) => {
                     e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
                   }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--error-08)';
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
+                  }}
                 >
                   <span style={{ color: overdueCount > 0 ? 'var(--crt-red)' : 'var(--text-secondary)' }}>
                     Overdue items
@@ -463,6 +472,12 @@ export function Dashboard() {
                     e.currentTarget.style.backgroundColor = 'var(--warning-08)';
                   }}
                   onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--warning-08)';
+                  }}
+                  onBlur={(e) => {
                     e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
                   }}
                 >
@@ -632,6 +647,8 @@ export function Dashboard() {
                     style={{ ...reservationRowStyle, textDecoration: 'none', cursor: 'pointer' }}
                     onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--accent-10)'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                    onFocus={(e) => { e.currentTarget.style.backgroundColor = 'var(--accent-10)'; }}
+                    onBlur={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                   >
                     <div>
                       <span style={reservationTextStyle}>{customerName}</span>
@@ -695,6 +712,17 @@ export function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Install Update Confirmation */}
+      <Modal isOpen={confirmUpdate} onClose={() => setConfirmUpdate(false)} title="Confirm Action">
+        <p style={{ color: 'var(--text-primary)', margin: 0 }}>
+          Install update and restart the system? The app will reload.
+        </p>
+        <div style={{ display: 'flex', gap: 'var(--space-sm)', justifyContent: 'flex-end', marginTop: 'var(--space-md)' }}>
+          <Button variant="secondary" onClick={() => setConfirmUpdate(false)}>Cancel</Button>
+          <Button variant="danger" onClick={() => { handleInstallUpdate(); setConfirmUpdate(false); }}>Install Update</Button>
+        </div>
+      </Modal>
     </div>
   );
 }

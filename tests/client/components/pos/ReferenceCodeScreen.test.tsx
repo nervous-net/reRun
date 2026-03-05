@@ -17,7 +17,7 @@ describe('ReferenceCodeScreen', () => {
     const codeElement = screen.getByText('RN-7X3K');
     expect(codeElement).toBeDefined();
     expect(codeElement.style.userSelect).toBe('all');
-    expect(codeElement.style.fontFamily).toContain('monospace');
+    expect(codeElement.style.fontFamily).toContain('var(--font-mono)');
   });
 
   it('displays the total that was rung up', () => {

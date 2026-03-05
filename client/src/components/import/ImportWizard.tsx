@@ -182,7 +182,11 @@ export function ImportWizard() {
         {STEPS.map((step, idx) => (
           <div key={step.number} style={styles.stepGroup}>
             <div style={styles.stepItem}>
-              <div style={getStepStyle(step.number)}>
+              <div
+                style={getStepStyle(step.number)}
+                aria-label={`Step ${step.number}: ${step.label}`}
+                {...(step.number === currentStep ? { 'aria-current': 'step' as const } : {})}
+              >
                 {step.number < currentStep ? '\u2713' : step.number}
               </div>
               <span style={{

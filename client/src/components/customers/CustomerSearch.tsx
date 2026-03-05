@@ -105,13 +105,26 @@ export function CustomerSearch() {
                 ...styles.resultRow,
                 ...(selectedId === customer.id ? styles.resultRowSelected : {}),
               }}
+              role="button"
+              tabIndex={0}
               onClick={() => setSelectedId(customer.id)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedId(customer.id); } }}
               onMouseEnter={(e) => {
                 if (selectedId !== customer.id) {
                   e.currentTarget.style.backgroundColor = 'var(--accent-06)';
                 }
               }}
               onMouseLeave={(e) => {
+                if (selectedId !== customer.id) {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }
+              }}
+              onFocus={(e) => {
+                if (selectedId !== customer.id) {
+                  e.currentTarget.style.backgroundColor = 'var(--accent-06)';
+                }
+              }}
+              onBlur={(e) => {
                 if (selectedId !== customer.id) {
                   e.currentTarget.style.backgroundColor = 'transparent';
                 }
@@ -197,7 +210,7 @@ const styles: Record<string, CSSProperties> = {
   },
   resultsHeader: {
     padding: '4px 8px',
-    borderBottom: '1px solid var(--crt-green-dim)',
+    borderBottom: '1px solid var(--crt-green)',
   },
   resultsLabel: {
     color: 'var(--text-secondary)',

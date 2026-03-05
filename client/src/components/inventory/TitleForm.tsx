@@ -263,14 +263,19 @@ export function TitleForm({ onClose, onSaved, titleId }: TitleFormProps) {
               </div>
             </div>
             {tmdbResults.length > 0 && (
-              <div style={tmdbDropdownStyle}>
+              <div style={tmdbDropdownStyle} role="listbox">
                 {tmdbResults.map((r: any) => (
                   <div
                     key={`${r.tmdbId}-${r.mediaType}`}
                     style={tmdbResultStyle}
+                    role="option"
+                    tabIndex={0}
                     onClick={() => handleTmdbSelect(r)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleTmdbSelect(r); } }}
                     onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--accent-10)'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                    onFocus={(e) => { e.currentTarget.style.backgroundColor = 'var(--accent-10)'; }}
+                    onBlur={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                   >
                     {r.posterUrl && (
                       <img src={r.posterUrl} alt="" style={{ width: '32px', height: '48px', objectFit: 'cover', borderRadius: '2px' }} />

@@ -86,6 +86,7 @@ export function FileUpload({ onFileLoaded }: FileUploadProps) {
         onClick={() => inputRef.current?.click()}
         role="button"
         tabIndex={0}
+        aria-label="Upload CSV file — drag and drop or click to browse"
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') inputRef.current?.click();
         }}
@@ -113,7 +114,7 @@ export function FileUpload({ onFileLoaded }: FileUploadProps) {
         )}
       </div>
 
-      {error && <div style={styles.error}>{error}</div>}
+      {error && <div style={styles.error} role="alert">{error}</div>}
     </div>
   );
 }

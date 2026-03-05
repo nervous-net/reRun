@@ -62,7 +62,7 @@ export function TransactionPanel({ items, onRemoveItem, subtotal, tax, total }: 
             }}
           >
             <span style={{ ...styles.cell, width: '32px', color: 'var(--text-secondary)' }}>
-              {typeIcon(item.type)}
+              <span aria-label={`Type: ${item.type}`}>{typeIcon(item.type)}</span>
             </span>
             <span style={{ ...styles.cell, flex: 1 }}>
               {item.description}
@@ -74,6 +74,7 @@ export function TransactionPanel({ items, onRemoveItem, subtotal, tax, total }: 
               <button
                 onClick={() => onRemoveItem(index)}
                 style={styles.removeButton}
+                aria-label="Remove item"
               >
                 X
               </button>

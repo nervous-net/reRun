@@ -215,14 +215,19 @@ export function MatchReview({ titles: initialTitles, onConfirm }: MatchReviewPro
                           {tmdbSearching ? 'Searching TMDb...' : 'TMDb Lookup'}
                         </Button>
                         {tmdbSuggestions.length > 0 && (
-                          <div style={styles.tmdbResults}>
+                          <div style={styles.tmdbResults} role="listbox">
                             {tmdbSuggestions.map((r: any) => (
                               <div
                                 key={`${r.tmdbId}-${r.mediaType}`}
                                 style={styles.tmdbResult}
+                                role="option"
+                                tabIndex={0}
                                 onClick={() => handleTmdbSelect(r)}
+                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleTmdbSelect(r); } }}
                                 onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--accent-10)'; }}
                                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                                onFocus={(e) => { e.currentTarget.style.backgroundColor = 'var(--accent-10)'; }}
+                                onBlur={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                               >
                                 {r.posterUrl && (
                                   <img src={r.posterUrl} alt="" style={{ width: '28px', height: '42px', objectFit: 'cover', borderRadius: '2px' }} />
@@ -255,7 +260,10 @@ export function MatchReview({ titles: initialTitles, onConfirm }: MatchReviewPro
                 <tr
                   key={title.originalIndex}
                   style={title.originalIndex % 2 === 1 ? styles.altRow : styles.row}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => startEditing(title.originalIndex)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); startEditing(title.originalIndex); } }}
                 >
                   <td style={styles.td}>{title.originalIndex + 1}</td>
                   <td style={styles.td}>

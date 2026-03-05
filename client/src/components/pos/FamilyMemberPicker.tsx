@@ -55,6 +55,14 @@ export function FamilyMemberPicker({ customerName, familyMembers, onSelect }: Fa
       <button
         style={optionStyle}
         onClick={() => onSelect(null)}
+        onFocus={(e) => {
+          e.currentTarget.style.borderColor = 'var(--crt-green)';
+          e.currentTarget.style.boxShadow = 'var(--glow-green)';
+        }}
+        onBlur={(e) => {
+          e.currentTarget.style.borderColor = '';
+          e.currentTarget.style.boxShadow = '';
+        }}
       >
         {customerName} (Account Holder)
       </button>
@@ -63,6 +71,14 @@ export function FamilyMemberPicker({ customerName, familyMembers, onSelect }: Fa
           key={member.id}
           style={optionStyle}
           onClick={() => onSelect(member)}
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = 'var(--crt-green)';
+            e.currentTarget.style.boxShadow = 'var(--glow-green)';
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = '';
+            e.currentTarget.style.boxShadow = '';
+          }}
         >
           {member.firstName} {member.lastName} ({member.relationship})
         </button>

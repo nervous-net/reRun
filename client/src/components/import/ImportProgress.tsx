@@ -5,6 +5,7 @@ import { type CSSProperties, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../api/client';
 import { Button } from '../common/Button';
+import { Modal } from '../common/Modal';
 import type { ImportTitle } from './MatchReview';
 
 interface ImportProgressProps {
@@ -24,6 +25,7 @@ export function ImportProgress({ titles, onComplete }: ImportProgressProps) {
   const [status, setStatus] = useState<'importing' | 'done' | 'error'>('importing');
   const [results, setResults] = useState<ImportResults | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [confirmStartOver, setConfirmStartOver] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -82,6 +84,11 @@ export function ImportProgress({ titles, onComplete }: ImportProgressProps) {
       <div style={styles.progressWrapper}>
         <div style={styles.progressTrack}>
           <div
+            role="progressbar"
+            aria-valuenow={Math.round(Math.min(progress, 100))}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label="Import progress"
             style={{
               ...styles.progressBar,
               width: `${Math.min(progress, 100)}%`,
@@ -129,11 +136,22 @@ export function ImportProgress({ titles, onComplete }: ImportProgressProps) {
       {status === 'error' && (
         <div style={styles.errorBox}>
           <p style={styles.errorText}>{errorMessage}</p>
-          <Button variant="danger" onClick={() => window.location.reload()}>
+          <Button variant="danger" onClick={() => setConfirmStartOver(true)}>
             Start Over
           </Button>
         </div>
       )}
+
+      {/* Start Over Confirmation */}
+      <Modal isOpen={confirmStartOver} onClose={() => setConfirmStartOver(false)} title="Confirm Action">
+        <p style={{ color: 'var(--text-primary)', margin: 0 }}>
+          Start over? Current import progress will be lost.
+        </p>
+        <div style={{ display: 'flex', gap: 'var(--space-sm)', justifyContent: 'flex-end', marginTop: 'var(--space-md)' }}>
+          <Button variant="secondary" onClick={() => setConfirmStartOver(false)}>Cancel</Button>
+          <Button variant="danger" onClick={() => window.location.reload()}>Start Over</Button>
+        </div>
+      </Modal>
     </div>
   );
 }

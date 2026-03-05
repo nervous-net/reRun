@@ -1,7 +1,7 @@
 // ABOUTME: Native select dropdown styled to match the CRT theme
 // ABOUTME: Supports label, options array, and standard select props
 
-import { type CSSProperties, type SelectHTMLAttributes } from 'react';
+import { type CSSProperties, type SelectHTMLAttributes, useId } from 'react';
 
 interface SelectOption {
   value: string;
@@ -63,6 +63,9 @@ export function Select({
   onBlur,
   ...rest
 }: SelectProps) {
+  const autoId = useId();
+  const selectId = rest.id || autoId;
+
   const handleFocus = (e: React.FocusEvent<HTMLSelectElement>) => {
     e.currentTarget.style.borderColor = 'var(--crt-green)';
     e.currentTarget.style.boxShadow = 'var(--glow-green)';
@@ -77,8 +80,13 @@ export function Select({
 
   return (
     <div style={wrapperStyle} className={className}>
-      {label && <label style={labelStyle}>{label}</label>}
+      {label && (
+        <label htmlFor={selectId} style={labelStyle}>
+          {label}
+        </label>
+      )}
       <select
+        id={selectId}
         style={{
           ...selectStyle,
           ...(disabled ? disabledSelectStyle : {}),
@@ -86,6 +94,7 @@ export function Select({
         disabled={disabled}
         onFocus={handleFocus}
         onBlur={handleBlur}
+        {...(!label ? { 'aria-label': options.find((o) => o.value === '')?.label } : {})}
         {...rest}
       >
         {options.map((opt) => (
