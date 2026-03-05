@@ -92,6 +92,7 @@ export const transactions = sqliteTable('transactions', {
   voided: integer('voided').default(0),
   voidReason: text('void_reason'),
   notes: text('notes'),
+  referenceCode: text('reference_code').unique(),
   createdAt: text('created_at').default(sql`(datetime('now'))`),
 });
 

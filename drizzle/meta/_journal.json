@@ -15,6 +15,13 @@
       "when": 1772652910708,
       "tag": "0001_woozy_epoch",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1772727574469,
+      "tag": "0002_worried_warlock",
+      "breakpoints": true
     }
   ]
 }
