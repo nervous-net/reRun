@@ -75,11 +75,9 @@ if (!(Test-Path $DataDir)) {
 }
 Write-Host "  Data directory ready." -ForegroundColor Green
 
-# Step 6: Set up database
-Write-Host "[6/8] Setting up database..." -ForegroundColor Cyan
-Set-Location $InstallDir
-npx drizzle-kit push 2>$null
-Write-Host "  Database initialized." -ForegroundColor Green
+# Step 6: Database will be initialized automatically on first server start
+Write-Host "[6/8] Database will initialize on first start..." -ForegroundColor Cyan
+Write-Host "  Ready." -ForegroundColor Green
 
 # Step 7: Start with PM2
 Write-Host "[7/8] Starting reRun..." -ForegroundColor Cyan

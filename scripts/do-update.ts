@@ -112,14 +112,7 @@ async function main() {
       fs.cpSync(drizzleSource, drizzleTarget, { recursive: true });
     }
 
-    // 8. Run migrations
-    log('Running migrations...');
-    try {
-      execSync('npx drizzle-kit push', { cwd: appDir, stdio: 'pipe' });
-      log('Migrations complete');
-    } catch (err: any) {
-      log(`Migration warning: ${err.message}`);
-    }
+    // 8. Migrations run automatically on server startup — no drizzle-kit needed
 
     // 9. Cleanup temp
     fs.rmSync(tmpDir, { recursive: true });

@@ -50,11 +50,10 @@ echo -e "${CYAN}[5/8] Setting up data directory...${NC}"
 mkdir -p "$INSTALL_DIR/data"
 echo -e "  Data directory ready."
 
-# Step 6: Set up database
-echo -e "${CYAN}[6/8] Setting up database...${NC}"
+# Step 6: Database will be initialized automatically on first server start
+echo -e "${CYAN}[6/8] Database will initialize on first start...${NC}"
 cd "$INSTALL_DIR"
-npx drizzle-kit push 2>/dev/null
-echo -e "  Database initialized."
+echo -e "  Ready."
 
 # Step 7: Start with PM2
 echo -e "${CYAN}[7/8] Starting reRun...${NC}"
