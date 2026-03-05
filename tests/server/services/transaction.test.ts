@@ -219,6 +219,24 @@ describe('Transaction Service', () => {
       expect(p2.stockQty).toBe(2);
     });
 
+    it('includes a reference code in RN-XXXX format', async () => {
+      const { db } = buildTestDb();
+      const customerId = await seedCustomer(db);
+      const productId = await seedProduct(db);
+      await seedTaxRate(db, 0);
+
+      const result = await createTransaction(db, {
+        customerId,
+        type: 'sale',
+        paymentMethod: 'card',
+        items: [
+          { type: 'sale', productId, description: 'Popcorn', amount: 399 },
+        ],
+      });
+
+      expect(result.referenceCode).toMatch(/^RN-[0-9A-HJ-NP-Z]{4}$/);
+    });
+
     it('does not set change for card payments', async () => {
       const { db } = buildTestDb();
       const customerId = await seedCustomer(db);

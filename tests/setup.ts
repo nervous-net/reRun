@@ -92,6 +92,7 @@ export function migrateTestDb(sqlite: Database.Database) {
       voided INTEGER DEFAULT 0,
       void_reason TEXT,
       notes TEXT,
+      reference_code TEXT UNIQUE,
       created_at TEXT DEFAULT (datetime('now'))
     );
 

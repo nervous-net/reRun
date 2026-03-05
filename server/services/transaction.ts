@@ -2,6 +2,7 @@
 // ABOUTME: Manages sale stock adjustments and rental copy status within SQLite transactions
 
 import { nanoid } from 'nanoid';
+import { generateReferenceCode } from './reference-code.js';
 import { eq, and, sql } from 'drizzle-orm';
 import {
   transactions,
@@ -110,6 +111,7 @@ export async function createTransaction(db: any, data: CreateTransactionInput) {
       : null;
 
   const txnId = nanoid();
+  const referenceCode = generateReferenceCode();
 
   // Use SQLite transaction for atomicity
   const rawDb = (db as any).session.client;
@@ -127,6 +129,7 @@ export async function createTransaction(db: any, data: CreateTransactionInput) {
         amountTendered: data.amountTendered ?? null,
         changeGiven,
         notes: data.notes ?? null,
+        referenceCode,
       })
       .run();
 
