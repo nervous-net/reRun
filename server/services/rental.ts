@@ -10,6 +10,7 @@ import {
   pricingRules,
   titles,
   familyMembers,
+  storeSettings,
 } from '../db/schema.js';
 
 // ─── Types ──────────────────────────────────────────────────────────
@@ -43,6 +44,18 @@ export async function checkoutCopy(db: any, input: CheckoutInput) {
 
   const now = new Date();
   const dueDate = new Date(now.getTime() + rule.durationDays * 24 * 60 * 60 * 1000);
+
+  // Apply configured return-by hour to due date (e.g. "all rentals due by 6pm")
+  const [returnByHourSetting] = await db
+    .select()
+    .from(storeSettings)
+    .where(eq(storeSettings.key, 'return_by_hour'));
+  if (returnByHourSetting?.value) {
+    const returnByHour = parseInt(returnByHourSetting.value, 10);
+    if (!isNaN(returnByHour)) {
+      dueDate.setHours(returnByHour, 0, 0, 0);
+    }
+  }
 
   const rentalId = nanoid();
 
@@ -121,7 +134,16 @@ export async function returnCopy(db: any, input: ReturnInput) {
   if (now > dueAt && lateFeePerDay > 0) {
     const msOverdue = now.getTime() - dueAt.getTime();
     const daysOverdue = Math.ceil(msOverdue / (1000 * 60 * 60 * 24));
-    lateFee = daysOverdue * lateFeePerDay;
+
+    // Subtract grace period days (default 0 — no grace period)
+    const [gracePeriodSetting] = await db
+      .select()
+      .from(storeSettings)
+      .where(eq(storeSettings.key, 'late_fee_grace_period'));
+    const gracePeriodDays = parseInt(gracePeriodSetting?.value ?? '0', 10);
+    const adjustedDaysOverdue = Math.max(0, daysOverdue - gracePeriodDays);
+
+    lateFee = adjustedDaysOverdue * lateFeePerDay;
   }
 
   // Determine late fee status

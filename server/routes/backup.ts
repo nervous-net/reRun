@@ -135,13 +135,37 @@ export function createBackupRoutes(db: any, options: BackupOptions) {
     try {
       console.warn(`[BACKUP] DESTRUCTIVE: Restoring database from ${filename}`);
 
+      const sqlite = getSqlite();
+
+      // Close the active database connection so SQLite releases the file
+      sqlite.close();
+
+      // Remove WAL and SHM files — stale WAL data would overwrite the restored backup
+      const walPath = dbPath + '-wal';
+      const shmPath = dbPath + '-shm';
+      if (fs.existsSync(walPath)) fs.unlinkSync(walPath);
+      if (fs.existsSync(shmPath)) fs.unlinkSync(shmPath);
+
       // Copy backup over the main database file
       fs.copyFileSync(backupPath, dbPath);
 
-      return c.json({
-        message: `Database restored from ${filename}. Server restart required to load restored data.`,
+      // Send response before exiting — PM2 will restart the process
+      const body = JSON.stringify({
+        message: `Database restored from ${filename}. Server is restarting...`,
         restartRequired: true,
       });
+      const response = new Response(body, {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      // Exit after a brief delay to allow the response to flush
+      setTimeout(() => {
+        console.log('[BACKUP] Restore complete. Exiting for PM2 restart...');
+        process.exit(0);
+      }, 500);
+
+      return response;
     } catch (err: any) {
       return c.json({ error: `Restore failed: ${err.message}` }, 500);
     }

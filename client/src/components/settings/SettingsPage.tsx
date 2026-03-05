@@ -679,9 +679,9 @@ export function SettingsPage() {
             }
           }}
           onMouseLeave={e => {
-            e.currentTarget.style.boxShadow = '';
-            e.currentTarget.style.borderColor = '';
-            e.currentTarget.style.color = '';
+            e.currentTarget.style.boxShadow = 'none';
+            e.currentTarget.style.borderColor = 'var(--crt-green)';
+            e.currentTarget.style.color = 'var(--crt-green)';
           }}
         >
           {backupAction ? 'Working...' : 'Create Backup'}
@@ -736,9 +736,9 @@ export function SettingsPage() {
           }
         }}
         onMouseLeave={e => {
-          e.currentTarget.style.boxShadow = '';
-          e.currentTarget.style.borderColor = '';
-          e.currentTarget.style.color = '';
+          e.currentTarget.style.boxShadow = 'none';
+          e.currentTarget.style.borderColor = 'var(--crt-green)';
+          e.currentTarget.style.color = 'var(--crt-green)';
         }}
       >
         {saving ? 'Saving...' : 'Save Settings'}

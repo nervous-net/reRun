@@ -4,13 +4,21 @@
 import { Hono } from 'hono';
 import { and, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { titles, copies } from '../db/schema.js';
+import { titles, copies, storeSettings } from '../db/schema.js';
 import { parseCsv, detectColumns } from '../services/csv-import.js';
 import { generateBarcodes } from '../services/barcode.js';
 import { TmdbClient, TmdbSearchResult } from '../services/tmdb.js';
 import { scoreTmdbMatch, queryVariations } from '../services/fuzzy-match.js';
 
-export function createImportRoutes(db: any, tmdb?: TmdbClient) {
+/** Read the TMDb API key from store_settings, falling back to env var. */
+async function getTmdbClient(db: any): Promise<TmdbClient | undefined> {
+  const [setting] = await db.select().from(storeSettings).where(eq(storeSettings.key, 'tmdb_api_key'));
+  const apiKey = setting?.value || process.env.TMDB_API_KEY;
+  if (!apiKey || apiKey === 'your_tmdb_api_key_here') return undefined;
+  return new TmdbClient(apiKey);
+}
+
+export function createImportRoutes(db: any) {
   const routes = new Hono();
 
   // POST /parse — Parse CSV content and return preview with detected column mapping
@@ -84,6 +92,7 @@ export function createImportRoutes(db: any, tmdb?: TmdbClient) {
     });
 
     // Enrich with TMDb data using fuzzy matching
+    const tmdb = await getTmdbClient(db);
     if (tmdb) {
       const BATCH_SIZE = 5;
       for (let i = 0; i < structured.length; i += BATCH_SIZE) {

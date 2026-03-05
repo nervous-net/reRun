@@ -1,12 +1,11 @@
 // ABOUTME: Tests for the CSV import API routes (parse, match, commit)
 // ABOUTME: Covers CSV parsing with preview, data structuring, and title/copy creation
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Hono } from 'hono';
 import { createTestDb, migrateTestDb } from '../../setup.js';
 import { createImportRoutes } from '../../../server/routes/import.js';
-import { titles, copies } from '../../../server/db/schema.js';
-import { TmdbClient } from '../../../server/services/tmdb.js';
+import { titles, copies, storeSettings } from '../../../server/db/schema.js';
 
 let db: ReturnType<typeof createTestDb>['db'];
 let sqlite: ReturnType<typeof createTestDb>['sqlite'];
@@ -205,9 +204,15 @@ describe('POST /api/import/match', () => {
       return new Response('{}', { status: 404 });
     };
 
-    const tmdb = new TmdbClient('fake-key', mockFetch as any);
+    // Seed the API key in the DB so getTmdbClient picks it up
+    sqlite.prepare("INSERT INTO store_settings (key, value) VALUES (?, ?)").run('tmdb_api_key', 'fake-key');
+
+    // Mock globalThis.fetch so TmdbClient uses our mock
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = mockFetch as any;
+
     const tmdbApp = new Hono();
-    tmdbApp.route('/api/import', createImportRoutes(db, tmdb));
+    tmdbApp.route('/api/import', createImportRoutes(db));
 
     const csvHeaders = ['Title', 'Year', 'Format', 'Quantity'];
     const rows = [['Blade Runner', '1982', 'VHS', '2']];
@@ -237,6 +242,9 @@ describe('POST /api/import/match', () => {
     expect(body.titles[0].title).toBe('Blade Runner');
     expect(body.titles[0].format).toBe('VHS');
     expect(body.titles[0].quantity).toBe('2');
+
+    // Restore original fetch
+    globalThis.fetch = originalFetch;
   });
 });
 

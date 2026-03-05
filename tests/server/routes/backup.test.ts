@@ -1,7 +1,7 @@
 // ABOUTME: Tests for backup, restore, and CSV export API routes
 // ABOUTME: Uses temp directories with file-based SQLite to test file copy operations
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Hono } from 'hono';
 import { nanoid } from 'nanoid';
 import Database from 'better-sqlite3';
@@ -323,14 +323,18 @@ describe('POST /api/backup/restore/:filename', () => {
   });
 
   it('restores from a valid backup file', async () => {
-    // Create a backup first
+    // Prevent process.exit from killing the test runner
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+    vi.useFakeTimers();
+
+    // Create a backup first (captures empty DB state)
     const createRes = await app.request('/api/backup', { method: 'POST' });
     const { filename } = await createRes.json();
 
     // Insert data AFTER the backup
     sqlite.prepare("INSERT INTO titles (id, name, year) VALUES (?, ?, ?)").run(nanoid(), 'Post-Backup Movie', 2026);
 
-    // Verify the data exists
+    // Verify the data exists before restore
     const beforeRestore = sqlite.prepare("SELECT count(*) as cnt FROM titles WHERE name = 'Post-Backup Movie'").get() as { cnt: number };
     expect(beforeRestore.cnt).toBe(1);
 
@@ -342,6 +346,26 @@ describe('POST /api/backup/restore/:filename', () => {
     const body = await res.json();
     expect(body.message).toBeDefined();
     expect(body.restartRequired).toBe(true);
+
+    // Advance timers to trigger the process.exit call
+    vi.advanceTimersByTime(1000);
+    expect(exitSpy).toHaveBeenCalledWith(0);
+
+    // Verify: WAL and SHM files were removed
+    expect(fs.existsSync(dbPath + '-wal')).toBe(false);
+    expect(fs.existsSync(dbPath + '-shm')).toBe(false);
+
+    // Verify: opening a fresh connection shows the restored data (no post-backup movie)
+    const restoredSqlite = new Database(dbPath, { readonly: true });
+    const afterRestore = restoredSqlite.prepare("SELECT count(*) as cnt FROM titles WHERE name = 'Post-Backup Movie'").get() as { cnt: number };
+    restoredSqlite.close();
+    expect(afterRestore.cnt).toBe(0);
+
+    // Reassign sqlite so afterEach cleanup doesn't fail on closed connection
+    sqlite = new Database(':memory:');
+
+    exitSpy.mockRestore();
+    vi.useRealTimers();
   });
 });
 

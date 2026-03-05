@@ -2,13 +2,24 @@
 // ABOUTME: Used by TitleForm and import flow for looking up title metadata
 
 import { Hono } from 'hono';
-import type { TmdbClient } from '../services/tmdb.js';
+import { eq } from 'drizzle-orm';
+import { TmdbClient } from '../services/tmdb.js';
+import { storeSettings } from '../db/schema.js';
 
-export function createTmdbRoutes(tmdb?: TmdbClient) {
+/** Read the TMDb API key from store_settings, falling back to env var. */
+async function getTmdbClient(db: any): Promise<TmdbClient | undefined> {
+  const [setting] = await db.select().from(storeSettings).where(eq(storeSettings.key, 'tmdb_api_key'));
+  const apiKey = setting?.value || process.env.TMDB_API_KEY;
+  if (!apiKey || apiKey === 'your_tmdb_api_key_here') return undefined;
+  return new TmdbClient(apiKey);
+}
+
+export function createTmdbRoutes(db: any) {
   const routes = new Hono();
 
   // GET /search?q=term&year=2024 — search TMDb for movies and TV shows
   routes.get('/search', async (c) => {
+    const tmdb = await getTmdbClient(db);
     if (!tmdb) {
       return c.json({ data: [], error: 'TMDb not configured' });
     }
@@ -31,6 +42,7 @@ export function createTmdbRoutes(tmdb?: TmdbClient) {
 
   // GET /details/:tmdbId?type=tv — get full movie or TV details
   routes.get('/details/:tmdbId', async (c) => {
+    const tmdb = await getTmdbClient(db);
     if (!tmdb) {
       return c.json({ error: 'TMDb not configured' }, 503);
     }

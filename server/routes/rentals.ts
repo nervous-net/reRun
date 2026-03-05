@@ -39,9 +39,12 @@ export function createRentalsRoutes(db: any) {
       return c.json({ error: `Rental limit reached. Maximum ${maxRentals} active rentals allowed.` }, 400);
     }
 
-    // Age restriction check
+    // Age restriction check (skip if store setting disables it)
+    const [ageCheckSetting] = await db.select().from(storeSettings).where(eq(storeSettings.key, 'age_check_enabled'));
+    const ageCheckEnabled = ageCheckSetting?.value !== '0';
+
     const [copy] = await db.select().from(copies).where(eq(copies.id, body.copyId));
-    if (copy) {
+    if (copy && ageCheckEnabled) {
       const [title] = await db.select().from(titles).where(eq(titles.id, copy.titleId));
       if (title) {
         let birthdayToCheck: string | null = null;
