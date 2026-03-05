@@ -29,6 +29,20 @@ customers, rentals, returns, and transactions with a retro CRT terminal interfac
 You only need to do this once. After that, the app starts automatically when
 you turn on the computer.
 
+### Windows Prerequisites
+
+Before running the installer, you need **Visual Studio Build Tools** installed.
+This is required to compile a database component for Windows.
+
+1. Go to https://visualstudio.microsoft.com/visual-cpp-build-tools/
+2. Download and run **Build Tools for Visual Studio**
+3. In the installer, check **"Desktop development with C++"** and click Install
+4. Restart your computer after it finishes
+
+> **Why?** reRun uses an embedded database (SQLite) that needs to be compiled
+> for your specific computer. The build tools provide the compiler. You only
+> need to do this once.
+
 ### On Windows
 
 1. Go to https://github.com/nervous-net/reRun/releases
@@ -524,6 +538,18 @@ because the file itself is flagged. To fix this:
 > files unless they are digitally signed. The `Unblock-File` command removes
 > this mark. The `install.bat` wrapper tries to bypass this automatically, but
 > some Windows configurations need the manual unblock step above.
+
+### "npm rebuild" fails or "gyp ERR!" during install (Windows)
+
+The installer needs to compile the database module for Windows. If you see
+errors mentioning `gyp`, `node-gyp`, `MSBUILD`, or `better-sqlite3`, you're
+missing the C++ build tools.
+
+1. Install **Build Tools for Visual Studio** from
+   https://visualstudio.microsoft.com/visual-cpp-build-tools/
+2. Check **"Desktop development with C++"** in the installer
+3. Restart your computer
+4. Run `install.bat` again
 
 ### "Do you want to allow Node.js through the firewall?" (Windows)
 
