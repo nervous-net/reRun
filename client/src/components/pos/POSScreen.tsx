@@ -9,9 +9,9 @@ import { Alert } from '../common/Alert';
 import { api } from '../../api/client';
 import { CustomerBar } from './CustomerBar';
 import { TransactionPanel, type LineItem } from './TransactionPanel';
-import { PaymentModal } from './PaymentModal';
+import { ConfirmationModal } from './ConfirmationModal';
+import { ReferenceCodeScreen } from './ReferenceCodeScreen';
 import { HeldTransactions } from './HeldTransactions';
-import { Receipt } from './Receipt';
 
 interface Customer {
   id: string;
@@ -37,14 +37,17 @@ export function POSScreen() {
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [scanValue, setScanValue] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [showPayment, setShowPayment] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
   const [showHeld, setShowHeld] = useState(false);
   const [heldCount, setHeldCount] = useState(0);
-  const [completedTransaction, setCompletedTransaction] = useState<any>(null);
+  const [referenceCode, setReferenceCode] = useState<string | null>(null);
+  const [completedTotal, setCompletedTotal] = useState<number | null>(null);
   const [pricingRules, setPricingRules] = useState<PricingRule[]>([]);
   const [pendingScan, setPendingScan] = useState<{ copyId: string; titleId: string; titleName: string; format: string } | null>(null);
   const [taxRate, setTaxRate] = useState(0.08);
-  const [storeName, setStoreName] = useState('reRun Video');
+  const [processing, setProcessing] = useState(false);
+  const [ageWarning, setAgeWarning] = useState<{ rating: string; message: string } | null>(null);
+  const [parentApproved, setParentApproved] = useState(false);
   const scanRef = useRef<HTMLInputElement>(null);
   const holdRef = useRef<() => void>(() => {});
 
@@ -54,10 +57,10 @@ export function POSScreen() {
 
   // Keep scan input focused
   const focusScanInput = useCallback(() => {
-    if (!showPayment && !showHeld && !completedTransaction) {
+    if (!showConfirmation && !showHeld && !referenceCode) {
       setTimeout(() => scanRef.current?.focus(), 50);
     }
-  }, [showPayment, showHeld, completedTransaction]);
+  }, [showConfirmation, showHeld, referenceCode]);
 
   useEffect(() => {
     focusScanInput();
@@ -71,15 +74,12 @@ export function POSScreen() {
     }).catch(() => {});
   }, []);
 
-  // Fetch tax rate and store name from settings
+  // Fetch tax rate from settings
   useEffect(() => {
     api.settings.list().then((data) => {
       const settings = data.data ?? data;
       if (settings?.tax_rate != null) {
         setTaxRate(Number(settings.tax_rate) / 10000);
-      }
-      if (settings?.store_name) {
-        setStoreName(settings.store_name);
       }
     }).catch((err) => {
       console.error('Failed to load settings for POS:', err);
@@ -123,19 +123,19 @@ export function POSScreen() {
         return;
       }
 
-      // Enter to complete when payment modal is not open but items exist
-      if (e.key === 'Enter' && !showPayment && !showHeld && lineItems.length > 0) {
+      // Enter to complete when confirmation modal is not open but items exist
+      if (e.key === 'Enter' && !showConfirmation && !showHeld && lineItems.length > 0) {
         const target = e.target as HTMLElement;
         // Only trigger if focused on scan input or the scan input is empty
         if (target === scanRef.current && scanValue.trim() === '') {
           e.preventDefault();
-          setShowPayment(true);
+          setShowConfirmation(true);
         }
       }
     }
     window.addEventListener('keydown', handleKeyDown, true);
     return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [showPayment, showHeld, lineItems.length, scanValue]);
+  }, [showConfirmation, showHeld, lineItems.length, scanValue]);
 
   async function handleScan() {
     const barcode = scanValue.trim();
@@ -280,29 +280,60 @@ export function POSScreen() {
     focusScanInput();
   }
 
-  function handlePaymentComplete(transaction: any) {
-    setShowPayment(false);
-    setCompletedTransaction({
-      id: transaction.id ?? 'N/A',
-      date: transaction.date ?? new Date().toISOString(),
-      customerName: customer
-        ? `${customer.firstName} ${customer.lastName}`
-        : null,
-      paymentMethod: transaction.paymentMethod ?? 'cash',
-      items: lineItems.map((item) => ({
-        description: item.description,
-        amount: item.amount,
-      })),
-      subtotal,
-      tax,
-      total,
-      cashTendered: transaction.cashTendered,
-      changeDue: transaction.changeDue,
-    });
+  async function handleConfirmCheckout() {
+    setProcessing(true);
+    setError(null);
+    try {
+      // Checkout rental copies first (creates rental records with due dates)
+      const rentalItems = lineItems.filter((item) => item.type === 'rental' && item.copyId && item.pricingRuleId);
+      for (const item of rentalItems) {
+        const result = await api.rentals.checkout({
+          customerId: customer!.id,
+          copyId: item.copyId!,
+          pricingRuleId: item.pricingRuleId!,
+          parentApproved,
+        });
+
+        // If age restriction warning returned, show dialog and stop
+        if (result.ageRestriction) {
+          setAgeWarning(result.ageRestriction);
+          setProcessing(false);
+          return;
+        }
+      }
+
+      // Determine transaction type from items
+      const hasRentals = lineItems.some((i) => i.type === 'rental');
+      const hasProducts = lineItems.some((i) => i.type === 'product');
+      const txnType = hasRentals && hasProducts ? 'mixed' : hasRentals ? 'rental' : hasProducts ? 'sale' : 'fee';
+
+      const transaction = await api.transactions.create({
+        customerId: customer?.id ?? null,
+        type: txnType,
+        items: lineItems.map((item) => ({
+          type: item.type,
+          description: item.description,
+          amount: item.amount,
+          copyId: item.copyId ?? null,
+          productId: item.productId ?? null,
+        })),
+      });
+
+      setReferenceCode(transaction.referenceCode);
+      setCompletedTotal(total);
+      setShowConfirmation(false);
+      setAgeWarning(null);
+      setParentApproved(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Checkout failed');
+    } finally {
+      setProcessing(false);
+    }
   }
 
-  function handleReceiptClose() {
-    setCompletedTransaction(null);
+  function handleReferenceCodeDone() {
+    setReferenceCode(null);
+    setCompletedTotal(null);
     resetTransaction();
   }
 
@@ -406,7 +437,7 @@ export function POSScreen() {
         </div>
         <Button
           variant="primary"
-          onClick={() => setShowPayment(true)}
+          onClick={() => setShowConfirmation(true)}
           disabled={lineItems.length === 0}
         >
           Complete [Enter]
@@ -440,15 +471,17 @@ export function POSScreen() {
         </div>
       )}
 
-      {/* Payment Modal */}
-      {showPayment && (
-        <PaymentModal
-          total={total}
-          customer={customer}
+      {/* Confirmation Modal */}
+      {showConfirmation && (
+        <ConfirmationModal
           lineItems={lineItems}
-          onComplete={handlePaymentComplete}
+          total={total}
+          tax={tax}
+          onConfirm={handleConfirmCheckout}
           onCancel={() => {
-            setShowPayment(false);
+            setShowConfirmation(false);
+            setAgeWarning(null);
+            setParentApproved(false);
             focusScanInput();
           }}
         />
@@ -464,13 +497,12 @@ export function POSScreen() {
         onRecall={handleRecallHeld}
       />
 
-      {/* Receipt Modal */}
-      {completedTransaction && (
-        <Receipt
-          transaction={completedTransaction}
-          isOpen={!!completedTransaction}
-          onClose={handleReceiptClose}
-          storeName={storeName}
+      {/* Reference Code Screen */}
+      {referenceCode && completedTotal !== null && (
+        <ReferenceCodeScreen
+          referenceCode={referenceCode}
+          total={completedTotal}
+          onDone={handleReferenceCodeDone}
         />
       )}
     </div>
