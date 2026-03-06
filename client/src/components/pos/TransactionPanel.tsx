@@ -91,10 +91,12 @@ export function TransactionPanel({ items, onRemoveItem, subtotal, tax, total }: 
           <span style={styles.totalLabel}>Subtotal</span>
           <span style={styles.totalValue}>{formatCurrency(subtotal)}</span>
         </div>
-        <div style={styles.totalRow}>
-          <span style={styles.totalLabel}>Tax</span>
-          <span style={styles.totalValue}>{formatCurrency(tax)}</span>
-        </div>
+        {tax > 0 && (
+          <div style={styles.totalRow}>
+            <span style={styles.totalLabel}>Tax</span>
+            <span style={styles.totalValue}>{formatCurrency(tax)}</span>
+          </div>
+        )}
         <div style={styles.grandTotalRow}>
           <span style={styles.grandTotalLabel}>TOTAL</span>
           <span style={styles.grandTotalValue}>{formatCurrency(total)}</span>

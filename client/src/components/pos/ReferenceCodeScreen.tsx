@@ -3,6 +3,7 @@
 
 import { type CSSProperties } from 'react';
 import { Button } from '../common/Button';
+import { Modal } from '../common/Modal';
 
 interface ReferenceCodeScreenProps {
   referenceCode: string;
@@ -16,39 +17,31 @@ function formatCurrency(cents: number): string {
 
 export function ReferenceCodeScreen({ referenceCode, total, onDone }: ReferenceCodeScreenProps) {
   return (
-    <div style={styles.container}>
-      <h2 style={styles.heading}>Rental Complete</h2>
+    <Modal
+      isOpen={true}
+      onClose={onDone}
+      title="Transaction Completed"
+      footer={<Button variant="primary" onClick={onDone}>Done</Button>}
+    >
+      <div style={styles.body}>
+        <p style={styles.instruction}>
+          Use this reference code in Lightspeed to complete the transaction.
+        </p>
 
-      <p style={styles.instruction}>
-        Use this reference code in Lightspeed to complete the transaction.
-      </p>
+        <div style={styles.code}>{referenceCode}</div>
 
-      <div style={styles.code}>{referenceCode}</div>
-
-      <div style={styles.total}>{formatCurrency(total)}</div>
-
-      <div style={styles.actions}>
-        <Button variant="primary" onClick={onDone}>Done</Button>
+        <div style={styles.total}>{formatCurrency(total)}</div>
       </div>
-    </div>
+    </Modal>
   );
 }
 
 const styles: Record<string, CSSProperties> = {
-  container: {
+  body: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: '32px',
     gap: '16px',
-  },
-  heading: {
-    fontSize: 'var(--font-size-xl, 24px)',
-    color: 'var(--crt-green)',
-    textTransform: 'uppercase',
-    letterSpacing: '2px',
-    margin: 0,
   },
   instruction: {
     color: 'var(--text-secondary)',
@@ -70,8 +63,5 @@ const styles: Record<string, CSSProperties> = {
   total: {
     fontSize: 'var(--font-size-lg, 18px)',
     color: 'var(--text-primary)',
-  },
-  actions: {
-    marginTop: '16px',
   },
 };

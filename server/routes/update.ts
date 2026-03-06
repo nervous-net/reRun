@@ -28,7 +28,7 @@ export function createUpdateRoutes(dbPath: string, backupDir: string) {
     setUpdating(true);
 
     // Spawn the update script as a detached process
-    const scriptPath = path.resolve('scripts/do-update.js');
+    const scriptPath = path.resolve('dist/scripts/do-update.js');
     const child = spawn('node', [
       scriptPath,
       '--version', status.availableUpdate.tagName,

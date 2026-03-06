@@ -61,7 +61,7 @@ export function createRentalsRoutes(db: any) {
 
         const warning = checkAgeRestriction(birthdayToCheck, title.rating);
         if (warning && !body.parentApproved) {
-          return c.json({ ageRestriction: warning }, 200);
+          return c.json({ ageRestriction: { ...warning, titleName: title.name } }, 200);
         }
       }
     }

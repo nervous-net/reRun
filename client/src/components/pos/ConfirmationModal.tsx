@@ -12,22 +12,21 @@ interface ConfirmationModalProps {
   tax: number;
   onConfirm: () => void;
   onCancel: () => void;
+  processing: boolean;
 }
 
 function formatCurrency(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
-export function ConfirmationModal({ lineItems, total, tax, onConfirm, onCancel }: ConfirmationModalProps) {
-  const ringUpTotal = total + tax;
-
+export function ConfirmationModal({ lineItems, total, tax, onConfirm, onCancel, processing }: ConfirmationModalProps) {
   const footer = (
     <>
-      <Button variant="secondary" onClick={onCancel}>
+      <Button variant="secondary" onClick={onCancel} disabled={processing}>
         Cancel
       </Button>
-      <Button variant="primary" onClick={onConfirm}>
-        Complete Rental
+      <Button variant="primary" onClick={onConfirm} disabled={processing}>
+        {processing ? 'Processing...' : 'Complete Rental'}
       </Button>
     </>
   );
@@ -45,16 +44,18 @@ export function ConfirmationModal({ lineItems, total, tax, onConfirm, onCancel }
           ))}
         </div>
 
-        {/* Tax */}
-        <div style={styles.taxRow}>
-          <span style={styles.taxLabel}>Tax</span>
-          <span style={styles.taxAmount}>{formatCurrency(tax)}</span>
-        </div>
+        {/* Tax (hidden when zero — Lightspeed handles tax) */}
+        {tax > 0 && (
+          <div style={styles.taxRow}>
+            <span style={styles.taxLabel}>Tax</span>
+            <span style={styles.taxAmount}>{formatCurrency(tax)}</span>
+          </div>
+        )}
 
         {/* Total to ring up */}
         <div style={styles.totalDisplay}>
           <span style={styles.totalLabel}>Ring Up in Lightspeed</span>
-          <span style={styles.totalAmount}>{formatCurrency(ringUpTotal)}</span>
+          <span style={styles.totalAmount}>{formatCurrency(total)}</span>
         </div>
       </div>
     </Modal>

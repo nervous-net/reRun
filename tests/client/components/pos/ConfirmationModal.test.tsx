@@ -13,10 +13,11 @@ const lineItems: LineItem[] = [
 
 const defaultProps = {
   lineItems,
-  total: 1198,
+  total: 1306,
   tax: 108,
   onConfirm: vi.fn(),
   onCancel: vi.fn(),
+  processing: false,
 };
 
 describe('ConfirmationModal', () => {
@@ -28,11 +29,17 @@ describe('ConfirmationModal', () => {
     expect(screen.getByText('$6.99')).toBeDefined();
   });
 
-  it('displays the total amount to ring up in Lightspeed (total + tax)', () => {
+  it('displays total to ring up in Lightspeed, hides tax row when tax is zero', () => {
+    render(<ConfirmationModal {...defaultProps} tax={0} total={1198} />);
+    // tax row hidden when zero
+    expect(screen.queryByText('Tax')).toBeNull();
+    // total = subtotal when no tax
+    expect(screen.getByText('$11.98')).toBeDefined();
+  });
+
+  it('shows tax row when tax is non-zero', () => {
     render(<ConfirmationModal {...defaultProps} />);
-    // tax is 108 cents = $1.08
     expect(screen.getByText('$1.08')).toBeDefined();
-    // total to ring up = (1198 + 108) / 100 = $13.06
     expect(screen.getByText('$13.06')).toBeDefined();
   });
 

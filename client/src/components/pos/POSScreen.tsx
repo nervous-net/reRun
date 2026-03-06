@@ -49,10 +49,11 @@ export function POSScreen() {
   const [completedTotal, setCompletedTotal] = useState<number | null>(null);
   const [pricingRules, setPricingRules] = useState<PricingRule[]>([]);
   const [pendingScan, setPendingScan] = useState<{ copyId: string; titleId: string; titleName: string; format: string; rating?: string } | null>(null);
-  const [taxRate, setTaxRate] = useState(0.08);
+  const [taxRate, setTaxRate] = useState(0);
   const [processing, setProcessing] = useState(false);
   const [ageWarning, setAgeWarning] = useState<{ rating: string; message: string; restrictedTitles?: string[] } | null>(null);
   const [parentApproved, setParentApproved] = useState(false);
+  const checkedOutCopyIds = useRef<Set<string>>(new Set());
   const [familyMembers, setFamilyMembers] = useState<any[]>([]);
   const [selectedFamilyMember, setSelectedFamilyMember] = useState<any | null>(null);
   const [showFamilyPicker, setShowFamilyPicker] = useState(false);
@@ -415,8 +416,11 @@ export function POSScreen() {
     setError(null);
     try {
       // Checkout rental copies first (creates rental records with due dates)
+      // Skip copies already checked out from a previous attempt (e.g. age restriction retry)
       const rentalItems = lineItems.filter((item) => item.type === 'rental' && item.copyId && item.pricingRuleId);
       for (const item of rentalItems) {
+        if (checkedOutCopyIds.current.has(item.copyId!)) continue;
+
         const result = await api.rentals.checkout({
           customerId: customer!.id,
           copyId: item.copyId!,
@@ -435,6 +439,8 @@ export function POSScreen() {
           setProcessing(false);
           return;
         }
+
+        checkedOutCopyIds.current.add(item.copyId!);
       }
 
       // Determine transaction type from items
@@ -454,6 +460,7 @@ export function POSScreen() {
         })),
       });
 
+      checkedOutCopyIds.current.clear();
       setReferenceCode(transaction.referenceCode);
       setCompletedTotal(total);
       setShowConfirmation(false);
@@ -484,6 +491,7 @@ export function POSScreen() {
     setShowSearchResults(false);
     setSelectedSearchTitle(null);
     setTitleCopies([]);
+    checkedOutCopyIds.current.clear();
     focusScanInput();
   }
 
@@ -729,8 +737,10 @@ export function POSScreen() {
             setShowConfirmation(false);
             setAgeWarning(null);
             setParentApproved(false);
+            checkedOutCopyIds.current.clear();
             focusScanInput();
           }}
+          processing={processing}
         />
       )}
 
@@ -742,6 +752,7 @@ export function POSScreen() {
             setAgeWarning(null);
             setShowConfirmation(false);
             setParentApproved(false);
+            setProcessing(false);
             focusScanInput();
           }}
           title="Age Restriction"
@@ -753,10 +764,11 @@ export function POSScreen() {
                   setAgeWarning(null);
                   setShowConfirmation(false);
                   setParentApproved(false);
+                  setProcessing(false);
                   focusScanInput();
                 }}
               >
-                Cancel Rental
+                No
               </Button>
               <Button
                 variant="primary"
@@ -765,7 +777,7 @@ export function POSScreen() {
                   setParentApproved(true);
                 }}
               >
-                Parent/Guardian Approves
+                Yes
               </Button>
             </>
           }
@@ -786,7 +798,7 @@ export function POSScreen() {
             {ageWarning.restrictedTitles && ageWarning.restrictedTitles.length > 0 && (
               <div style={{ margin: 0 }}>
                 <p style={{ color: 'var(--text-secondary)', margin: '0 0 4px', fontSize: 'var(--font-size-sm)', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                  {ageWarning.restrictedTitles.length === 1 ? 'Restricted Title' : 'Restricted Titles'}
+                  Customer does not meet the age requirement to rent:
                 </p>
                 {ageWarning.restrictedTitles.map((title, i) => (
                   <p key={i} style={{ color: 'var(--crt-amber, var(--crt-green))', margin: '2px 0', fontSize: 'var(--font-size-md)' }}>
@@ -795,11 +807,8 @@ export function POSScreen() {
                 ))}
               </div>
             )}
-            <p style={{ color: 'var(--text-primary)', margin: 0 }}>
-              {ageWarning.message}
-            </p>
             <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: 'var(--font-size-sm)' }}>
-              A parent or guardian must approve this rental for an under-18 customer.
+              Proceed with transaction?
             </p>
           </div>
         </Modal>

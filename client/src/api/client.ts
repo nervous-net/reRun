@@ -1,10 +1,20 @@
 // ABOUTME: Typed API client for all reRun backend endpoints
 // ABOUTME: Uses fetch with JSON helpers, relative URLs work in both dev and production
 
+async function throwResponseError(res: Response, fallback: string): Promise<never> {
+  try {
+    const body = await res.json();
+    if (body.error) throw new Error(body.error);
+  } catch (e) {
+    if (e instanceof Error && e.message !== fallback) throw e;
+  }
+  throw new Error(fallback);
+}
+
 async function get<T>(path: string, params?: Record<string, string>): Promise<T> {
   const url = params ? `${path}?${new URLSearchParams(params)}` : path;
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  if (!res.ok) await throwResponseError(res, `API error: ${res.status}`);
   return res.json();
 }
 
@@ -14,7 +24,7 @@ async function post<T>(path: string, body?: unknown): Promise<T> {
     headers: { 'Content-Type': 'application/json' },
     body: body ? JSON.stringify(body) : undefined,
   });
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  if (!res.ok) await throwResponseError(res, `API error: ${res.status}`);
   return res.json();
 }
 
@@ -24,13 +34,13 @@ async function put<T>(path: string, body: unknown): Promise<T> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  if (!res.ok) await throwResponseError(res, `API error: ${res.status}`);
   return res.json();
 }
 
 async function del<T>(path: string): Promise<T> {
   const res = await fetch(path, { method: 'DELETE' });
-  if (!res.ok) throw new Error(`DELETE ${path} failed: ${res.status}`);
+  if (!res.ok) await throwResponseError(res, `DELETE ${path} failed: ${res.status}`);
   if (res.status === 204 || res.headers.get('content-length') === '0') {
     return {} as T;
   }
