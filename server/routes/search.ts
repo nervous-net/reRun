@@ -14,6 +14,7 @@ export function createSearchRoutes(db: any) {
     const available = c.req.query('available');
     const rating = c.req.query('rating');
     const year = c.req.query('year');
+    const showInactive = c.req.query('showInactive');
     const sort = c.req.query('sort') || 'name';
     const page = Math.max(1, Number(c.req.query('page') || '1'));
     const limit = Math.max(1, Math.min(100, Number(c.req.query('limit') || '20')));
@@ -22,6 +23,11 @@ export function createSearchRoutes(db: any) {
     // Build dynamic WHERE clauses with parameterized values
     const conditions: string[] = [];
     const params: any[] = [];
+
+    // Filter out inactive titles by default
+    if (showInactive !== '1') {
+      conditions.push(`(t.active = 1 OR t.active IS NULL)`);
+    }
 
     if (q) {
       conditions.push(

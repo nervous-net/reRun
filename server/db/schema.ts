@@ -19,6 +19,7 @@ export const titles = sqliteTable('titles', {
   coverUrl: text('cover_url'),
   mediaType: text('media_type').default('movie'),
   numberOfSeasons: integer('number_of_seasons'),
+  active: integer('active').default(1),
   createdAt: text('created_at').default(sql`(datetime('now'))`),
   updatedAt: text('updated_at').default(sql`(datetime('now'))`),
 });
@@ -199,6 +200,13 @@ export const alertConfigs = sqliteTable('alert_configs', {
   type: text('type').notNull(),
   template: text('template').notNull(),
   enabled: integer('enabled').default(1),
+});
+
+// ─── Held Transactions ──────────────────────────────────────────────
+export const heldTransactions = sqliteTable('held_transactions', {
+  id: text('id').primaryKey(),
+  data: text('data').notNull(),
+  heldAt: text('held_at').notNull(),
 });
 
 // ─── Store Settings ──────────────────────────────────────────────────

@@ -4,6 +4,7 @@
 import { Hono } from 'hono';
 import { eq } from 'drizzle-orm';
 import { storeSettings } from '../db/schema.js';
+import { getNow } from '../lib/date.js';
 
 export function createSettingsRoutes(db: any) {
   const routes = new Hono();
@@ -18,6 +19,13 @@ export function createSettingsRoutes(db: any) {
     }
 
     return c.json({ data: settings });
+  });
+
+  // GET /dev-time — get effective date for dev mode
+  routes.get('/dev-time', async (c) => {
+    const effectiveDate = getNow(db).toISOString();
+    const realDate = new Date().toISOString();
+    return c.json({ effectiveDate, realDate });
   });
 
   // GET /:key — get a single setting

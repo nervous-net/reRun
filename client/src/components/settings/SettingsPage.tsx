@@ -204,6 +204,8 @@ const SETTINGS_KEYS = [
   'return_by_hour',
   'tmdb_api_key',
   'theme',
+  'dev_mode',
+  'dev_date_offset',
 ] as const;
 
 const THEME_OPTIONS = [
@@ -236,6 +238,7 @@ export function SettingsPage() {
   const [confirmUpdate, setConfirmUpdate] = useState(false);
   const [confirmRestore, setConfirmRestore] = useState(false);
   const [restoreTarget, setRestoreTarget] = useState<string | null>(null);
+  const [simulatedDate, setSimulatedDate] = useState<string | null>(null);
 
   // Tax rate is displayed as percentage but stored as basis points
   const [taxDisplay, setTaxDisplay] = useState('');
@@ -287,6 +290,24 @@ export function SettingsPage() {
     const timer = setTimeout(() => setFeedback(null), 4000);
     return () => clearTimeout(timer);
   }, [feedback]);
+
+  const fetchDevTime = useCallback(async () => {
+    try {
+      const data = await api.settings.devTime();
+      setSimulatedDate(data.effectiveDate);
+    } catch {
+      setSimulatedDate(null);
+    }
+  }, []);
+
+  // Fetch dev time when settings load and dev_mode is on
+  useEffect(() => {
+    if (settings.dev_mode === '1') {
+      fetchDevTime();
+    } else {
+      setSimulatedDate(null);
+    }
+  }, [settings.dev_mode, settings.dev_date_offset, fetchDevTime]);
 
   function updateSetting(key: SettingsKey, value: string) {
     setSettings(prev => ({ ...prev, [key]: value }));
@@ -718,6 +739,67 @@ export function SettingsPage() {
           </button>
         </div>
       ))}
+
+      {/* Developer Tools */}
+      <div style={styles.sectionHeader}>Developer Tools</div>
+
+      <div style={styles.fieldRow}>
+        <label style={styles.label}>Dev Mode</label>
+        <select
+          style={styles.input}
+          value={settings.dev_mode ?? '0'}
+          onChange={e => updateSetting('dev_mode', e.target.value)}
+        >
+          <option value="0">Off</option>
+          <option value="1">On — Enable date override for testing</option>
+        </select>
+        <div style={styles.hint}>
+          When enabled, business logic uses simulated date instead of real time
+        </div>
+      </div>
+
+      {settings.dev_mode === '1' && (
+        <>
+          <div style={styles.fieldRow}>
+            <label style={styles.label}>Date Offset (days)</label>
+            <div style={{ display: 'flex', gap: 'var(--space-xs)', alignItems: 'center' }}>
+              <button
+                type="button"
+                style={styles.toggleButton}
+                onClick={() => updateSetting('dev_date_offset', String(Number(settings.dev_date_offset || '0') - 1))}
+              >
+                -1
+              </button>
+              <input
+                style={{ ...styles.input, flex: 1, textAlign: 'center' as const }}
+                type="number"
+                value={settings.dev_date_offset ?? '0'}
+                onChange={e => updateSetting('dev_date_offset', e.target.value)}
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
+              />
+              <button
+                type="button"
+                style={styles.toggleButton}
+                onClick={() => updateSetting('dev_date_offset', String(Number(settings.dev_date_offset || '0') + 1))}
+              >
+                +1
+              </button>
+            </div>
+            <div style={styles.hint}>
+              Positive = future, negative = past. Shifts system date for rentals, alerts, etc.
+            </div>
+          </div>
+          {simulatedDate && (
+            <div style={styles.systemRow}>
+              <span style={styles.systemLabel}>Simulated Date</span>
+              <span style={styles.systemValue}>
+                {new Date(simulatedDate).toLocaleDateString()} {new Date(simulatedDate).toLocaleTimeString()}
+              </span>
+            </div>
+          )}
+        </>
+      )}
 
       {/* Save Button */}
       <button

@@ -4,7 +4,7 @@
 import { Hono } from 'hono';
 import { and, eq, like, or, sql, count } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { customers, familyMembers, storeSettings } from '../db/schema.js';
+import { customers, familyMembers, rentals, storeSettings } from '../db/schema.js';
 
 export function createCustomersRoutes(db: any) {
   const routes = new Hono();
@@ -375,6 +375,68 @@ export function createCustomersRoutes(db: any) {
       .all();
 
     return c.json({ ...updated, balanceAdjustReason: body.reason ?? null });
+  });
+
+  // DELETE /:id — soft-delete (set active=0)
+  routes.delete('/:id', async (c) => {
+    const id = c.req.param('id');
+
+    const [customer] = await db
+      .select()
+      .from(customers)
+      .where(eq(customers.id, id))
+      .all();
+
+    if (!customer) {
+      return c.json({ error: 'Customer not found' }, 404);
+    }
+
+    // Check for active rentals
+    const [activeRentals] = await db
+      .select({ count: count() })
+      .from(rentals)
+      .where(and(eq(rentals.customerId, id), eq(rentals.status, 'out')));
+
+    if (activeRentals.count > 0) {
+      return c.json({ error: 'Cannot deactivate customer with active rentals' }, 400);
+    }
+
+    await db
+      .update(customers)
+      .set({ active: 0, updatedAt: sql`(datetime('now'))` })
+      .where(eq(customers.id, id))
+      .run();
+
+    return c.json({ success: true });
+  });
+
+  // PUT /:id/reactivate — restore soft-deleted customer
+  routes.put('/:id/reactivate', async (c) => {
+    const id = c.req.param('id');
+
+    const [customer] = await db
+      .select()
+      .from(customers)
+      .where(eq(customers.id, id))
+      .all();
+
+    if (!customer) {
+      return c.json({ error: 'Customer not found' }, 404);
+    }
+
+    await db
+      .update(customers)
+      .set({ active: 1, updatedAt: sql`(datetime('now'))` })
+      .where(eq(customers.id, id))
+      .run();
+
+    const [updated] = await db
+      .select()
+      .from(customers)
+      .where(eq(customers.id, id))
+      .all();
+
+    return c.json(updated);
   });
 
   return routes;

@@ -29,6 +29,7 @@ export function migrateTestDb(sqlite: Database.Database) {
       cover_url TEXT,
       media_type TEXT DEFAULT 'movie',
       number_of_seasons INTEGER,
+      active INTEGER DEFAULT 1,
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now'))
     );
@@ -182,6 +183,12 @@ export function migrateTestDb(sqlite: Database.Database) {
       type TEXT NOT NULL,
       template TEXT NOT NULL,
       enabled INTEGER DEFAULT 1
+    );
+
+    CREATE TABLE IF NOT EXISTS held_transactions (
+      id TEXT PRIMARY KEY,
+      data TEXT NOT NULL,
+      held_at TEXT NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS store_settings (

@@ -148,7 +148,7 @@ describe('ThemePreview', () => {
 
     expect(screen.getByText('F1')).toBeDefined();
     expect(screen.getByText('F6')).toBeDefined();
-    expect(screen.getByText('reRun v0.1.0')).toBeDefined();
+    expect(screen.getByText('reRun v0.1.1')).toBeDefined();
   });
 
   THEME_IDS.forEach((id) => {

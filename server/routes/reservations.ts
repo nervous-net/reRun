@@ -5,6 +5,7 @@ import { Hono } from 'hono';
 import { eq, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { reservations, customers, titles } from '../db/schema.js';
+import { getNow } from '../lib/date.js';
 
 export function createReservationsRoutes(db: any) {
   const routes = new Hono();
@@ -21,7 +22,7 @@ export function createReservationsRoutes(db: any) {
     }
 
     const id = nanoid();
-    const now = new Date();
+    const now = getNow(db);
     const reservedAt = now.toISOString();
     const expiresAt = body.expiresAt
       ?? new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();

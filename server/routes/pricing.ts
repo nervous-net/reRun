@@ -42,6 +42,15 @@ export function createPricingRoutes(db: any) {
     if (body.durationDays === undefined || body.durationDays === null) {
       return c.json({ error: 'durationDays is required' }, 400);
     }
+    if (body.rate <= 0) {
+      return c.json({ error: 'rate must be greater than 0' }, 400);
+    }
+    if (body.durationDays <= 0) {
+      return c.json({ error: 'durationDays must be greater than 0' }, 400);
+    }
+    if (body.lateFeePerDay !== undefined && body.lateFeePerDay < 0) {
+      return c.json({ error: 'lateFeePerDay must be >= 0' }, 400);
+    }
 
     const id = nanoid();
 

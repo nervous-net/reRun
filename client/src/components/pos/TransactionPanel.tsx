@@ -3,6 +3,7 @@
 
 import { type CSSProperties } from 'react';
 export interface LineItem {
+  id: string;
   type: 'rental' | 'product' | 'fee';
   description: string;
   amount: number;
@@ -55,7 +56,7 @@ export function TransactionPanel({ items, onRemoveItem, subtotal, tax, total }: 
         )}
         {items.map((item, index) => (
           <div
-            key={index}
+            key={item.id}
             style={{
               ...styles.row,
               backgroundColor: index % 2 === 1 ? 'var(--accent-02)' : 'transparent',

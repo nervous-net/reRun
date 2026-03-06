@@ -80,5 +80,26 @@ if (drizzleDir) {
   }
 }
 
+// Auto-create held_transactions table for existing installs
+const heldTable = sqlite.prepare(
+  "SELECT name FROM sqlite_master WHERE type='table' AND name='held_transactions'"
+).all();
+if (heldTable.length === 0) {
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS held_transactions (
+      id TEXT PRIMARY KEY,
+      data TEXT NOT NULL,
+      held_at TEXT NOT NULL
+    )
+  `);
+}
+
+// Auto-add active column to titles for existing installs
+try {
+  sqlite.exec(`ALTER TABLE titles ADD COLUMN active INTEGER DEFAULT 1`);
+} catch {
+  // Column already exists
+}
+
 export const db = drizzle(sqlite, { schema });
 export { sqlite };

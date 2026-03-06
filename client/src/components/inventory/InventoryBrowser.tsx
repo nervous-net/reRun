@@ -211,6 +211,7 @@ export function InventoryBrowser() {
   const [formatFilters, setFormatFilters] = useState<Set<string>>(new Set());
   const [availableOnly, setAvailableOnly] = useState(false);
   const [ratingFilter, setRatingFilter] = useState('');
+  const [showDeleted, setShowDeleted] = useState(false);
 
   // Genre options built from results
   const [genreOptions, setGenreOptions] = useState<{ value: string; label: string }[]>([
@@ -231,8 +232,9 @@ export function InventoryBrowser() {
     if (ratingFilter) params.rating = ratingFilter;
     if (availableOnly) params.available = 'true';
     if (formatFilters.size > 0) params.format = [...formatFilters].join(',');
+    if (showDeleted) params.showInactive = '1';
     return params;
-  }, [searchQuery, genreFilter, formatFilters, availableOnly, ratingFilter]);
+  }, [searchQuery, genreFilter, formatFilters, availableOnly, ratingFilter, showDeleted]);
 
   const fetchTitles = useCallback(async () => {
     setLoading(true);
@@ -426,6 +428,19 @@ export function InventoryBrowser() {
               onChange={(e) => setRatingFilter(e.target.value)}
             />
           </div>
+
+          <div style={sidebarSectionStyle}>
+            <div style={sidebarLabelStyle}>Deleted</div>
+            <div
+              style={toggleRowStyle}
+              onClick={() => setShowDeleted(!showDeleted)}
+              role="checkbox"
+              aria-checked={showDeleted}
+            >
+              <span>Show deleted</span>
+              <span style={toggleIndicatorStyle(showDeleted)} />
+            </div>
+          </div>
         </aside>
 
         {/* Main Content */}
@@ -478,6 +493,7 @@ export function InventoryBrowser() {
           titleId={detailTitleId}
           onClose={() => setDetailTitleId(null)}
           onEdit={handleEditTitle}
+          onDeleted={fetchTitles}
         />
       )}
 

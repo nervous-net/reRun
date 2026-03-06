@@ -15,6 +15,9 @@ import { ReferenceCodeScreen } from './ReferenceCodeScreen';
 import { HeldTransactions } from './HeldTransactions';
 import { FamilyMemberPicker } from './FamilyMemberPicker';
 
+let nextLineItemId = 0;
+const lineItemId = () => String(++nextLineItemId);
+
 interface Customer {
   id: string;
   firstName: string;
@@ -265,6 +268,7 @@ export function POSScreen() {
     setLineItems((prev) => [
       ...prev,
       {
+        id: lineItemId(),
         type: 'rental',
         description: `${pendingScan.titleName} (${pendingScan.format})`,
         amount: rule.rate,
@@ -369,7 +373,7 @@ export function POSScreen() {
             // Customer lookup failed, proceed without
           }
         }
-        setLineItems(recalled.items ?? []);
+        setLineItems((recalled.items ?? []).map((item: any) => ({ ...item, id: item.id ?? lineItemId() })));
       }
       refreshHeldCount();
       focusScanInput();
@@ -386,6 +390,7 @@ export function POSScreen() {
     setLineItems((prev) => [
       ...prev,
       {
+        id: lineItemId(),
         type: 'fee',
         description: 'Late Fee',
         amount: 100,

@@ -576,7 +576,7 @@ export function ThemePreview({ themeId }: ThemePreviewProps) {
           <span style={fKeyStyle}>F6</span><span style={fKeyLabelStyle}>Dashboard</span>
         </div>
         <div style={{ color: 'var(--text-muted)' }}>
-          reRun v0.1.0
+          reRun v0.1.1
         </div>
       </div>
     </div>

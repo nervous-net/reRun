@@ -12,6 +12,7 @@ import {
   familyMembers,
   storeSettings,
 } from '../db/schema.js';
+import { getNow } from '../lib/date.js';
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -42,7 +43,7 @@ export async function checkoutCopy(db: any, input: CheckoutInput) {
     throw new Error('Pricing rule not found');
   }
 
-  const now = new Date();
+  const now = getNow(db);
   const dueDate = new Date(now.getTime() + rule.durationDays * 24 * 60 * 60 * 1000);
 
   // Apply configured return-by hour to due date (e.g. "all rentals due by 6pm")
@@ -113,7 +114,7 @@ export async function returnCopy(db: any, input: ReturnInput) {
     throw new Error('No active rental found for this copy');
   }
 
-  const now = new Date();
+  const now = getNow(db);
   const dueAt = new Date(rental.dueAt);
 
   // Calculate late fee
@@ -199,7 +200,7 @@ export async function returnCopy(db: any, input: ReturnInput) {
 // ─── Overdue Rentals ────────────────────────────────────────────────
 
 export async function getOverdueRentals(db: any) {
-  const now = new Date().toISOString();
+  const now = getNow(db).toISOString();
 
   const results = await db
     .select({

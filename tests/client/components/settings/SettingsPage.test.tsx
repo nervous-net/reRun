@@ -27,7 +27,7 @@ function mockFetch(settingsData: Record<string, string> = {}) {
         ok: true,
         status: 200,
         json: () => Promise.resolve({
-          currentVersion: '0.1.0',
+          currentVersion: '0.1.1',
           availableUpdate: null,
           lastChecked: null,
           updating: false,
@@ -151,7 +151,7 @@ describe('SettingsPage', () => {
       expect(screen.getByText('System')).toBeDefined();
     });
 
-    expect(screen.getByText('v0.1.0')).toBeDefined();
+    expect(screen.getByText('v0.1.1')).toBeDefined();
     expect(screen.getByText('SQLite (local)')).toBeDefined();
   });
 

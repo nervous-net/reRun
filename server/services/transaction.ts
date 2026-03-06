@@ -11,7 +11,9 @@ import {
   copies,
   rentals,
   storeSettings,
+  heldTransactions as heldTransactionsTable,
 } from '../db/schema.js';
+import { getNow } from '../lib/date.js';
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -47,37 +49,37 @@ interface HeldTransactionSummary {
   heldAt: string;
 }
 
-// ─── In-memory hold storage ─────────────────────────────────────────
+// ─── DB-backed hold storage ─────────────────────────────────────────
 
-const heldTransactions = new Map<string, HeldTransactionEntry>();
+export function holdTransaction(db: any, holdId: string, data: any): void {
+  db.insert(heldTransactionsTable).values({
+    id: holdId,
+    data: JSON.stringify(data),
+    heldAt: getNow(db).toISOString(),
+  }).run();
+}
 
-export function holdTransaction(holdId: string, data: any): void {
-  heldTransactions.set(holdId, {
-    data,
-    heldAt: new Date().toISOString(),
+export function getHeldTransactions(db: any): HeldTransactionSummary[] {
+  const rows = db.select().from(heldTransactionsTable).all();
+  return rows.map((row: any) => {
+    const data = JSON.parse(row.data);
+    return {
+      id: row.id,
+      customerId: data.customerId ?? null,
+      customerName: data.customerName ?? null,
+      itemCount: Array.isArray(data.items) ? data.items.length : 0,
+      total: data.total ?? 0,
+      heldAt: row.heldAt,
+    };
   });
 }
 
-export function getHeldTransactions(): HeldTransactionSummary[] {
-  const result: HeldTransactionSummary[] = [];
-  for (const [holdId, entry] of heldTransactions.entries()) {
-    result.push({
-      id: holdId,
-      customerId: entry.data.customerId ?? null,
-      customerName: entry.data.customerName ?? null,
-      itemCount: Array.isArray(entry.data.items) ? entry.data.items.length : 0,
-      total: entry.data.total ?? 0,
-      heldAt: entry.heldAt,
-    });
-  }
-  return result;
-}
-
-export function recallTransaction(holdId: string): any | undefined {
-  const entry = heldTransactions.get(holdId);
-  if (!entry) return undefined;
-  heldTransactions.delete(holdId);
-  return entry.data;
+export function recallTransaction(db: any, holdId: string): any | undefined {
+  const [row] = db.select().from(heldTransactionsTable)
+    .where(eq(heldTransactionsTable.id, holdId)).all();
+  if (!row) return undefined;
+  db.delete(heldTransactionsTable).where(eq(heldTransactionsTable.id, holdId)).run();
+  return JSON.parse(row.data);
 }
 
 // ─── Tax calculation ────────────────────────────────────────────────
@@ -231,10 +233,18 @@ export async function voidTransaction(db: any, transactionId: string, reason: st
       }
 
       if (item.type === 'rental' && item.copyId) {
-        db.update(copies)
-          .set({ status: 'in' })
-          .where(eq(copies.id, item.copyId))
-          .run();
+        // Only revert copy status if no newer active rental exists for this copy
+        const activeRentals = db.select({ id: rentals.id })
+          .from(rentals)
+          .where(and(eq(rentals.copyId, item.copyId), eq(rentals.status, 'out')))
+          .all();
+        const hasNewerRental = activeRentals.some((r: any) => r.id !== item.rentalId);
+        if (!hasNewerRental) {
+          db.update(copies)
+            .set({ status: 'in' })
+            .where(eq(copies.id, item.copyId))
+            .run();
+        }
 
         // Find and reverse the rental for this copy
         if (item.rentalId) {

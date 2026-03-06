@@ -21,21 +21,21 @@ export function createTransactionsRoutes(db: any) {
     const body = await c.req.json();
     const holdId = nanoid();
 
-    holdTransaction(holdId, body);
+    holdTransaction(db, holdId, body);
 
     return c.json({ holdId }, 201);
   });
 
   // GET /held — list held transactions
   routes.get('/held', async (c) => {
-    const held = getHeldTransactions();
+    const held = getHeldTransactions(db);
     return c.json({ data: held });
   });
 
   // POST /recall/:holdId — recall a held transaction
   routes.post('/recall/:holdId', async (c) => {
     const holdId = c.req.param('holdId');
-    const data = recallTransaction(holdId);
+    const data = recallTransaction(db, holdId);
 
     if (!data) {
       return c.json({ error: 'Held transaction not found' }, 404);
@@ -75,7 +75,9 @@ export function createTransactionsRoutes(db: any) {
       const result = await createTransaction(db, body);
       return c.json(result, 201);
     } catch (err: any) {
-      return c.json({ error: err.message }, 500);
+      const msg = err.message || '';
+      const isBusinessError = /out of stock|not available|not found/i.test(msg);
+      return c.json({ error: msg }, isBusinessError ? 400 : 500);
     }
   });
 
@@ -112,7 +114,9 @@ export function createTransactionsRoutes(db: any) {
       if (err.message === 'Transaction not found') {
         return c.json({ error: 'Transaction not found' }, 404);
       }
-      return c.json({ error: err.message }, 500);
+      const msg = err.message || '';
+      const isBusinessError = /already voided/i.test(msg);
+      return c.json({ error: msg }, isBusinessError ? 400 : 500);
     }
   });
 

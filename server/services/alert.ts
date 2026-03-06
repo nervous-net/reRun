@@ -9,11 +9,12 @@ import {
   titles,
   products,
 } from '../db/schema.js';
+import { getNow } from '../lib/date.js';
 
 // ─── Overdue Rentals ────────────────────────────────────────────────
 
 export async function getOverdueRentals(db: any) {
-  const now = new Date().toISOString();
+  const now = getNow(db).toISOString();
 
   const results = await db
     .select({
@@ -42,12 +43,21 @@ export async function getOverdueRentals(db: any) {
 // ─── Birthday Alerts ────────────────────────────────────────────────
 
 export async function getBirthdayAlerts(db: any) {
-  const today = new Date();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
-  const mmdd = `${month}-${day}`;
+  const today = getNow(db);
+  const monthPadded = String(today.getMonth() + 1).padStart(2, '0');
+  const dayPadded = String(today.getDate()).padStart(2, '0');
+  const monthRaw = String(today.getMonth() + 1);
+  const dayRaw = String(today.getDate());
 
-  // Match birthdays stored as YYYY-MM-DD or MM-DD by checking if the string ends with MM-DD
+  // Match birthdays ending with all pad/no-pad combos of month-day
+  // Covers YYYY-MM-DD, YYYY-M-D, and bare MM-DD formats
+  const patterns = [
+    `%${monthPadded}-${dayPadded}`,
+    `%${monthRaw}-${dayRaw}`,
+    `%${monthPadded}-${dayRaw}`,
+    `%${monthRaw}-${dayPadded}`,
+  ];
+
   const results = await db
     .select({
       id: customers.id,
@@ -61,7 +71,7 @@ export async function getBirthdayAlerts(db: any) {
     .where(
       and(
         eq(customers.active, 1),
-        sql`${customers.birthday} LIKE ${'%' + mmdd}`
+        sql`(${customers.birthday} LIKE ${patterns[0]} OR ${customers.birthday} LIKE ${patterns[1]} OR ${customers.birthday} LIKE ${patterns[2]} OR ${customers.birthday} LIKE ${patterns[3]})`
       )
     );
 

@@ -350,6 +350,36 @@ export function CustomerCard({ customerId }: CustomerCardProps) {
         <Button variant="secondary" onClick={() => setShowBalanceAdjust(true)}>
           Adjust Balance
         </Button>
+        {customer.active ? (
+          <Button
+            variant="danger"
+            onClick={async () => {
+              if (!window.confirm(`Deactivate ${customer.firstName} ${customer.lastName}? They will be hidden from customer lists.`)) return;
+              try {
+                await api.customers.delete(customerId);
+                loadCustomer();
+              } catch {
+                // error visible from stale state
+              }
+            }}
+          >
+            Deactivate
+          </Button>
+        ) : (
+          <Button
+            variant="secondary"
+            onClick={async () => {
+              try {
+                await api.customers.reactivate(customerId);
+                loadCustomer();
+              } catch {
+                // error visible from stale state
+              }
+            }}
+          >
+            Reactivate
+          </Button>
+        )}
       </div>
 
       {/* Edit modal */}

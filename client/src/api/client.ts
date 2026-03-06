@@ -44,6 +44,7 @@ export const api = {
     create: (data: any) => post<any>('/api/titles', data),
     update: (id: string, data: any) => put<any>(`/api/titles/${id}`, data),
     addCopies: (id: string, data: any) => post<any>(`/api/titles/${id}/copies`, data),
+    delete: (id: string) => del<any>(`/api/titles/${id}`),
   },
   copies: {
     update: (id: string, data: any) => put<any>(`/api/copies/${id}`, data),
@@ -60,6 +61,8 @@ export const api = {
     updateFamily: (id: string, familyId: string, data: any) => put<any>(`/api/customers/${id}/family/${familyId}`, data),
     removeFamily: (id: string, familyId: string) => del<any>(`/api/customers/${id}/family/${familyId}`),
     adjustBalance: (id: string, data: any) => put<any>(`/api/customers/${id}/balance`, data),
+    delete: (id: string) => del<any>(`/api/customers/${id}`),
+    reactivate: (id: string) => put<any>(`/api/customers/${id}/reactivate`, {}),
   },
   products: {
     list: (params?: Record<string, string>) => get<any>('/api/products', params),
@@ -122,6 +125,7 @@ export const api = {
     list: () => get<any>('/api/settings'),
     get: (key: string) => get<any>(`/api/settings/${key}`),
     update: (key: string, value: string) => put<any>(`/api/settings/${key}`, { value }),
+    devTime: () => get<any>('/api/settings/dev-time'),
   },
   dashboard: {
     stats: () => get<any>('/api/dashboard/stats'),

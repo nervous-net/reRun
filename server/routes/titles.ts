@@ -2,9 +2,9 @@
 // ABOUTME: Provides paginated listing with available copy counts, detail view, and batch copy creation
 
 import { Hono } from 'hono';
-import { eq, sql, count } from 'drizzle-orm';
+import { eq, and, sql, count } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { titles, copies } from '../db/schema.js';
+import { titles, copies, rentals } from '../db/schema.js';
 import { generateBarcode, generateBarcodes } from '../services/barcode.js';
 
 export function createTitlesRoutes(db: any) {
@@ -12,14 +12,17 @@ export function createTitlesRoutes(db: any) {
 
   // GET / — List titles (paginated), include availableCopies count
   routes.get('/', async (c) => {
-    const page = Math.max(1, Number(c.req.query('page') || '1'));
-    const limit = Math.max(1, Math.min(100, Number(c.req.query('limit') || '20')));
+    const page = Math.max(1, Number(c.req.query('page')) || 1);
+    const limit = Math.max(1, Math.min(100, Number(c.req.query('limit')) || 20));
     const offset = (page - 1) * limit;
+    const showInactive = c.req.query('showInactive') === '1';
+
+    const activeFilter = showInactive ? sql`1=1` : sql`t.active = 1`;
 
     // Get total count
-    const [{ total }] = await db
-      .select({ total: count() })
-      .from(titles);
+    const [{ total }] = await db.all(sql`
+      SELECT count(*) AS total FROM titles t WHERE ${activeFilter}
+    `) as any;
 
     // Get titles with available copy counts via raw SQL subquery
     const rows = await db.all(sql`
@@ -28,9 +31,10 @@ export function createTitlesRoutes(db: any) {
         t.runtime_minutes AS "runtimeMinutes", t.synopsis, t.rating,
         t.cast_list AS "cast", t.director, t.cover_url AS "coverUrl",
         t.media_type AS "mediaType", t.number_of_seasons AS "numberOfSeasons",
-        t.created_at AS "createdAt", t.updated_at AS "updatedAt",
+        t.active, t.created_at AS "createdAt", t.updated_at AS "updatedAt",
         (SELECT count(*) FROM copies c WHERE c.title_id = t.id AND c.status = 'in') AS "availableCopies"
       FROM titles t
+      WHERE ${activeFilter}
       LIMIT ${limit} OFFSET ${offset}
     `);
 
@@ -85,22 +89,25 @@ export function createTitlesRoutes(db: any) {
       numberOfSeasons: body.numberOfSeasons ?? null,
     };
 
-    await db.insert(titles).values(values);
+    const rawDb = (db as any).session.client;
+    rawDb.transaction(() => {
+      db.insert(titles).values(values).run();
 
-    if (body.format && body.quantity) {
-      const existingCopies = await db.select({ id: copies.id }).from(copies).where(eq(copies.titleId, id));
-      for (let i = 0; i < body.quantity; i++) {
-        const barcode = generateBarcode(body.format, id, existingCopies.length + i + 1);
-        db.insert(copies).values({
-          id: nanoid(),
-          titleId: id,
-          barcode,
-          format: body.format,
-          status: 'in',
-          condition: 'good',
-        }).run();
+      if (body.format && body.quantity) {
+        const existingCopies = db.select({ id: copies.id }).from(copies).where(eq(copies.titleId, id)).all();
+        for (let i = 0; i < body.quantity; i++) {
+          const barcode = generateBarcode(body.format, id, existingCopies.length + i + 1);
+          db.insert(copies).values({
+            id: nanoid(),
+            titleId: id,
+            barcode,
+            format: body.format,
+            status: 'in',
+            condition: 'good',
+          }).run();
+        }
       }
-    }
+    })();
 
     const [created] = await db
       .select()
@@ -202,6 +209,44 @@ export function createTitlesRoutes(db: any) {
     }
 
     return c.json({ copies: insertedCopies }, 201);
+  });
+
+  // DELETE /:id — soft-delete title (set active=0)
+  routes.delete('/:id', async (c) => {
+    const id = c.req.param('id');
+
+    const [title] = await db
+      .select()
+      .from(titles)
+      .where(eq(titles.id, id));
+
+    if (!title) {
+      return c.json({ error: 'Title not found' }, 404);
+    }
+
+    // Check for active rentals on any copy of this title
+    const titleCopies = await db
+      .select({ id: copies.id })
+      .from(copies)
+      .where(eq(copies.titleId, id));
+
+    for (const copy of titleCopies) {
+      const [activeRental] = await db
+        .select({ count: count() })
+        .from(rentals)
+        .where(and(eq(rentals.copyId, copy.id), eq(rentals.status, 'out')));
+
+      if (activeRental.count > 0) {
+        return c.json({ error: 'Cannot delete title with active rentals' }, 400);
+      }
+    }
+
+    await db
+      .update(titles)
+      .set({ active: 0, updatedAt: sql`(datetime('now'))` })
+      .where(eq(titles.id, id));
+
+    return c.json({ success: true });
   });
 
   return routes;

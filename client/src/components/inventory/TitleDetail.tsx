@@ -12,6 +12,7 @@ interface TitleDetailProps {
   titleId: string;
   onClose: () => void;
   onEdit?: (titleId: string) => void;
+  onDeleted?: () => void;
 }
 
 interface CopyData {
@@ -198,7 +199,7 @@ function getStatusVariant(status: string): 'success' | 'warning' | 'danger' | 'i
   }
 }
 
-export function TitleDetail({ titleId, onClose, onEdit }: TitleDetailProps) {
+export function TitleDetail({ titleId, onClose, onEdit, onDeleted }: TitleDetailProps) {
   const [title, setTitle] = useState<TitleData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -417,6 +418,24 @@ export function TitleDetail({ titleId, onClose, onEdit }: TitleDetailProps) {
                   data={copiesData}
                   emptyMessage="No copies in inventory"
                 />
+              </div>
+
+              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: 'var(--space-md)' }}>
+                <Button
+                  variant="danger"
+                  onClick={async () => {
+                    if (!window.confirm(`Delete "${title.name}"? It will be hidden from inventory.`)) return;
+                    try {
+                      await api.titles.delete(titleId);
+                      onDeleted?.();
+                      onClose();
+                    } catch {
+                      // error visible from stale state
+                    }
+                  }}
+                >
+                  Delete Title
+                </Button>
               </div>
             </>
           )}

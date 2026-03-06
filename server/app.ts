@@ -24,6 +24,7 @@ import { createUpdateRoutes } from './routes/update.js';
 import { startUpdateChecker } from './services/update.js';
 import { createAutoBackupMiddleware } from './middleware/auto-backup.js';
 import { DB_PATH } from './db/index.js';
+import { purgeInactiveRecords } from './lib/purge.js';
 import path from 'path';
 import fs from 'fs';
 
@@ -69,6 +70,9 @@ app.route('/api/update', createUpdateRoutes(DB_PATH, backupDir));
 
 // Start update checker
 startUpdateChecker(pkg.version);
+
+// Purge records that have been soft-deleted for 30+ days
+purgeInactiveRecords(db);
 
 // In production, serve the built frontend
 if (process.env.NODE_ENV === 'production') {

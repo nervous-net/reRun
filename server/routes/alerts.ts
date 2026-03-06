@@ -34,9 +34,20 @@ export function createAlertsRoutes(db: any) {
   // POST /configs — create an alert config
   routes.post('/configs', async (c) => {
     const body = await c.req.json();
+
+    if (!body.type || !body.template) {
+      return c.json({ error: 'type and template are required' }, 400);
+    }
+
     const id = nanoid();
-    await db.insert(alertConfigs).values({ id, ...body }).run();
-    return c.json({ data: { id, ...body } }, 201);
+    const values = {
+      id,
+      type: body.type,
+      template: body.template,
+      enabled: body.enabled ?? 1,
+    };
+    await db.insert(alertConfigs).values(values).run();
+    return c.json({ data: values }, 201);
   });
 
   // PUT /configs/:id — update an alert config

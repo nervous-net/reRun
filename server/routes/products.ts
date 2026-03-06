@@ -74,6 +74,12 @@ export function createProductsRoutes(db: DB) {
         400
       );
     }
+    if (body.price < 0) {
+      return c.json({ error: 'price must be >= 0' }, 400);
+    }
+    if (body.cost < 0) {
+      return c.json({ error: 'cost must be >= 0' }, 400);
+    }
 
     const id = nanoid();
 

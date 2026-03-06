@@ -347,47 +347,45 @@ describe('Transaction Service', () => {
 
   describe('hold/recall transactions', () => {
     it('holds and recalls a transaction', () => {
+      const { db } = buildTestDb();
       const holdData = {
         customerId: 'cust-1',
         items: [{ type: 'sale', description: 'Held item', amount: 500 }],
       };
 
-      holdTransaction('hold-1', holdData);
-      const held = getHeldTransactions();
+      holdTransaction(db, 'hold-1', holdData);
+      const held = getHeldTransactions(db);
       expect(held).toHaveLength(1);
       expect(held[0].id).toBe('hold-1');
       expect(held[0].customerId).toBe('cust-1');
 
-      const recalled = recallTransaction('hold-1');
+      const recalled = recallTransaction(db, 'hold-1');
       expect(recalled).toBeDefined();
       expect(recalled!.customerId).toBe('cust-1');
 
       // After recall, the hold should be removed
-      const heldAfter = getHeldTransactions();
+      const heldAfter = getHeldTransactions(db);
       expect(heldAfter).toHaveLength(0);
     });
 
     it('returns undefined when recalling a nonexistent hold', () => {
-      const result = recallTransaction('does-not-exist');
+      const { db } = buildTestDb();
+      const result = recallTransaction(db, 'does-not-exist');
       expect(result).toBeUndefined();
     });
 
     it('can hold multiple transactions', () => {
-      // Clean slate (clear any leftover holds)
-      while (getHeldTransactions().length > 0) {
-        const h = getHeldTransactions()[0];
-        recallTransaction(h.id);
-      }
+      const { db } = buildTestDb();
 
-      holdTransaction('h1', { customerId: 'c1', items: [] });
-      holdTransaction('h2', { customerId: 'c2', items: [] });
+      holdTransaction(db, 'h1', { customerId: 'c1', items: [] });
+      holdTransaction(db, 'h2', { customerId: 'c2', items: [] });
 
-      const held = getHeldTransactions();
+      const held = getHeldTransactions(db);
       expect(held).toHaveLength(2);
 
       // Clean up
-      recallTransaction('h1');
-      recallTransaction('h2');
+      recallTransaction(db, 'h1');
+      recallTransaction(db, 'h2');
     });
   });
 });
