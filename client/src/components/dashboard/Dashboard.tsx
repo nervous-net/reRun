@@ -7,6 +7,7 @@ import { api } from '../../api/client';
 import { Badge } from '../common/Badge';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
+import { HelpModal } from '../help/HelpModal';
 
 // --- Grid layout ---
 
@@ -260,6 +261,7 @@ const updatingBannerStyle: CSSProperties = {
 export function Dashboard() {
   const [overdueRentals, setOverdueRentals] = useState<any[]>([]);
   const [lowStockProducts, setLowStockProducts] = useState<any[]>([]);
+  const [productsEnabled, setProductsEnabled] = useState(true);
   const [reservations, setReservations] = useState<any[]>([]);
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
   const [titleCount, setTitleCount] = useState<number | null>(null);
@@ -275,14 +277,28 @@ export function Dashboard() {
   const [updateStatus, setUpdateStatus] = useState<any>(null);
   const [installing, setInstalling] = useState(false);
   const [confirmUpdate, setConfirmUpdate] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   const loadDashboard = useCallback(async () => {
     const errs: string[] = [];
 
+    // Check products setting and setup_complete
+    let showProducts = true;
+    try {
+      const settingsData = await api.settings.list();
+      const s = settingsData.data ?? settingsData;
+      showProducts = s?.products_enabled !== '0';
+      if (s?.setup_complete !== '1') {
+        setShowWelcome(true);
+      }
+    } catch { /* keep default */ }
+    setProductsEnabled(showProducts);
+
     const [overdueResult, lowStockResult, reservationsResult, titlesResult, customersResult, statsResult, recentResult] =
       await Promise.allSettled([
         api.rentals.overdue(),
-        api.products.lowStock(),
+        showProducts ? api.products.lowStock() : Promise.resolve([]),
         api.reservations.list(),
         api.titles.list({ limit: '1' }),
         api.customers.list({ limit: '1' }),
@@ -392,6 +408,35 @@ export function Dashboard() {
         </div>
       )}
 
+      {showWelcome && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: 'var(--space-sm) var(--space-md)',
+          marginBottom: 'var(--space-md)',
+          backgroundColor: 'var(--accent-05)',
+          border: '1px solid var(--crt-green)',
+          borderRadius: 'var(--border-radius)',
+          color: 'var(--crt-green)',
+          textShadow: 'var(--glow-green)',
+          fontFamily: 'var(--font-mono)',
+          fontSize: 'var(--font-size-md)',
+          letterSpacing: '1px',
+        }}>
+          <span>Welcome to reRun Video! Get started with the setup guide.</span>
+          <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
+            <Button variant="primary" onClick={() => setShowHelp(true)}>Get Started</Button>
+            <Button variant="ghost" onClick={async () => {
+              setShowWelcome(false);
+              try { await api.settings.update('setup_complete', '1'); } catch { /* non-critical */ }
+            }}>Dismiss</Button>
+          </div>
+        </div>
+      )}
+
+      <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} initialTab="start" />
+
       {updateStatus?.availableUpdate && !installing && (
         <div style={updateBannerStyle}>
           <span>Update available: v{updateStatus.availableUpdate.version}</span>
@@ -465,6 +510,7 @@ export function Dashboard() {
                     {overdueCount}
                   </Badge>
                 </Link>
+                {productsEnabled && (
                 <Link
                   to="/inventory"
                   style={alertLinkStyle}
@@ -488,6 +534,7 @@ export function Dashboard() {
                     {lowStockCount}
                   </Badge>
                 </Link>
+                )}
               </>
             )}
           </div>

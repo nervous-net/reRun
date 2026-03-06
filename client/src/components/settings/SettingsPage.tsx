@@ -7,6 +7,7 @@ import { Button } from '../common/Button';
 import { Modal } from '../common/Modal';
 import { PricingRulesManager } from './PricingRulesManager';
 import { PromotionsManager } from './PromotionsManager';
+import { HelpModal } from '../help/HelpModal';
 
 // --- Types ---
 
@@ -201,11 +202,13 @@ const SETTINGS_KEYS = [
   'max_active_rentals',
   'max_family_members',
   'age_check_enabled',
+  'products_enabled',
   'return_by_hour',
   'tmdb_api_key',
   'theme',
   'dev_mode',
   'dev_date_offset',
+  'setup_complete',
 ] as const;
 
 const THEME_OPTIONS = [
@@ -238,7 +241,9 @@ export function SettingsPage() {
   const [confirmUpdate, setConfirmUpdate] = useState(false);
   const [confirmRestore, setConfirmRestore] = useState(false);
   const [restoreTarget, setRestoreTarget] = useState<string | null>(null);
+  const [showAllBackups, setShowAllBackups] = useState(false);
   const [simulatedDate, setSimulatedDate] = useState<string | null>(null);
+  const [showHelp, setShowHelp] = useState(false);
 
   // Tax rate is displayed as percentage but stored as basis points
   const [taxDisplay, setTaxDisplay] = useState('');
@@ -434,7 +439,12 @@ export function SettingsPage() {
 
   return (
     <div style={styles.container}>
-      <div style={styles.pageTitle}>SETTINGS</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-lg)' }}>
+        <div style={{ ...styles.pageTitle, marginBottom: 0 }}>SETTINGS</div>
+        <Button variant="secondary" onClick={() => setShowHelp(true)}>Help &amp; Guide</Button>
+      </div>
+
+      <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
 
       {/* Appearance */}
       <div style={styles.sectionHeader}>Appearance</div>
@@ -611,6 +621,21 @@ export function SettingsPage() {
         </div>
       </div>
 
+      <div style={styles.fieldRow}>
+        <label style={styles.label}>Product Sales</label>
+        <select
+          style={styles.input}
+          value={settings.products_enabled ?? '1'}
+          onChange={e => updateSetting('products_enabled', e.target.value)}
+        >
+          <option value="1">Enabled — Show inventory &amp; product sales</option>
+          <option value="0">Disabled — Rentals only</option>
+        </select>
+        <div style={styles.hint}>
+          Hides the Inventory section and product features when disabled
+        </div>
+      </div>
+
       {/* Integration */}
       <div style={styles.sectionHeader}>Integration</div>
 
@@ -714,31 +739,74 @@ export function SettingsPage() {
       )}
 
       {!backupsLoading && backups.length === 0 && (
-        <div style={styles.hint}>No backups found.</div>
+        <div style={styles.hint}>No backups found. Auto-backup creates one daily (keeps last 30).</div>
       )}
 
-      {!backupsLoading && backups.map(backup => (
-        <div key={backup.filename} style={styles.systemRow}>
-          <div>
-            <span style={styles.systemLabel}>{backup.filename}</span>
-            <span style={{ ...styles.hint, marginLeft: 'var(--space-sm)' }}>
-              {formatFileSize(backup.size)} &mdash; {new Date(backup.createdAt).toLocaleString()}
-            </span>
+      {/* Most recent backup */}
+      {!backupsLoading && backups.length > 0 && (
+        <>
+          <div style={styles.systemRow}>
+            <div>
+              <span style={styles.systemLabel}>{backups[0].filename}</span>
+              <span style={{ ...styles.hint, marginLeft: 'var(--space-sm)' }}>
+                {formatFileSize(backups[0].size)} &mdash; {new Date(backups[0].createdAt).toLocaleString()}
+              </span>
+            </div>
+            <button
+              type="button"
+              style={{
+                ...styles.toggleButton,
+                color: 'var(--crt-amber)',
+                borderColor: 'var(--crt-amber)',
+              }}
+              disabled={backupAction}
+              onClick={() => { setRestoreTarget(backups[0].filename); setConfirmRestore(true); }}
+            >
+              Restore
+            </button>
           </div>
-          <button
-            type="button"
-            style={{
-              ...styles.toggleButton,
-              color: 'var(--crt-amber)',
-              borderColor: 'var(--crt-amber)',
-            }}
-            disabled={backupAction}
-            onClick={() => { setRestoreTarget(backup.filename); setConfirmRestore(true); }}
-          >
-            Restore
-          </button>
-        </div>
-      ))}
+
+          {/* Expanded list of older backups */}
+          {showAllBackups && backups.slice(1).map(backup => (
+            <div key={backup.filename} style={styles.systemRow}>
+              <div>
+                <span style={styles.systemLabel}>{backup.filename}</span>
+                <span style={{ ...styles.hint, marginLeft: 'var(--space-sm)' }}>
+                  {formatFileSize(backup.size)} &mdash; {new Date(backup.createdAt).toLocaleString()}
+                </span>
+              </div>
+              <button
+                type="button"
+                style={{
+                  ...styles.toggleButton,
+                  color: 'var(--crt-amber)',
+                  borderColor: 'var(--crt-amber)',
+                }}
+                disabled={backupAction}
+                onClick={() => { setRestoreTarget(backup.filename); setConfirmRestore(true); }}
+              >
+                Restore
+              </button>
+            </div>
+          ))}
+
+          {/* Show All / Hide toggle */}
+          {backups.length > 1 && (
+            <button
+              type="button"
+              style={{
+                ...styles.toggleButton,
+                marginTop: 'var(--space-xs)',
+                color: 'var(--text-secondary)',
+                borderColor: 'var(--border-color)',
+              }}
+              onClick={() => setShowAllBackups(!showAllBackups)}
+            >
+              {showAllBackups ? 'Hide Older Backups' : `Show All Backups (${backups.length})`}
+            </button>
+          )}
+        </>
+      )}
 
       {/* Developer Tools */}
       <div style={styles.sectionHeader}>Developer Tools</div>

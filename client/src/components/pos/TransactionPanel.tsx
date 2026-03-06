@@ -11,6 +11,7 @@ export interface LineItem {
   titleId?: string;
   productId?: string;
   pricingRuleId?: string;
+  rating?: string;
 }
 
 interface TransactionPanelProps {

@@ -48,10 +48,10 @@ export function POSScreen() {
   const [referenceCode, setReferenceCode] = useState<string | null>(null);
   const [completedTotal, setCompletedTotal] = useState<number | null>(null);
   const [pricingRules, setPricingRules] = useState<PricingRule[]>([]);
-  const [pendingScan, setPendingScan] = useState<{ copyId: string; titleId: string; titleName: string; format: string } | null>(null);
+  const [pendingScan, setPendingScan] = useState<{ copyId: string; titleId: string; titleName: string; format: string; rating?: string } | null>(null);
   const [taxRate, setTaxRate] = useState(0.08);
   const [processing, setProcessing] = useState(false);
-  const [ageWarning, setAgeWarning] = useState<{ rating: string; message: string } | null>(null);
+  const [ageWarning, setAgeWarning] = useState<{ rating: string; message: string; restrictedTitles?: string[] } | null>(null);
   const [parentApproved, setParentApproved] = useState(false);
   const [familyMembers, setFamilyMembers] = useState<any[]>([]);
   const [selectedFamilyMember, setSelectedFamilyMember] = useState<any | null>(null);
@@ -78,6 +78,13 @@ export function POSScreen() {
   useEffect(() => {
     focusScanInput();
   }, [focusScanInput, lineItems]);
+
+  // When parent approval is granted, retry the checkout automatically
+  useEffect(() => {
+    if (parentApproved && showConfirmation && !ageWarning) {
+      handleConfirmCheckout();
+    }
+  }, [parentApproved]);
 
   // Fetch family members when a customer is selected
   async function handleCustomerSelected(cust: Customer) {
@@ -223,6 +230,7 @@ export function POSScreen() {
           titleId: copyResult.titleId ?? copyResult.title?.id,
           titleName,
           format,
+          rating: copyResult.title?.rating ?? copyResult.rating,
         });
         return;
       }
@@ -275,6 +283,7 @@ export function POSScreen() {
         copyId: pendingScan.copyId,
         titleId: pendingScan.titleId,
         pricingRuleId: rule.id,
+        rating: pendingScan.rating,
       },
     ]);
     setPendingScan(null);
@@ -300,6 +309,7 @@ export function POSScreen() {
           titleId: title.id,
           titleName: title.name,
           format: copies[0].format,
+          rating: title.rating,
         });
         setShowSearchResults(false);
         setSearchResults([]);
@@ -322,6 +332,7 @@ export function POSScreen() {
       titleId: selectedSearchTitle.id,
       titleName: selectedSearchTitle.name,
       format: copy.format,
+      rating: selectedSearchTitle.rating,
     });
     setShowSearchResults(false);
     setSearchResults([]);
@@ -414,9 +425,13 @@ export function POSScreen() {
           familyMemberId: selectedFamilyMember?.id,
         });
 
-        // If age restriction warning returned, show dialog and stop
+        // If age restriction warning returned, collect all restricted titles and show dialog
         if (result.ageRestriction) {
-          setAgeWarning(result.ageRestriction);
+          const restricted = ['R', 'NC-17'];
+          const restrictedTitles = rentalItems
+            .filter((li) => li.rating && restricted.includes(li.rating))
+            .map((li) => li.description);
+          setAgeWarning({ ...result.ageRestriction, restrictedTitles });
           setProcessing(false);
           return;
         }
@@ -704,7 +719,7 @@ export function POSScreen() {
       )}
 
       {/* Confirmation Modal */}
-      {showConfirmation && (
+      {showConfirmation && !ageWarning && (
         <ConfirmationModal
           lineItems={lineItems}
           total={total}
@@ -717,6 +732,77 @@ export function POSScreen() {
             focusScanInput();
           }}
         />
+      )}
+
+      {/* Age Restriction Warning Modal */}
+      {ageWarning && (
+        <Modal
+          isOpen
+          onClose={() => {
+            setAgeWarning(null);
+            setShowConfirmation(false);
+            setParentApproved(false);
+            focusScanInput();
+          }}
+          title="Age Restriction"
+          footer={
+            <>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setAgeWarning(null);
+                  setShowConfirmation(false);
+                  setParentApproved(false);
+                  focusScanInput();
+                }}
+              >
+                Cancel Rental
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setAgeWarning(null);
+                  setParentApproved(true);
+                }}
+              >
+                Parent/Guardian Approves
+              </Button>
+            </>
+          }
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+            <div style={{
+              padding: '12px 16px',
+              backgroundColor: 'var(--bg-primary)',
+              border: '1px solid var(--crt-amber, var(--crt-red))',
+              borderRadius: 'var(--border-radius)',
+              color: 'var(--crt-amber, var(--crt-red))',
+              textAlign: 'center',
+              fontSize: 'var(--font-size-lg)',
+              letterSpacing: '1px',
+            }}>
+              RATED {ageWarning.rating}
+            </div>
+            {ageWarning.restrictedTitles && ageWarning.restrictedTitles.length > 0 && (
+              <div style={{ margin: 0 }}>
+                <p style={{ color: 'var(--text-secondary)', margin: '0 0 4px', fontSize: 'var(--font-size-sm)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                  {ageWarning.restrictedTitles.length === 1 ? 'Restricted Title' : 'Restricted Titles'}
+                </p>
+                {ageWarning.restrictedTitles.map((title, i) => (
+                  <p key={i} style={{ color: 'var(--crt-amber, var(--crt-green))', margin: '2px 0', fontSize: 'var(--font-size-md)' }}>
+                    {title}
+                  </p>
+                ))}
+              </div>
+            )}
+            <p style={{ color: 'var(--text-primary)', margin: 0 }}>
+              {ageWarning.message}
+            </p>
+            <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: 'var(--font-size-sm)' }}>
+              A parent or guardian must approve this rental for an under-18 customer.
+            </p>
+          </div>
+        </Modal>
       )}
 
       {/* Held Transactions Modal */}

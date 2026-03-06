@@ -12,6 +12,7 @@ interface ModalProps {
   title?: string;
   children: ReactNode;
   footer?: ReactNode;
+  maxWidth?: string;
 }
 
 const overlayStyle: CSSProperties = {
@@ -81,7 +82,7 @@ const footerStyle: CSSProperties = {
   gap: 'var(--space-sm)',
 };
 
-export function Modal({ isOpen, onClose, title, children, footer }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, footer, maxWidth }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const titleId = useId();
@@ -154,7 +155,7 @@ export function Modal({ isOpen, onClose, title, children, footer }: ModalProps) 
     <div style={overlayStyle} onClick={handleOverlayClick}>
       <div
         ref={panelRef}
-        style={panelStyle}
+        style={{ ...panelStyle, ...(maxWidth ? { maxWidth } : {}) }}
         role="dialog"
         aria-modal="true"
         {...(title ? { 'aria-labelledby': titleId } : {})}
