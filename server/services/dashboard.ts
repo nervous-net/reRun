@@ -14,7 +14,14 @@ export interface TodayStats {
 export async function getTodayStats(db: any): Promise<TodayStats> {
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
-  const todayIso = todayStart.toISOString();
+  // Use SQLite-compatible format (YYYY-MM-DD HH:MM:SS) for string comparison.
+  // SQLite datetime('now') stores without 'T' or 'Z', and space < 'T' in ASCII,
+  // so ISO format (.toISOString()) would make all SQLite-formatted dates appear
+  // to be before the start of day.
+  const y = todayStart.getFullYear();
+  const m = String(todayStart.getMonth() + 1).padStart(2, '0');
+  const d = String(todayStart.getDate()).padStart(2, '0');
+  const todayIso = `${y}-${m}-${d} 00:00:00`;
 
   // Count rental transactions today (non-voided)
   const [rentalCount] = await db

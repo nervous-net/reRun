@@ -93,6 +93,32 @@ describe('Dashboard Service', () => {
       expect(stats.rentalsToday).toBe(1);
     });
 
+    it('counts transactions with SQLite datetime format (no T separator)', async () => {
+      // SQLite datetime('now') produces 'YYYY-MM-DD HH:MM:SS' (space, no T/Z)
+      // This is what production actually stores via schema default
+      const { db } = buildDb();
+      const customerId = await seedCustomer(db);
+
+      const now = new Date();
+      const sqliteFormat = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+
+      await db.insert(transactions).values({
+        id: nanoid(),
+        customerId,
+        type: 'rental',
+        subtotal: 399,
+        tax: 0,
+        total: 399,
+        paymentMethod: 'cash',
+        voided: 0,
+        createdAt: sqliteFormat,
+      });
+
+      const stats = await getTodayStats(db);
+      expect(stats.rentalsToday).toBe(1);
+      expect(stats.revenueCents).toBe(399);
+    });
+
     it('excludes voided transactions from rental count', async () => {
       const { db } = buildDb();
       const customerId = await seedCustomer(db);
