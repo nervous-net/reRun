@@ -406,16 +406,20 @@ export function SettingsPage() {
     setInstallingUpdate(true);
     try {
       await api.update.install();
-      // Poll health endpoint until server comes back
+      // Wait for the server to go down first, then poll until it comes back
+      let serverWentDown = false;
       const poll = setInterval(async () => {
         try {
           const res = await fetch('/api/health');
-          if (res.ok) {
+          if (res.ok && serverWentDown) {
             clearInterval(poll);
             window.location.reload();
           }
-        } catch {}
-      }, 3000);
+        } catch {
+          // Server is down — update is in progress
+          serverWentDown = true;
+        }
+      }, 2000);
     } catch {
       setInstallingUpdate(false);
     }

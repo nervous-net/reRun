@@ -369,18 +369,20 @@ export function Dashboard() {
   async function handleInstallUpdate() {
     setInstalling(true);
     await api.update.install();
-    // Poll health endpoint until server comes back up
+    // Wait for the server to go down first, then poll until it comes back
+    let serverWentDown = false;
     const poll = setInterval(async () => {
       try {
         const res = await fetch('/api/health');
-        if (res.ok) {
+        if (res.ok && serverWentDown) {
           clearInterval(poll);
           window.location.reload();
         }
       } catch {
-        // Server still restarting, keep polling
+        // Server is down — update is in progress
+        serverWentDown = true;
       }
-    }, 3000);
+    }, 2000);
   }
 
   // Load on mount + refresh every 30s + refetch on window focus
