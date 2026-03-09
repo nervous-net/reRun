@@ -145,13 +145,13 @@ describe('Return Flow E2E', () => {
       const [copy] = await db.select().from(copies).where(eq(copies.id, copyId));
       expect(copy.status).toBe('in');
 
-      // Step 6: Verify customer balance updated (increased by late fee)
+      // Step 6: Verify customer balance updated (negative = owes money)
       const [customer] = await db.select().from(customers).where(eq(customers.id, customerId));
-      expect(customer.balance).toBe(750);
+      expect(customer.balance).toBe(-750);
     });
 
     it('adds late fee to existing customer balance', async () => {
-      // Customer starts with a $5.00 existing balance
+      // Customer starts with a $5.00 existing balance (credit)
       const customerId = await seedCustomer(db, { balance: 500 });
       const { copyId } = await seedTitleAndCopy(db);
       const pricingRuleId = await seedPricingRule(db, {
@@ -162,9 +162,11 @@ describe('Return Flow E2E', () => {
       // Checkout
       const rental = await checkoutCopy(db, { customerId, copyId, pricingRuleId });
 
-      // Backdate to 3 days overdue
-      const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
-      const sixDaysAgo = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString();
+      // Backdate to 3 days overdue (add 1hr buffer so Math.ceil gives exact day count)
+      const HOUR = 60 * 60 * 1000;
+      const DAY = 24 * HOUR;
+      const threeDaysAgo = new Date(Date.now() - 3 * DAY + HOUR).toISOString();
+      const sixDaysAgo = new Date(Date.now() - 6 * DAY + HOUR).toISOString();
 
       await db.update(rentals)
         .set({
@@ -180,9 +182,72 @@ describe('Return Flow E2E', () => {
       expect(result.lateFee).toBe(600);
       expect(result.lateFeeStatus).toBe('balance');
 
-      // Customer balance should be 500 (existing) + 600 (late fee) = 1100
+      // Customer balance should be 500 (credit) - 600 (late fee) = -100 (owes)
       const [customer] = await db.select().from(customers).where(eq(customers.id, customerId));
-      expect(customer.balance).toBe(1100);
+      expect(customer.balance).toBe(-100);
+    });
+  });
+
+  describe('balance sign semantics (positive=credit, negative=owed)', () => {
+    it('late fee creates a negative balance (customer owes money)', async () => {
+      const customerId = await seedCustomer(db, { balance: 0 });
+      const { copyId } = await seedTitleAndCopy(db, {
+        titleName: 'Clerks II',
+        year: 2006,
+      });
+      const pricingRuleId = await seedPricingRule(db, {
+        durationDays: 3,
+        lateFeePerDay: 200, // $2.00/day
+      });
+
+      const rental = await checkoutCopy(db, { customerId, copyId, pricingRuleId });
+
+      // Backdate to 1 day overdue (with buffer for Math.ceil precision)
+      const HOUR = 60 * 60 * 1000;
+      const DAY = 24 * HOUR;
+      const oneDayAgo = new Date(Date.now() - 1 * DAY + HOUR).toISOString();
+      const fourDaysAgo = new Date(Date.now() - 4 * DAY + HOUR).toISOString();
+
+      await db.update(rentals)
+        .set({ dueAt: oneDayAgo, checkedOutAt: fourDaysAgo })
+        .where(eq(rentals.id, rental.id));
+
+      await returnCopy(db, { copyId, lateFeeAction: 'balance' });
+
+      // Customer should OWE $2 (negative balance = debt)
+      const [customer] = await db.select().from(customers).where(eq(customers.id, customerId));
+      expect(customer.balance).toBe(-200);
+    });
+
+    it('late fee reduces existing credit balance', async () => {
+      // Customer starts with $5 credit
+      const customerId = await seedCustomer(db, { balance: 500 });
+      const { copyId } = await seedTitleAndCopy(db, {
+        titleName: 'Clerks III',
+        year: 2022,
+      });
+      const pricingRuleId = await seedPricingRule(db, {
+        durationDays: 3,
+        lateFeePerDay: 200, // $2.00/day
+      });
+
+      const rental = await checkoutCopy(db, { customerId, copyId, pricingRuleId });
+
+      // Backdate to 3 days overdue
+      const HOUR = 60 * 60 * 1000;
+      const DAY = 24 * HOUR;
+      const threeDaysAgo = new Date(Date.now() - 3 * DAY + HOUR).toISOString();
+      const sixDaysAgo = new Date(Date.now() - 6 * DAY + HOUR).toISOString();
+
+      await db.update(rentals)
+        .set({ dueAt: threeDaysAgo, checkedOutAt: sixDaysAgo })
+        .where(eq(rentals.id, rental.id));
+
+      await returnCopy(db, { copyId, lateFeeAction: 'balance' });
+
+      // $5.00 credit - $6.00 late fee = -$1.00 (now owes)
+      const [customer] = await db.select().from(customers).where(eq(customers.id, customerId));
+      expect(customer.balance).toBe(-100);
     });
   });
 
@@ -201,9 +266,11 @@ describe('Return Flow E2E', () => {
       // Checkout the copy
       const rental = await checkoutCopy(db, { customerId, copyId, pricingRuleId });
 
-      // Backdate to 4 days overdue
-      const fourDaysAgo = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString();
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      // Backdate to 4 days overdue (add 1hr buffer so Math.ceil gives exact day count)
+      const HOUR = 60 * 60 * 1000;
+      const DAY = 24 * HOUR;
+      const fourDaysAgo = new Date(Date.now() - 4 * DAY + HOUR).toISOString();
+      const sevenDaysAgo = new Date(Date.now() - 7 * DAY + HOUR).toISOString();
 
       await db.update(rentals)
         .set({
@@ -244,9 +311,11 @@ describe('Return Flow E2E', () => {
 
       const rental = await checkoutCopy(db, { customerId, copyId, pricingRuleId });
 
-      // Backdate to 2 days overdue
-      const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
-      const fiveDaysAgo = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
+      // Backdate to 2 days overdue (add 1hr buffer so Math.ceil gives exact day count)
+      const HOUR = 60 * 60 * 1000;
+      const DAY = 24 * HOUR;
+      const twoDaysAgo = new Date(Date.now() - 2 * DAY + HOUR).toISOString();
+      const fiveDaysAgo = new Date(Date.now() - 5 * DAY + HOUR).toISOString();
 
       await db.update(rentals)
         .set({
@@ -319,9 +388,9 @@ describe('Return Flow E2E', () => {
       const [copyFinal] = await db.select().from(copies).where(eq(copies.id, copyId));
       expect(copyFinal.status).toBe('in');
 
-      // Verify final customer state
+      // Verify final customer state (negative = owes money)
       const [customerFinal] = await db.select().from(customers).where(eq(customers.id, customerId));
-      expect(customerFinal.balance).toBe(300);
+      expect(customerFinal.balance).toBe(-300);
 
       // Verify rental record is fully updated in DB
       const [rentalFinal] = await db.select().from(rentals).where(eq(rentals.id, rental.id));

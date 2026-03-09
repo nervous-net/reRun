@@ -109,6 +109,24 @@ describe('Transaction Service', () => {
       expect(result.items[0].amount).toBe(399);
     });
 
+    it('defaults paymentMethod to cash when not provided', async () => {
+      const { db } = buildTestDb();
+      const customerId = await seedCustomer(db);
+      const productId = await seedProduct(db, { stockQty: 10 });
+      await seedTaxRate(db, 0);
+
+      const result = await createTransaction(db, {
+        customerId,
+        type: 'sale',
+        // No paymentMethod provided
+        items: [
+          { type: 'sale', productId, description: 'Popcorn', amount: 399 },
+        ],
+      });
+
+      expect(result.paymentMethod).toBe('cash');
+    });
+
     it('decrements product stock on sale items', async () => {
       const { db } = buildTestDb();
       const customerId = await seedCustomer(db);

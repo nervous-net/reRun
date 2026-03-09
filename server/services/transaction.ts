@@ -127,7 +127,7 @@ export async function createTransaction(db: any, data: CreateTransactionInput) {
         subtotal,
         tax,
         total,
-        paymentMethod: data.paymentMethod ?? null,
+        paymentMethod: data.paymentMethod ?? 'cash',
         amountTendered: data.amountTendered ?? null,
         changeGiven,
         notes: data.notes ?? null,

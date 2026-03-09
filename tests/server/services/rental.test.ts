@@ -206,9 +206,9 @@ describe('Rental Service', () => {
       expect(result.lateFee).toBe(400);
       expect(result.lateFeeStatus).toBe('balance');
 
-      // Customer balance should be 400
+      // Customer balance should be -400 (negative = owes money)
       const [customer] = await db.select().from(customers).where(eq(customers.id, customerId));
-      expect(customer.balance).toBe(400);
+      expect(customer.balance).toBe(-400);
     });
 
     it('forgives late fee when action is forgive', async () => {

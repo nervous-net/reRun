@@ -9,6 +9,7 @@ import { Select } from '../common/Select';
 import { Badge } from '../common/Badge';
 import { Alert } from '../common/Alert';
 import { api } from '../../api/client';
+import { calculateOverdue } from '../../utils/rental';
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -62,14 +63,6 @@ interface ReturnResult {
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────
-
-function calculateOverdue(dueAt: string): { daysOverdue: number } {
-  const now = new Date();
-  const due = new Date(dueAt);
-  if (now <= due) return { daysOverdue: 0 };
-  const ms = now.getTime() - due.getTime();
-  return { daysOverdue: Math.floor(ms / (1000 * 60 * 60 * 24)) };
-}
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -220,7 +213,7 @@ export function ReturnScreen() {
       try {
         await api.rentals.return({
           copyId: item.copy.id,
-          lateFeeAction: item.lateFeeAction ?? 'forgive',
+          lateFeeAction: item.lateFeeAction ?? 'pay',
         });
 
         // Check for pending reservations on the returned title

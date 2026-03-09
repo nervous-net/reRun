@@ -180,7 +180,7 @@ export async function returnCopy(db: any, input: ReturnInput) {
     // Add to customer balance if action is 'balance'
     if (lateFee > 0 && lateFeeAction === 'balance') {
       db.update(customers)
-        .set({ balance: sql`${customers.balance} + ${lateFee}` })
+        .set({ balance: sql`${customers.balance} - ${lateFee}` })
         .where(eq(customers.id, rental.customerId))
         .run();
     }
