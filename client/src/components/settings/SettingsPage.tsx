@@ -405,19 +405,18 @@ export function SettingsPage() {
   async function handleInstallUpdate() {
     setInstallingUpdate(true);
     try {
+      const currentVersion = updateStatus?.currentVersion;
       await api.update.install();
-      // Wait for the server to go down first, then poll until it comes back
-      let serverWentDown = false;
+      // Poll update status until the version changes
       const poll = setInterval(async () => {
         try {
-          const res = await fetch('/api/health');
-          if (res.ok && serverWentDown) {
+          const status = await api.update.status();
+          if (status.currentVersion && status.currentVersion !== currentVersion) {
             clearInterval(poll);
             window.location.reload();
           }
         } catch {
-          // Server is down — update is in progress
-          serverWentDown = true;
+          // Server restarting, keep polling
         }
       }, 2000);
     } catch {
