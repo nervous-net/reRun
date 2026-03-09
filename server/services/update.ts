@@ -74,6 +74,16 @@ export async function checkForUpdates(currentVersion: string): Promise<UpdateInf
   }
 }
 
+export async function forceCheck(): Promise<UpdateStatus> {
+  if (!cachedStatus.currentVersion) {
+    return { ...cachedStatus };
+  }
+  const update = await checkForUpdates(cachedStatus.currentVersion);
+  cachedStatus.availableUpdate = update;
+  cachedStatus.lastChecked = new Date().toISOString();
+  return { ...cachedStatus };
+}
+
 export function getUpdateStatus(): UpdateStatus {
   return { ...cachedStatus };
 }

@@ -51,3 +51,10 @@ describe('parseGitHubRelease', () => {
     expect(parseGitHubRelease(release)).toBeNull();
   });
 });
+
+describe('forceCheck', () => {
+  it('is exported as a function', async () => {
+    const { forceCheck } = await import('../../../server/services/update.js');
+    expect(typeof forceCheck).toBe('function');
+  });
+});
