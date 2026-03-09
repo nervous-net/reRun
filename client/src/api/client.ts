@@ -149,6 +149,7 @@ export const api = {
   },
   update: {
     status: () => get<any>('/api/update/status'),
+    check: () => post<any>('/api/update/check'),
     install: () => post<any>('/api/update/install'),
   },
 };

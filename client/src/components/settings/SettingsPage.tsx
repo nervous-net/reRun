@@ -396,7 +396,7 @@ export function SettingsPage() {
   async function handleCheckUpdate() {
     setCheckingUpdate(true);
     try {
-      const status = await api.update.status();
+      const status = await api.update.check();
       setUpdateStatus(status);
     } catch {}
     setCheckingUpdate(false);
