@@ -118,6 +118,20 @@ describe('Modal', () => {
     expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
   });
 
+  it('focuses first input field over close button when modal has inputs', async () => {
+    render(
+      <Modal isOpen={true} onClose={vi.fn()} title="Form Modal">
+        <input placeholder="First Name" aria-label="First Name" />
+        <input placeholder="Last Name" aria-label="Last Name" />
+      </Modal>
+    );
+    await waitFor(() => {
+      const activeEl = document.activeElement;
+      expect(activeEl?.tagName).toBe('INPUT');
+      expect(activeEl).toHaveAttribute('aria-label', 'First Name');
+    });
+  });
+
   it('renders close button with aria-label', () => {
     render(
       <Modal isOpen={true} onClose={vi.fn()} title="Close Btn">

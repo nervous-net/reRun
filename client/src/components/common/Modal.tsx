@@ -123,10 +123,15 @@ export function Modal({ isOpen, onClose, title, children, footer, maxWidth }: Mo
 
       const timer = setTimeout(() => {
         if (panelRef.current) {
+          // Prefer input/select/textarea for initial focus so form modals
+          // don't land on the close button (which precedes the body in DOM)
+          const firstInput =
+            panelRef.current.querySelector<HTMLElement>('input, select, textarea');
           const firstFocusable =
             panelRef.current.querySelector<HTMLElement>(focusableSelector);
-          if (firstFocusable) {
-            firstFocusable.focus();
+          const target = firstInput ?? firstFocusable;
+          if (target) {
+            target.focus();
           } else {
             panelRef.current.setAttribute('tabindex', '-1');
             panelRef.current.focus();
