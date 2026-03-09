@@ -4,7 +4,11 @@
 import { Hono } from 'hono';
 import { spawn } from 'child_process';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { getUpdateStatus, setUpdating, forceCheck } from '../services/update.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export function createUpdateRoutes(dbPath: string, backupDir: string) {
   const routes = new Hono();
@@ -33,7 +37,10 @@ export function createUpdateRoutes(dbPath: string, backupDir: string) {
     setUpdating(true);
 
     // Spawn the update script as a detached process
-    const scriptPath = path.resolve('dist/scripts/do-update.js');
+    // Use __dirname to build an absolute path — path.resolve relies on cwd which
+    // may differ under PM2
+    const scriptPath = path.resolve(__dirname, '..', 'scripts', 'do-update.js');
+    const appDir = path.resolve(__dirname, '..', '..');
     const child = spawn('node', [
       scriptPath,
       '--version', status.availableUpdate.tagName,
@@ -41,8 +48,13 @@ export function createUpdateRoutes(dbPath: string, backupDir: string) {
       '--db-path', dbPath,
       '--backup-dir', backupDir,
     ], {
+      cwd: appDir,
       detached: true,
       stdio: 'ignore',
+    });
+    child.on('error', (err) => {
+      console.error(`[UPDATE] Failed to spawn update script: ${err.message}`);
+      setUpdating(false);
     });
     child.unref();
 
