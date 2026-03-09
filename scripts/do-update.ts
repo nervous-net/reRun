@@ -61,11 +61,11 @@ async function main() {
     if (process.platform === 'win32') {
       execSync(
         `powershell -Command "Expand-Archive -Force -Path '${zipPath}' -DestinationPath '${tmpDir}/extracted'"`,
-        { stdio: 'pipe' }
+        { stdio: 'ignore' }
       );
     } else {
-      execSync(`unzip -o "${zipPath}" -d "${tmpDir}/extracted"`, {
-        stdio: 'pipe',
+      execSync(`unzip -o -q "${zipPath}" -d "${tmpDir}/extracted"`, {
+        stdio: 'ignore',
       });
     }
 
@@ -119,7 +119,7 @@ async function main() {
 
     // 10. Restart via PM2
     log('Restarting app...');
-    execSync('npx pm2 restart rerun', { cwd: appDir, stdio: 'pipe' });
+    execSync('npx pm2 restart rerun', { cwd: appDir, stdio: 'ignore' });
 
     log(`Update to ${version} complete!`);
   } catch (err: any) {
