@@ -4,13 +4,18 @@
 import { Hono } from 'hono';
 import { spawn } from 'child_process';
 import path from 'path';
-import { getUpdateStatus, setUpdating } from '../services/update.js';
+import { getUpdateStatus, setUpdating, forceCheck } from '../services/update.js';
 
 export function createUpdateRoutes(dbPath: string, backupDir: string) {
   const routes = new Hono();
 
   routes.get('/status', async (c) => {
     const status = getUpdateStatus();
+    return c.json(status);
+  });
+
+  routes.post('/check', async (c) => {
+    const status = await forceCheck();
     return c.json(status);
   });
 

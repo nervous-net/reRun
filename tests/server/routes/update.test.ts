@@ -14,6 +14,10 @@ vi.mock('../../../server/services/update.js', () => {
   return {
     getUpdateStatus: vi.fn(() => ({ ...status })),
     setUpdating: vi.fn((val: boolean) => { status.updating = val; }),
+    forceCheck: vi.fn(async () => {
+      status.lastChecked = new Date().toISOString();
+      return { ...status };
+    }),
     __setMockStatus: (s: any) => { status = s; },
   };
 });
@@ -53,6 +57,14 @@ describe('Update routes', () => {
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toBe('No update available');
+  });
+
+  it('POST /api/update/check triggers force check and returns status', async () => {
+    const res = await app.request('/api/update/check', { method: 'POST' });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toHaveProperty('currentVersion');
+    expect(body).toHaveProperty('lastChecked');
   });
 
   it('POST /api/update/install returns 400 when already updating', async () => {
