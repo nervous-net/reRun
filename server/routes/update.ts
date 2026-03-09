@@ -38,9 +38,9 @@ export function createUpdateRoutes(dbPath: string, backupDir: string) {
 
     // Spawn the update script as a detached process
     // Use __dirname to build an absolute path — path.resolve relies on cwd which
-    // may differ under PM2
-    const scriptPath = path.resolve(__dirname, '..', 'scripts', 'do-update.js');
-    const appDir = path.resolve(__dirname, '..', '..');
+    // may differ under PM2. Route is at dist/server/routes/, script is at dist/scripts/
+    const scriptPath = path.resolve(__dirname, '..', '..', 'scripts', 'do-update.js');
+    const appDir = path.resolve(__dirname, '..', '..', '..');
     const child = spawn('node', [
       scriptPath,
       '--version', status.availableUpdate.tagName,
