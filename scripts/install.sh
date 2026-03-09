@@ -47,8 +47,9 @@ echo -e "${CYAN}[4/8] Installing reRun to $INSTALL_DIR...${NC}"
 pm2 stop rerun 2>/dev/null || true
 pm2 delete rerun 2>/dev/null || true
 mkdir -p "$INSTALL_DIR"
-# Copy everything from project root except the scripts folder
-rsync -a --exclude='scripts' "$PROJECT_ROOT/" "$INSTALL_DIR/"
+# Copy everything from project root except the top-level scripts folder
+# Leading slash ensures dist/scripts/ (compiled update script) is not excluded
+rsync -a --exclude='/scripts' "$PROJECT_ROOT/" "$INSTALL_DIR/"
 echo -e "  Files copied."
 
 # Step 5: Create data directory
