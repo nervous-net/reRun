@@ -92,6 +92,10 @@ export function ReturnScreen() {
   const [results, setResults] = useState<ReturnResult[] | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
   const [confirmProcess, setConfirmProcess] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[] | null>(null);
+  const [selectedTitleCopies, setSelectedTitleCopies] = useState<any[] | null>(null);
+  const [selectedTitleName, setSelectedTitleName] = useState<string>('');
+  const [searchLoading, setSearchLoading] = useState(false);
 
   // Re-focus the scan input after processing results are dismissed
   const focusScanInput = useCallback(() => {
@@ -177,11 +181,92 @@ export function ReturnScreen() {
 
       setReturnQueue((prev) => [...prev, queueItem]);
     } catch (err: any) {
-      setScanError(err.message || 'Copy not found');
+      // Barcode lookup failed — try as title search
+      try {
+        const searchData = await api.search.query({ q: barcode });
+        const titleResults = searchData.titles ?? [];
+        if (titleResults.length === 0) {
+          setScanError(`No results found for "${barcode}"`);
+        } else {
+          setSearchResults(titleResults);
+        }
+      } catch {
+        setScanError('Copy not found and search failed');
+      }
     } finally {
       setScanning(false);
     }
   }, [barcodeInput, returnQueue, scanning]);
+
+  const handleTitleSelect = useCallback(async (titleId: string, titleName: string) => {
+    setSearchLoading(true);
+    try {
+      const data = await api.rentals.rentedCopiesForTitle(titleId);
+      const copies = data.data ?? [];
+      if (copies.length === 0) {
+        setScanError(`No rented copies found for "${titleName}"`);
+        setSearchResults(null);
+      } else {
+        setSelectedTitleName(titleName);
+        setSelectedTitleCopies(copies);
+      }
+    } catch {
+      setScanError('Failed to load rented copies');
+      setSearchResults(null);
+    } finally {
+      setSearchLoading(false);
+    }
+  }, []);
+
+  const handleCopySelect = useCallback(async (copy: any) => {
+    if (returnQueue.some((item) => item.copy.barcode === copy.barcode)) {
+      setScanError(`${copy.barcode} is already in the return queue`);
+      setSelectedTitleCopies(null);
+      setSearchResults(null);
+      return;
+    }
+
+    let customerName = `${copy.customerFirstName ?? ''} ${copy.customerLastName ?? ''}`.trim() || 'Unknown Customer';
+    if (copy.familyMemberFirstName) {
+      const fmName = `${copy.familyMemberFirstName} ${copy.familyMemberLastName ?? ''}`.trim();
+      const fmLabel = copy.familyMemberRelationship
+        ? `${fmName} (${copy.familyMemberRelationship})`
+        : fmName;
+      customerName = `${customerName} — ${fmLabel}`;
+    }
+
+    const { daysOverdue } = calculateOverdue(copy.dueAt);
+    const estimatedFeePerDay = 100;
+    const lateFee = daysOverdue > 0 ? daysOverdue * estimatedFeePerDay : 0;
+
+    const queueItem: ReturnQueueItem = {
+      copy: {
+        id: copy.copyId,
+        titleId: '',
+        barcode: copy.barcode,
+        format: copy.format,
+        condition: '',
+        status: 'out',
+        title: { id: '', name: selectedTitleName, year: 0, genre: null, rating: null },
+      },
+      rental: {
+        id: copy.rentalId,
+        customerId: '',
+        copyId: copy.copyId,
+        checkedOutAt: copy.checkedOutAt,
+        dueAt: copy.dueAt,
+        status: 'out',
+      },
+      customerName,
+      daysOverdue,
+      lateFee,
+      lateFeeAction: daysOverdue > 0 ? 'pay' : null,
+    };
+
+    setReturnQueue((prev) => [...prev, queueItem]);
+    setSelectedTitleCopies(null);
+    setSearchResults(null);
+  }, [returnQueue, selectedTitleName]);
 
   const handleBarcodeKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -269,7 +354,7 @@ export function ReturnScreen() {
       <div style={styles.scanBar}>
         <div style={styles.scanInputWrapper}>
           <Input
-            placeholder="Scan copy barcode to return..."
+            placeholder="Scan barcode or search by title..."
             value={barcodeInput}
             onChange={(e) => setBarcodeInput(e.target.value)}
             onKeyDown={handleBarcodeKeyDown}
@@ -420,7 +505,7 @@ export function ReturnScreen() {
       {returnQueue.length === 0 && !results && (
         <div style={styles.emptyState}>
           <div style={styles.emptyIcon}>[&lt;&lt;]</div>
-          <div>Scan a copy barcode to start processing returns</div>
+          <div>Scan a barcode or search by title to start processing returns</div>
         </div>
       )}
 
@@ -443,6 +528,114 @@ export function ReturnScreen() {
         <div style={{ display: 'flex', gap: 'var(--space-sm)', justifyContent: 'flex-end', marginTop: 'var(--space-md)' }}>
           <Button variant="secondary" onClick={() => setConfirmProcess(false)}>Cancel</Button>
           <Button variant="danger" onClick={() => { processAllReturns(); setConfirmProcess(false); }}>Process Returns</Button>
+        </div>
+      </Modal>
+
+      {/* Title Search Results Modal */}
+      <Modal
+        isOpen={searchResults !== null && selectedTitleCopies === null}
+        onClose={() => setSearchResults(null)}
+        title="Search Results"
+      >
+        <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+          {searchResults?.map((title: any) => (
+            <div
+              key={title.id}
+              onClick={() => handleTitleSelect(title.id, title.name)}
+              style={{
+                padding: '8px 12px',
+                borderBottom: '1px solid var(--border-color)',
+                cursor: 'pointer',
+                color: 'var(--text-primary)',
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--accent-02)'; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.backgroundColor = 'transparent'; }}
+            >
+              <div style={{ fontSize: 'var(--font-size-md)', fontWeight: 'bold' }}>
+                {title.name} ({title.year})
+              </div>
+              <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)' }}>
+                {title.genre ?? 'No genre'} · {title.formats?.join(', ') ?? ''}
+              </div>
+            </div>
+          ))}
+          {searchLoading && (
+            <div style={{ padding: '12px', color: 'var(--text-muted)', textAlign: 'center' }}>
+              Loading...
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* Copy Selection Modal */}
+      <Modal
+        isOpen={selectedTitleCopies !== null}
+        onClose={() => { setSelectedTitleCopies(null); setSearchResults(null); }}
+        title={`Return: ${selectedTitleName}`}
+      >
+        <div style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-sm)', fontSize: 'var(--font-size-sm)' }}>
+          Select which copy to return:
+        </div>
+        <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+          {selectedTitleCopies?.map((copy: any, index: number) => {
+            let custName = `${copy.customerFirstName ?? ''} ${copy.customerLastName ?? ''}`.trim();
+            if (copy.familyMemberFirstName) {
+              const fmName = `${copy.familyMemberFirstName} ${copy.familyMemberLastName ?? ''}`.trim();
+              custName += ` — ${fmName}`;
+            }
+            const { daysOverdue } = calculateOverdue(copy.dueAt);
+
+            return (
+              <div
+                key={copy.copyId}
+                onClick={() => handleCopySelect(copy)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 'var(--space-md)',
+                  padding: '10px 12px',
+                  borderBottom: '1px solid var(--border-color)',
+                  cursor: 'pointer',
+                  color: 'var(--text-primary)',
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--accent-02)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.backgroundColor = 'transparent'; }}
+              >
+                {/* Numbered indicator */}
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--crt-green)',
+                  color: 'var(--bg-primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 'bold',
+                  fontSize: 'var(--font-size-lg)',
+                  flexShrink: 0,
+                }}>
+                  {index + 1}
+                </div>
+
+                {/* Copy details */}
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', gap: 'var(--space-sm)', alignItems: 'center' }}>
+                    <span style={{ fontFamily: 'monospace', fontSize: 'var(--font-size-sm)' }}>{copy.barcode}</span>
+                    <Badge variant="info">{copy.format}</Badge>
+                  </div>
+                  <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                    {custName} · Due: {formatDate(copy.dueAt)}
+                    {daysOverdue > 0 && (
+                      <span style={{ color: 'var(--crt-red)', marginLeft: 'var(--space-sm)' }}>
+                        {daysOverdue} day{daysOverdue !== 1 ? 's' : ''} overdue
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </Modal>
     </div>
