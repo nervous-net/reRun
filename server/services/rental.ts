@@ -333,6 +333,37 @@ export async function getReturnedToday(db: any) {
   return results;
 }
 
+// ─── Rented Copies for Title ────────────────────────────────────────
+
+export async function getRentedCopiesForTitle(db: any, titleId: string) {
+  const results = await db
+    .select({
+      rentalId: rentals.id,
+      copyId: copies.id,
+      barcode: copies.barcode,
+      format: copies.format,
+      checkedOutAt: rentals.checkedOutAt,
+      dueAt: rentals.dueAt,
+      customerFirstName: customers.firstName,
+      customerLastName: customers.lastName,
+      familyMemberFirstName: familyMembers.firstName,
+      familyMemberLastName: familyMembers.lastName,
+      familyMemberRelationship: familyMembers.relationship,
+    })
+    .from(rentals)
+    .innerJoin(copies, eq(rentals.copyId, copies.id))
+    .innerJoin(customers, eq(rentals.customerId, customers.id))
+    .leftJoin(familyMembers, eq(rentals.familyMemberId, familyMembers.id))
+    .where(
+      and(
+        eq(copies.titleId, titleId),
+        eq(rentals.status, 'out'),
+      )
+    );
+
+  return results;
+}
+
 // ─── Previously Rented ──────────────────────────────────────────────
 
 export async function checkPreviouslyRented(

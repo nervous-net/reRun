@@ -372,6 +372,46 @@ describe('Rental Service', () => {
     });
   });
 
+  describe('getRentedCopiesForTitle', () => {
+    it('returns rented-out copies for a title with customer info', async () => {
+      const { db } = buildTestDb();
+      const customerId = await seedCustomer(db, { firstName: 'Randal', lastName: 'Graves' });
+      const titleId = nanoid();
+      await db.insert(titles).values({ id: titleId, name: 'Jaws', year: 1975 });
+
+      const copy1Id = nanoid();
+      const copy2Id = nanoid();
+      await db.insert(copies).values([
+        { id: copy1Id, titleId, barcode: 'BC-001', format: 'DVD', status: 'in' },
+        { id: copy2Id, titleId, barcode: 'BC-002', format: 'Blu-ray', status: 'in' },
+      ]);
+      const ruleId = await seedPricingRule(db);
+      await checkoutCopy(db, { customerId, copyId: copy1Id, pricingRuleId: ruleId });
+
+      const results = await getRentedCopiesForTitle(db, titleId);
+      expect(results).toHaveLength(1);
+      expect(results[0]).toMatchObject({
+        copyId: copy1Id,
+        barcode: 'BC-001',
+        format: 'DVD',
+        customerFirstName: 'Randal',
+        customerLastName: 'Graves',
+      });
+      expect(results[0].dueAt).toBeDefined();
+    });
+
+    it('returns empty array when no copies are rented', async () => {
+      const { db } = buildTestDb();
+      const titleId = nanoid();
+      await db.insert(titles).values({ id: titleId, name: 'Clerks II', year: 2006 });
+      const copyId = nanoid();
+      await db.insert(copies).values({ id: copyId, titleId, barcode: 'BC-003', format: 'DVD', status: 'in' });
+
+      const results = await getRentedCopiesForTitle(db, titleId);
+      expect(results).toHaveLength(0);
+    });
+  });
+
   describe('getReturnedToday', () => {
     it('returns rentals returned today with title and customer info', async () => {
       const { db } = buildTestDb();
