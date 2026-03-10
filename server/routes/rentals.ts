@@ -11,6 +11,8 @@ import {
   getOverdueRentals,
   getCustomerRentals,
   getActiveRentals,
+  getReturnedToday,
+  getRentedCopiesForTitle,
 } from '../services/rental.js';
 
 export function createRentalsRoutes(db: any) {
@@ -116,6 +118,19 @@ export function createRentalsRoutes(db: any) {
   routes.get('/customer/:id', async (c) => {
     const customerId = c.req.param('id');
     const data = await getCustomerRentals(db, customerId);
+    return c.json({ data });
+  });
+
+  // GET /returned-today — rentals returned today
+  routes.get('/returned-today', async (c) => {
+    const data = await getReturnedToday(db);
+    return c.json({ data });
+  });
+
+  // GET /title/:titleId/rented-copies — currently rented copies for a title
+  routes.get('/title/:titleId/rented-copies', async (c) => {
+    const titleId = c.req.param('titleId');
+    const data = await getRentedCopiesForTitle(db, titleId);
     return c.json({ data });
   });
 

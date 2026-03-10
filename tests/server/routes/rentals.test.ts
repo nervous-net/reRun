@@ -678,6 +678,66 @@ describe('Rentals API', () => {
     });
   });
 
+  describe('GET /api/rentals/returned-today', () => {
+    it('returns 200 with today returned rentals', async () => {
+      const { app, db } = buildApp();
+      const customerId = await seedCustomer(db);
+      const { copyId } = await seedTitleAndCopy(db);
+      const ruleId = await seedPricingRule(db);
+
+      // Checkout then return via API
+      await app.request('/api/rentals/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId, copyId, pricingRuleId: ruleId }),
+      });
+      await app.request('/api/rentals/return', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ copyId }),
+      });
+
+      const res = await app.request('/api/rentals/returned-today');
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.data).toHaveLength(1);
+      expect(body.data[0].titleName).toBeDefined();
+      expect(body.data[0].copyBarcode).toBeDefined();
+    });
+  });
+
+  describe('GET /api/rentals/title/:titleId/rented-copies', () => {
+    it('returns 200 with rented copies for a title', async () => {
+      const { app, db } = buildApp();
+      const customerId = await seedCustomer(db);
+      const { copyId, titleId } = await seedTitleAndCopy(db);
+      const ruleId = await seedPricingRule(db);
+
+      await app.request('/api/rentals/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId, copyId, pricingRuleId: ruleId }),
+      });
+
+      const res = await app.request(`/api/rentals/title/${titleId}/rented-copies`);
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.data).toHaveLength(1);
+      expect(body.data[0].barcode).toBeDefined();
+      expect(body.data[0].customerFirstName).toBeDefined();
+    });
+
+    it('returns empty data for title with no rented copies', async () => {
+      const { app, db } = buildApp();
+      const { titleId } = await seedTitleAndCopy(db);
+
+      const res = await app.request(`/api/rentals/title/${titleId}/rented-copies`);
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.data).toHaveLength(0);
+    });
+  });
+
   describe('GET /api/rentals/overdue', () => {
     it('includes family member info in overdue rentals', async () => {
       const { app, db } = buildApp();
