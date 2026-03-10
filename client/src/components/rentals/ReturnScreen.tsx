@@ -96,6 +96,20 @@ export function ReturnScreen() {
   const [selectedTitleCopies, setSelectedTitleCopies] = useState<any[] | null>(null);
   const [selectedTitleName, setSelectedTitleName] = useState<string>('');
   const [searchLoading, setSearchLoading] = useState(false);
+  const [todaysReturns, setTodaysReturns] = useState<any[]>([]);
+
+  const loadTodaysReturns = useCallback(async () => {
+    try {
+      const data = await api.rentals.returnedToday();
+      setTodaysReturns(data.data ?? []);
+    } catch {
+      // Non-critical — silently fail
+    }
+  }, []);
+
+  useEffect(() => {
+    loadTodaysReturns();
+  }, [loadTodaysReturns]);
 
   // Re-focus the scan input after processing results are dismissed
   const focusScanInput = useCallback(() => {
@@ -334,6 +348,7 @@ export function ReturnScreen() {
 
     setResults(returnResults);
     setReturnQueue([]);
+    await loadTodaysReturns();
     setProcessing(false);
   };
 
@@ -501,8 +516,67 @@ export function ReturnScreen() {
         </div>
       )}
 
+      {/* Today's Returns */}
+      {todaysReturns.length > 0 && (
+        <div style={styles.queueSection}>
+          <div style={styles.queueHeader}>
+            <span style={styles.queueLabel}>
+              Today's Returns — {todaysReturns.length} item{todaysReturns.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+          <div style={styles.queueList}>
+            {todaysReturns.map((item: any, index: number) => {
+              let customerName = `${item.customerFirstName ?? ''} ${item.customerLastName ?? ''}`.trim();
+              if (item.familyMemberFirstName) {
+                const fmName = `${item.familyMemberFirstName} ${item.familyMemberLastName ?? ''}`.trim();
+                customerName += ` — ${fmName}`;
+              }
+              return (
+                <div
+                  key={item.id}
+                  style={{
+                    ...styles.queueRow,
+                    backgroundColor: index % 2 === 1 ? 'var(--accent-02)' : 'transparent',
+                  }}
+                >
+                  <div style={styles.queueRowMain}>
+                    <div style={styles.titleInfo}>
+                      <span style={styles.titleName}>{item.titleName}</span>
+                      <div style={styles.copyMeta}>
+                        <Badge variant="info">{item.copyFormat}</Badge>
+                        <span style={styles.barcode}>{item.copyBarcode}</span>
+                      </div>
+                    </div>
+                    <div style={styles.rentalInfo}>
+                      <span style={styles.customerName}>{customerName}</span>
+                      <span style={styles.dueDate}>
+                        Returned: {formatDate(item.returnedAt)}
+                      </span>
+                    </div>
+                    <div style={styles.overdueInfo}>
+                      {item.lateFee > 0 ? (
+                        <>
+                          <span style={styles.lateFeeAmount}>
+                            {formatCents(item.lateFee)} late fee
+                          </span>
+                          <Badge variant={item.lateFeeStatus === 'forgiven' ? 'info' : 'success'}>
+                            {item.lateFeeStatus}
+                          </Badge>
+                        </>
+                      ) : (
+                        <Badge variant="success">On Time</Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Empty state */}
-      {returnQueue.length === 0 && !results && (
+      {returnQueue.length === 0 && !results && todaysReturns.length === 0 && (
         <div style={styles.emptyState}>
           <div style={styles.emptyIcon}>[&lt;&lt;]</div>
           <div>Scan a barcode or search by title to start processing returns</div>
