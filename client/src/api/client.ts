@@ -104,6 +104,8 @@ export const api = {
     overdue: () => get<any>('/api/rentals/overdue'),
     active: () => get<any>('/api/rentals/active'),
     customer: (id: string) => get<any>(`/api/rentals/customer/${id}`),
+    returnedToday: () => get<any>('/api/rentals/returned-today'),
+    rentedCopiesForTitle: (titleId: string) => get<any>(`/api/rentals/title/${titleId}/rented-copies`),
   },
   reservations: {
     list: () => get<any>('/api/reservations'),
