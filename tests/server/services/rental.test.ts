@@ -11,6 +11,8 @@ import {
   getCustomerRentals,
   getActiveRentals,
   checkPreviouslyRented,
+  getReturnedToday,
+  getRentedCopiesForTitle,
 } from '../../../server/services/rental.js';
 import {
   customers,
@@ -367,6 +369,46 @@ describe('Rental Service', () => {
       const active = await getActiveRentals(db);
       expect(active).toHaveLength(1);
       expect(active[0].copyId).toBe(copyId2);
+    });
+  });
+
+  describe('getReturnedToday', () => {
+    it('returns rentals returned today with title and customer info', async () => {
+      const { db } = buildTestDb();
+      const customerId = await seedCustomer(db, { firstName: 'Dante', lastName: 'Hicks' });
+      const { copyId } = await seedTitleAndCopy(db, { titleName: 'Clerks' });
+      const ruleId = await seedPricingRule(db);
+
+      await checkoutCopy(db, { customerId, copyId, pricingRuleId: ruleId });
+      await returnCopy(db, { copyId, lateFeeAction: 'pay' });
+
+      const results = await getReturnedToday(db);
+      expect(results).toHaveLength(1);
+      expect(results[0]).toMatchObject({
+        copyId,
+        status: 'returned',
+        titleName: 'Clerks',
+        customerFirstName: 'Dante',
+      });
+      expect(results[0].returnedAt).toBeDefined();
+      expect(results[0].copyBarcode).toBeDefined();
+    });
+
+    it('excludes rentals returned on previous days', async () => {
+      const { db } = buildTestDb();
+      const customerId = await seedCustomer(db);
+      const { copyId } = await seedTitleAndCopy(db);
+      const ruleId = await seedPricingRule(db);
+
+      await checkoutCopy(db, { customerId, copyId, pricingRuleId: ruleId });
+      await returnCopy(db, { copyId, lateFeeAction: 'pay' });
+
+      // Backdate the returnedAt to yesterday
+      const yesterday = new Date(Date.now() - 86400000).toISOString();
+      await db.update(rentals).set({ returnedAt: yesterday }).where(eq(rentals.copyId, copyId));
+
+      const results = await getReturnedToday(db);
+      expect(results).toHaveLength(0);
     });
   });
 });

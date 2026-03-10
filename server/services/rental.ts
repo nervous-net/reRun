@@ -2,7 +2,7 @@
 // ABOUTME: Manages copy status transitions and customer balance charges for late fees
 
 import { nanoid } from 'nanoid';
-import { eq, and, lt, sql } from 'drizzle-orm';
+import { eq, and, lt, gte, sql } from 'drizzle-orm';
 import {
   rentals,
   copies,
@@ -284,6 +284,51 @@ export async function getActiveRentals(db: any) {
     .innerJoin(customers, eq(rentals.customerId, customers.id))
     .leftJoin(familyMembers, eq(rentals.familyMemberId, familyMembers.id))
     .where(eq(rentals.status, 'out'));
+
+  return results;
+}
+
+// ─── Returned Today ─────────────────────────────────────────────────
+
+export async function getReturnedToday(db: any) {
+  const now = getNow(db);
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+  const tomorrowStart = new Date(todayStart);
+  tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+
+  const results = await db
+    .select({
+      id: rentals.id,
+      customerId: rentals.customerId,
+      copyId: rentals.copyId,
+      checkedOutAt: rentals.checkedOutAt,
+      dueAt: rentals.dueAt,
+      returnedAt: rentals.returnedAt,
+      lateFee: rentals.lateFee,
+      lateFeeStatus: rentals.lateFeeStatus,
+      status: rentals.status,
+      titleName: titles.name,
+      copyBarcode: copies.barcode,
+      copyFormat: copies.format,
+      customerFirstName: customers.firstName,
+      customerLastName: customers.lastName,
+      familyMemberFirstName: familyMembers.firstName,
+      familyMemberLastName: familyMembers.lastName,
+      familyMemberRelationship: familyMembers.relationship,
+    })
+    .from(rentals)
+    .innerJoin(copies, eq(rentals.copyId, copies.id))
+    .innerJoin(titles, eq(copies.titleId, titles.id))
+    .innerJoin(customers, eq(rentals.customerId, customers.id))
+    .leftJoin(familyMembers, eq(rentals.familyMemberId, familyMembers.id))
+    .where(
+      and(
+        eq(rentals.status, 'returned'),
+        gte(rentals.returnedAt, todayStart.toISOString()),
+        lt(rentals.returnedAt, tomorrowStart.toISOString()),
+      )
+    );
 
   return results;
 }
