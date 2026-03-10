@@ -57,10 +57,11 @@ echo -e "${CYAN}[5/8] Setting up data directory...${NC}"
 mkdir -p "$INSTALL_DIR/data"
 echo -e "  Data directory ready."
 
-# Step 6: Rebuild native modules for this platform
+# Step 6: Install/rebuild native modules for this platform
 echo -e "${CYAN}[6/8] Building native modules...${NC}"
 cd "$INSTALL_DIR"
-npm rebuild better-sqlite3
+# Use npm install (not rebuild) to properly fetch prebuilt binaries
+npm install better-sqlite3
 echo -e "  Ready."
 
 # Step 7: Start with PM2

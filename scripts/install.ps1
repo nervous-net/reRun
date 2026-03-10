@@ -17,7 +17,7 @@ if (-not $PSScriptRoot) {
 }
 Write-Host "  Installing from: $ProjectRoot" -ForegroundColor Gray
 
-# Wrap everything in a try/catch so the window stays open on errors
+# Wrap everything in a trap so the window stays open on errors
 trap {
     Write-Host ""
     Write-Host "================================" -ForegroundColor Red
@@ -30,32 +30,107 @@ trap {
     exit 1
 }
 
+# Helper: find npm.cmd by searching known locations and PATH
+# Returns the full path to npm.cmd, or throws with manual install instructions
+function Find-Npm {
+    # Check known Node.js install locations
+    $candidates = @(
+        "$env:ProgramFiles\nodejs\npm.cmd",
+        "${env:ProgramFiles(x86)}\nodejs\npm.cmd",
+        "$env:APPDATA\npm\npm.cmd",
+        "$env:LOCALAPPDATA\Programs\nodejs\npm.cmd"
+    )
+    foreach ($candidate in $candidates) {
+        if (Test-Path $candidate) {
+            return $candidate
+        }
+    }
+    # Check PATH as last resort
+    $fromPath = Get-Command npm.cmd -ErrorAction SilentlyContinue
+    if ($fromPath) {
+        return $fromPath.Source
+    }
+    $fromPath = Get-Command npm -ErrorAction SilentlyContinue
+    if ($fromPath) {
+        return $fromPath.Source
+    }
+    return $null
+}
+
+# Helper: find node.exe by searching known locations and PATH
+function Find-Node {
+    $candidates = @(
+        "$env:ProgramFiles\nodejs\node.exe",
+        "${env:ProgramFiles(x86)}\nodejs\node.exe",
+        "$env:LOCALAPPDATA\Programs\nodejs\node.exe"
+    )
+    foreach ($candidate in $candidates) {
+        if (Test-Path $candidate) {
+            return $candidate
+        }
+    }
+    $fromPath = Get-Command node -ErrorAction SilentlyContinue
+    if ($fromPath) {
+        return $fromPath.Source
+    }
+    return $null
+}
+
 # Step 1: Check for Node.js
 Write-Host "[1/8] Checking for Node.js..." -ForegroundColor Cyan
-try {
-    $nodeVersion = node --version 2>$null
-    Write-Host "  Found Node.js $nodeVersion" -ForegroundColor Green
-} catch {
+$nodePath = Find-Node
+if ($nodePath) {
+    $nodeVersion = & $nodePath --version 2>$null
+    Write-Host "  Found Node.js $nodeVersion at $nodePath" -ForegroundColor Green
+} else {
     Write-Host "  Node.js not found. Downloading installer..." -ForegroundColor Yellow
     $nodeUrl = "https://nodejs.org/dist/v20.11.1/node-v20.11.1-x64.msi"
     $nodeMsi = "$env:TEMP\node-installer.msi"
     Invoke-WebRequest -Uri $nodeUrl -OutFile $nodeMsi
     Write-Host "  Running Node.js installer..." -ForegroundColor Yellow
     Start-Process msiexec.exe -Wait -ArgumentList "/i `"$nodeMsi`" /quiet"
-    # Refresh PATH
-    $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
-    Write-Host "  Node.js installed." -ForegroundColor Green
+    # Re-check after install
+    $nodePath = Find-Node
+    if (-not $nodePath) {
+        Write-Host ""
+        Write-Host "  Node.js was installed but could not be found." -ForegroundColor Red
+        Write-Host ""
+        Write-Host "  MANUAL FIX:" -ForegroundColor Yellow
+        Write-Host "  1. Go to https://nodejs.org" -ForegroundColor White
+        Write-Host "  2. Download and run the LTS installer (use all defaults)" -ForegroundColor White
+        Write-Host "  3. RESTART your computer" -ForegroundColor White
+        Write-Host "  4. Double-click install.bat again" -ForegroundColor White
+        Write-Host ""
+        throw "Node.js not found after install. See manual steps above."
+    }
+    Write-Host "  Node.js installed at $nodePath" -ForegroundColor Green
 }
+
+# Find npm.cmd (use .cmd explicitly to avoid PowerShell execution policy issues with npm.ps1)
+$npmPath = Find-Npm
+if (-not $npmPath) {
+    Write-Host ""
+    Write-Host "  npm was not found on this system." -ForegroundColor Red
+    Write-Host ""
+    Write-Host "  MANUAL FIX:" -ForegroundColor Yellow
+    Write-Host "  1. Go to https://nodejs.org" -ForegroundColor White
+    Write-Host "  2. Download and run the LTS installer (use all defaults)" -ForegroundColor White
+    Write-Host "  3. RESTART your computer" -ForegroundColor White
+    Write-Host "  4. Double-click install.bat again" -ForegroundColor White
+    Write-Host ""
+    throw "npm not found. See manual steps above."
+}
+Write-Host "  Using npm at $npmPath" -ForegroundColor Gray
 
 # Step 2: Install PM2
 Write-Host "[2/8] Installing PM2..." -ForegroundColor Cyan
-npm install -g pm2 2>$null
+& $npmPath install -g pm2 2>$null
 Write-Host "  PM2 installed." -ForegroundColor Green
 
 # Step 3: Configure PM2 auto-start
 Write-Host "[3/8] Configuring PM2 startup..." -ForegroundColor Cyan
-npm install -g pm2-windows-startup 2>$null
-pm2-startup install 2>$null
+& $npmPath install -g pm2-windows-startup 2>$null
+try { pm2-startup install 2>$null } catch { }
 Write-Host "  PM2 startup configured." -ForegroundColor Green
 
 # Step 4: Stop existing reRun process (if running) before copying files
@@ -77,10 +152,22 @@ if (!(Test-Path $DataDir)) {
 }
 Write-Host "  Data directory ready." -ForegroundColor Green
 
-# Step 6: Rebuild native modules for this platform and initialize database
+# Step 6: Install/rebuild native modules for this platform
 Write-Host "[6/8] Building native modules..." -ForegroundColor Cyan
 Set-Location $InstallDir
-npm rebuild better-sqlite3
+# Use npm install (not rebuild) to properly fetch prebuilt binaries
+& $npmPath install better-sqlite3 2>&1 | ForEach-Object { Write-Host "  $_" -ForegroundColor Gray }
+if ($LASTEXITCODE -ne 0) {
+    Write-Host ""
+    Write-Host "  better-sqlite3 failed to build." -ForegroundColor Red
+    Write-Host ""
+    Write-Host "  MANUAL FIX:" -ForegroundColor Yellow
+    Write-Host "  1. Open PowerShell as Administrator" -ForegroundColor White
+    Write-Host "  2. Run: npm install -g windows-build-tools" -ForegroundColor White
+    Write-Host "  3. Close all terminals, then double-click install.bat again" -ForegroundColor White
+    Write-Host ""
+    throw "Native module build failed. See manual steps above."
+}
 Write-Host "  Ready." -ForegroundColor Green
 
 # Step 7: Start with PM2
