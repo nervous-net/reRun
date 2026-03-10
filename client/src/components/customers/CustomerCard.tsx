@@ -53,6 +53,8 @@ export function CustomerCard({ customerId }: CustomerCardProps) {
   const navigate = useNavigate();
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [rentals, setRentals] = useState<ActiveRental[]>([]);
+  const [rentalHistory, setRentalHistory] = useState<any[]>([]);
+  const [showAllHistory, setShowAllHistory] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showEdit, setShowEdit] = useState(false);
@@ -82,6 +84,11 @@ export function CustomerCard({ customerId }: CustomerCardProps) {
       setCustomer(data);
       const rentalList = Array.isArray(rentalData) ? rentalData : rentalData.data ?? [];
       setRentals(rentalList.filter((r: any) => r.status === 'out' || r.status === 'active'));
+      setRentalHistory(
+        rentalList
+          .filter((r: any) => r.status === 'returned')
+          .sort((a: any, b: any) => new Date(b.returnedAt).getTime() - new Date(a.returnedAt).getTime())
+      );
     } catch {
       setError('Failed to load customer');
     } finally {
@@ -206,6 +213,34 @@ export function CustomerCard({ customerId }: CustomerCardProps) {
           {days < 0 ? `${Math.abs(days)}d overdue` : `${days}d`}
         </span>
       ),
+    };
+  });
+
+  const HISTORY_DEFAULT_LIMIT = 20;
+  const visibleHistory = showAllHistory ? rentalHistory : rentalHistory.slice(0, HISTORY_DEFAULT_LIMIT);
+
+  const historyTableData = visibleHistory.map((r: any) => {
+    let familyMember = '';
+    if (r.familyMemberFirstName) {
+      familyMember = `${r.familyMemberFirstName} ${r.familyMemberLastName ?? ''}`.trim();
+      if (r.familyMemberRelationship) {
+        familyMember += ` (${r.familyMemberRelationship})`;
+      }
+    }
+
+    let lateFeeDisplay = '—';
+    if (r.lateFee > 0) {
+      const dollars = (r.lateFee / 100).toFixed(2);
+      lateFeeDisplay = `$${dollars} (${r.lateFeeStatus})`;
+    }
+
+    return {
+      title: r.titleName ?? 'Unknown',
+      format: r.copyBarcode ?? '',
+      checked_out: new Date(r.checkedOutAt).toLocaleDateString(),
+      returned: r.returnedAt ? new Date(r.returnedAt).toLocaleDateString() : '—',
+      family: familyMember || '—',
+      late_fee: lateFeeDisplay,
     };
   });
 
@@ -338,6 +373,35 @@ export function CustomerCard({ customerId }: CustomerCardProps) {
           <div style={styles.notes}>{customer.notes}</div>
         </div>
       )}
+
+      {/* Rental History */}
+      <div style={styles.section}>
+        <h3 style={styles.sectionTitle}>
+          Rental History
+          {rentalHistory.length > 0 && (
+            <Badge variant="info">{rentalHistory.length}</Badge>
+          )}
+        </h3>
+        <Table
+          columns={[
+            { key: 'title', label: 'Title' },
+            { key: 'format', label: 'Barcode', width: '100px' },
+            { key: 'checked_out', label: 'Checked Out', width: '100px' },
+            { key: 'returned', label: 'Returned', width: '100px' },
+            { key: 'family', label: 'Family', width: '120px' },
+            { key: 'late_fee', label: 'Late Fee', width: '110px' },
+          ]}
+          data={historyTableData}
+          emptyMessage="No rental history"
+        />
+        {rentalHistory.length > HISTORY_DEFAULT_LIMIT && !showAllHistory && (
+          <div style={{ textAlign: 'center', marginTop: 'var(--space-sm)' }}>
+            <Button variant="ghost" onClick={() => setShowAllHistory(true)}>
+              Show All ({rentalHistory.length} total)
+            </Button>
+          </div>
+        )}
+      </div>
 
       {/* Quick actions */}
       <div style={styles.actions}>
