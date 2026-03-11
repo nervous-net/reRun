@@ -203,7 +203,7 @@ beforeEach(() => {
   applySchema(sqlite);
   db = drizzle(sqlite, { schema });
 
-  const backupRoutes = createBackupRoutes(db, { dbPath, backupDir });
+  const backupRoutes = createBackupRoutes(db, { dbPath, defaultBackupDir: backupDir });
   app = new Hono();
   app.route('/api/backup', backupRoutes);
 });
@@ -279,19 +279,26 @@ describe('GET /api/backup/list', () => {
   });
 
   it('returns multiple backups sorted by most recent first', async () => {
-    // Create two backups with slightly different timestamps
+    // Create two backups with distinct mtimes so sort order is deterministic
     fs.mkdirSync(backupDir, { recursive: true });
     const file1 = 'rerun-2026-01-01T120000.db';
     const file2 = 'rerun-2026-02-15T143000.db';
-    fs.writeFileSync(path.join(backupDir, file1), 'fake-db-1');
-    fs.writeFileSync(path.join(backupDir, file2), 'fake-db-2');
+    const path1 = path.join(backupDir, file1);
+    const path2 = path.join(backupDir, file2);
+    fs.writeFileSync(path1, 'fake-db-1');
+    fs.writeFileSync(path2, 'fake-db-2');
+    // Set explicit mtimes: file2 is newer than file1
+    const older = new Date('2026-01-01T12:00:00Z');
+    const newer = new Date('2026-02-15T14:30:00Z');
+    fs.utimesSync(path1, older, older);
+    fs.utimesSync(path2, newer, newer);
 
     const res = await app.request('/api/backup/list');
     expect(res.status).toBe(200);
 
     const body = await res.json();
     expect(body.backups).toHaveLength(2);
-    // Most recent first (alphabetical desc for our naming convention)
+    // Most recent first (sorted by mtime)
     expect(body.backups[0].filename).toBe(file2);
     expect(body.backups[1].filename).toBe(file1);
   });
@@ -435,5 +442,126 @@ describe('GET /api/backup/export/:table', () => {
     // Values with commas/quotes should be properly escaped
     expect(csv).toContain('"Lock, Stock and Two Smoking Barrels"');
     expect(csv).toContain('"A movie with ""quotes"" and, commas"');
+  });
+});
+
+describe('backup with custom backup_dir setting', () => {
+  it('POST / creates backup in custom directory when backup_dir is set', async () => {
+    const customDir = path.join(tmpDir, 'custom-backups');
+    fs.mkdirSync(customDir, { recursive: true });
+    await db.insert(schema.storeSettings).values({ key: 'backup_dir', value: customDir });
+
+    const res = await app.request('/api/backup', { method: 'POST' });
+    expect(res.status).toBe(201);
+
+    const customFiles = fs.readdirSync(customDir).filter((f: string) => f.endsWith('.db'));
+    expect(customFiles.length).toBe(1);
+  });
+
+  it('GET /list merges backups from custom and default directories', async () => {
+    fs.mkdirSync(backupDir, { recursive: true });
+    fs.copyFileSync(dbPath, path.join(backupDir, 'rerun-20260101T000000.db'));
+
+    const customDir = path.join(tmpDir, 'custom-backups');
+    fs.mkdirSync(customDir, { recursive: true });
+    fs.copyFileSync(dbPath, path.join(customDir, 'rerun-20260102T000000.db'));
+    await db.insert(schema.storeSettings).values({ key: 'backup_dir', value: customDir });
+
+    const res = await app.request('/api/backup/list');
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.backups.length).toBe(2);
+    expect(body.backups[0]).toHaveProperty('location');
+    expect(body.backups[1]).toHaveProperty('location');
+  });
+
+  it('GET /list returns location field on all backup entries', async () => {
+    // Create a backup (will land in default dir since no custom dir set)
+    await app.request('/api/backup', { method: 'POST' });
+
+    const res = await app.request('/api/backup/list');
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.backups).toHaveLength(1);
+    expect(body.backups[0]).toHaveProperty('location');
+    expect(typeof body.backups[0].location).toBe('string');
+  });
+
+  it('GET /list deduplicates by filename (custom takes precedence)', async () => {
+    const customDir = path.join(tmpDir, 'custom-backups');
+    fs.mkdirSync(customDir, { recursive: true });
+    fs.mkdirSync(backupDir, { recursive: true });
+
+    // Same filename in both dirs
+    const sharedFilename = 'rerun-20260101T000000.db';
+    fs.copyFileSync(dbPath, path.join(backupDir, sharedFilename));
+    fs.copyFileSync(dbPath, path.join(customDir, sharedFilename));
+    await db.insert(schema.storeSettings).values({ key: 'backup_dir', value: customDir });
+
+    const res = await app.request('/api/backup/list');
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    // Should only appear once, from the custom dir
+    expect(body.backups.length).toBe(1);
+    expect(body.backups[0].location).toBe(path.resolve(customDir));
+  });
+
+  it('POST /restore/:filename accepts location in body', async () => {
+    vi.useFakeTimers();
+    const customDir = path.join(tmpDir, 'custom-backups');
+    fs.mkdirSync(customDir, { recursive: true });
+    const backupFilename = 'rerun-20260101T000000.db';
+    fs.copyFileSync(dbPath, path.join(customDir, backupFilename));
+    await db.insert(schema.storeSettings).values({ key: 'backup_dir', value: customDir });
+
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+    const res = await app.request(`/api/backup/restore/${backupFilename}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ location: customDir }),
+    });
+    expect(res.status).toBe(200);
+
+    vi.advanceTimersByTime(1000);
+
+    // Reassign sqlite so afterEach doesn't fail on closed connection
+    sqlite = new Database(':memory:');
+
+    exitSpy.mockRestore();
+    vi.useRealTimers();
+  });
+
+  it('POST /restore/:filename rejects arbitrary location paths', async () => {
+    const evilDir = '/tmp/evil-dir';
+    const res = await app.request('/api/backup/restore/rerun-20260101T000000.db', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ location: evilDir }),
+    });
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain('Invalid backup location');
+  });
+
+  it('POST /restore/:filename finds file without location if in known dirs', async () => {
+    vi.useFakeTimers();
+    fs.mkdirSync(backupDir, { recursive: true });
+    const backupFilename = 'rerun-20260101T000000.db';
+    fs.copyFileSync(dbPath, path.join(backupDir, backupFilename));
+
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+    // No location in body — should still find it in default dir
+    const res = await app.request(`/api/backup/restore/${backupFilename}`, {
+      method: 'POST',
+    });
+    expect(res.status).toBe(200);
+
+    vi.advanceTimersByTime(1000);
+
+    sqlite = new Database(':memory:');
+    exitSpy.mockRestore();
+    vi.useRealTimers();
   });
 });

@@ -64,7 +64,7 @@ app.route('/api/dashboard', createDashboardRoutes(db));
 app.route('/api/settings', createSettingsRoutes(db));
 app.route('/api/backup', createBackupRoutes(db, {
   dbPath: DB_PATH,
-  backupDir: defaultBackupDir,  // still using old interface name, Task 3 will rename
+  defaultBackupDir,
 }));
 app.route('/api/update', createUpdateRoutes(DB_PATH, defaultBackupDir));
 
