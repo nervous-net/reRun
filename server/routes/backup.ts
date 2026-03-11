@@ -42,14 +42,15 @@ function csvEscape(value: unknown): string {
  * Returns empty array if directory doesn't exist or can't be read.
  */
 function scanBackupDir(dir: string): Array<{ filename: string; size: number; createdAt: string; location: string }> {
-  if (!fs.existsSync(dir)) return [];
+  const resolvedDir = path.resolve(dir);
+  if (!fs.existsSync(resolvedDir)) return [];
   try {
-    return fs.readdirSync(dir)
+    return fs.readdirSync(resolvedDir)
       .filter((f) => f.startsWith('rerun-') && f.endsWith('.db'))
       .map((filename) => {
-        const filePath = path.join(dir, filename);
+        const filePath = path.join(resolvedDir, filename);
         const stat = fs.statSync(filePath);
-        return { filename, size: stat.size, createdAt: stat.mtime.toISOString(), location: dir };
+        return { filename, size: stat.size, createdAt: stat.mtime.toISOString(), location: resolvedDir };
       });
   } catch {
     return [];
