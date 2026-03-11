@@ -43,8 +43,8 @@ const pkg = JSON.parse(fs.readFileSync(path.resolve('package.json'), 'utf-8'));
 app.get('/api/health', (c) => c.json({ status: 'ok', name: 'reRun', version: pkg.version }));
 
 // Auto daily backup middleware
-const backupDir = path.join(path.dirname(DB_PATH), 'backups');
-app.use('/api/*', createAutoBackupMiddleware(db, DB_PATH, backupDir));
+const defaultBackupDir = path.join(path.dirname(DB_PATH), 'backups');
+app.use('/api/*', createAutoBackupMiddleware(db, DB_PATH, defaultBackupDir));
 
 // API routes
 app.route('/api/titles', createTitlesRoutes(db));
@@ -64,9 +64,9 @@ app.route('/api/dashboard', createDashboardRoutes(db));
 app.route('/api/settings', createSettingsRoutes(db));
 app.route('/api/backup', createBackupRoutes(db, {
   dbPath: DB_PATH,
-  backupDir,
+  backupDir: defaultBackupDir,  // still using old interface name, Task 3 will rename
 }));
-app.route('/api/update', createUpdateRoutes(DB_PATH, backupDir));
+app.route('/api/update', createUpdateRoutes(DB_PATH, defaultBackupDir));
 
 // Start update checker
 startUpdateChecker(pkg.version);
