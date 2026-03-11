@@ -2,6 +2,7 @@
 // ABOUTME: Used by the Settings UI directory picker for choosing a backup location
 
 import { Hono } from 'hono';
+import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
@@ -15,8 +16,7 @@ function isDangerousPath(resolved: string): boolean {
   );
 }
 
-async function getWindowsDriveRoots(): Promise<Array<{ name: string; path: string }>> {
-  const { execSync } = await import('child_process');
+function getWindowsDriveRoots(): Array<{ name: string; path: string }> {
   try {
     const output = execSync(
       'powershell -NoProfile -Command "Get-PSDrive -PSProvider FileSystem | Select-Object -ExpandProperty Root"',
@@ -39,7 +39,7 @@ export function createFilesystemRoutes() {
     const rawPath = c.req.query('path') || '';
 
     if (!rawPath && process.platform === 'win32') {
-      const drives = await getWindowsDriveRoots();
+      const drives = getWindowsDriveRoots();
       return c.json({ current: '', parent: null, directories: drives });
     }
 
@@ -72,8 +72,8 @@ export function createFilesystemRoutes() {
       const parent = resolved === path.parse(resolved).root ? null : path.dirname(resolved);
 
       return c.json({ current: resolved, parent, directories });
-    } catch (err: any) {
-      return c.json({ error: `Cannot read directory: ${err.message}` }, 400);
+    } catch {
+      return c.json({ error: 'Cannot read directory' }, 400);
     }
   });
 

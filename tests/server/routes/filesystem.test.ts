@@ -8,6 +8,8 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 
+interface DirEntry { name: string; path: string }
+
 let app: Hono;
 let tmpDir: string;
 
@@ -34,7 +36,7 @@ describe('GET /api/filesystem/browse', () => {
     const body = await res.json();
     expect(body.current).toBe(tmpDir);
     expect(body.directories.length).toBe(3);
-    expect(body.directories.map((d: any) => d.name).sort()).toEqual(['dir-a', 'dir-b', 'dir-c']);
+    expect(body.directories.map((d: DirEntry) => d.name).sort()).toEqual(['dir-a', 'dir-b', 'dir-c']);
     expect(body.parent).toBe(path.dirname(tmpDir));
   });
 
@@ -54,6 +56,15 @@ describe('GET /api/filesystem/browse', () => {
   it('rejects path traversal attempts', async () => {
     const res = await app.request(`/api/filesystem/browse?path=${encodeURIComponent('/tmp/../proc')}`);
     expect(res.status).toBe(400);
+  });
+
+  it('defaults to root when path param is omitted', async () => {
+    if (process.platform === 'win32') return;
+    const res = await app.request('/api/filesystem/browse');
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.current).toBe('/');
+    expect(body.parent).toBeNull();
   });
 
   it('returns parent as null at root', async () => {
@@ -78,7 +89,7 @@ describe('GET /api/filesystem/browse', () => {
     const res = await app.request(`/api/filesystem/browse?path=${encodeURIComponent(tmpDir)}`);
     expect(res.status).toBe(200);
     const body = await res.json();
-    const names = body.directories.map((d: any) => d.name);
+    const names = body.directories.map((d: DirEntry) => d.name);
     expect(names).not.toContain('.hidden');
   });
 
@@ -86,7 +97,7 @@ describe('GET /api/filesystem/browse', () => {
     const res = await app.request(`/api/filesystem/browse?path=${encodeURIComponent(tmpDir)}`);
     expect(res.status).toBe(200);
     const body = await res.json();
-    const names = body.directories.map((d: any) => d.name);
+    const names = body.directories.map((d: DirEntry) => d.name);
     expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)));
   });
 
