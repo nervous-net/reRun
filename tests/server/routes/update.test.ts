@@ -39,7 +39,7 @@ describe('Update routes', () => {
       updating: false,
     });
     app = new Hono();
-    app.route('/api/update', createUpdateRoutes('/tmp/test.db', '/tmp/backups'));
+    app.route('/api/update', createUpdateRoutes({} as any, '/tmp/test.db', '/tmp/backups'));
   });
 
   it('GET /api/update/status returns update status', async () => {

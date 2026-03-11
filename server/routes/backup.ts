@@ -6,6 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import { storeSettings } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
+import { resolveBackupDir } from '../lib/resolve-backup-dir.js';
 
 const VALID_TABLES = [
   'titles', 'copies', 'customers', 'family_members',
@@ -18,7 +19,7 @@ type ValidTable = typeof VALID_TABLES[number];
 
 interface BackupOptions {
   dbPath: string;
-  backupDir: string;
+  defaultBackupDir: string;
 }
 
 /**
@@ -36,9 +37,29 @@ function csvEscape(value: unknown): string {
   return str;
 }
 
+/**
+ * Scan a directory for backup files and return metadata for each.
+ * Returns empty array if directory doesn't exist or can't be read.
+ */
+function scanBackupDir(dir: string): Array<{ filename: string; size: number; createdAt: string; location: string }> {
+  const resolvedDir = path.resolve(dir);
+  if (!fs.existsSync(resolvedDir)) return [];
+  try {
+    return fs.readdirSync(resolvedDir)
+      .filter((f) => f.startsWith('rerun-') && f.endsWith('.db'))
+      .map((filename) => {
+        const filePath = path.join(resolvedDir, filename);
+        const stat = fs.statSync(filePath);
+        return { filename, size: stat.size, createdAt: stat.mtime.toISOString(), location: resolvedDir };
+      });
+  } catch {
+    return [];
+  }
+}
+
 export function createBackupRoutes(db: any, options: BackupOptions) {
   const routes = new Hono();
-  const { dbPath, backupDir } = options;
+  const { dbPath, defaultBackupDir } = options;
 
   // Get the raw sqlite instance from Drizzle
   function getSqlite() {
@@ -50,9 +71,12 @@ export function createBackupRoutes(db: any, options: BackupOptions) {
     try {
       const sqlite = getSqlite();
 
+      // Resolve effective backup directory (respects custom backup_dir setting)
+      const { path: effectiveBackupDir } = await resolveBackupDir(db, defaultBackupDir);
+
       // Ensure backups directory exists
-      if (!fs.existsSync(backupDir)) {
-        fs.mkdirSync(backupDir, { recursive: true });
+      if (!fs.existsSync(effectiveBackupDir)) {
+        fs.mkdirSync(effectiveBackupDir, { recursive: true });
       }
 
       // Flush WAL to ensure the DB file is self-contained
@@ -67,7 +91,7 @@ export function createBackupRoutes(db: any, options: BackupOptions) {
         .split('T')
         .join('T');
       const filename = `rerun-${timestamp}.db`;
-      const backupPath = path.join(backupDir, filename);
+      const backupPath = path.join(effectiveBackupDir, filename);
 
       // Copy the database file
       fs.copyFileSync(dbPath, backupPath);
@@ -88,30 +112,30 @@ export function createBackupRoutes(db: any, options: BackupOptions) {
     }
   });
 
-  // GET /list — List available backup files
+  // GET /list — List available backup files from both default and custom directories
   routes.get('/list', async (c) => {
     try {
-      // If backups directory doesn't exist, return empty list
-      if (!fs.existsSync(backupDir)) {
-        return c.json({ backups: [] });
+      const [setting] = await db.select().from(storeSettings)
+        .where(eq(storeSettings.key, 'backup_dir'));
+      const customDir = setting?.value?.trim() || null;
+
+      const defaultBackups = scanBackupDir(defaultBackupDir);
+      const customBackups = (customDir && path.resolve(customDir) !== path.resolve(defaultBackupDir))
+        ? scanBackupDir(path.resolve(customDir))
+        : [];
+
+      // Merge, dedup by filename (custom takes precedence), sort by mtime desc
+      const seen = new Set<string>();
+      const merged: Array<{ filename: string; size: number; createdAt: string; location: string }> = [];
+      for (const b of [...customBackups, ...defaultBackups]) {
+        if (!seen.has(b.filename)) {
+          seen.add(b.filename);
+          merged.push(b);
+        }
       }
+      merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-      const files = fs.readdirSync(backupDir)
-        .filter((f) => f.startsWith('rerun-') && f.endsWith('.db'))
-        .sort()
-        .reverse(); // Most recent first (filenames sort chronologically)
-
-      const backups = files.map((filename) => {
-        const filePath = path.join(backupDir, filename);
-        const stat = fs.statSync(filePath);
-        return {
-          filename,
-          size: stat.size,
-          createdAt: stat.mtime.toISOString(),
-        };
-      });
-
-      return c.json({ backups });
+      return c.json({ backups: merged });
     } catch (err: any) {
       return c.json({ error: `Failed to list backups: ${err.message}` }, 500);
     }
@@ -126,9 +150,40 @@ export function createBackupRoutes(db: any, options: BackupOptions) {
       return c.json({ error: 'Invalid filename' }, 400);
     }
 
-    const backupPath = path.join(backupDir, filename);
+    // Get location from body (optional)
+    let location: string | null = null;
+    try {
+      const body = await c.req.json();
+      location = body?.location ?? null;
+    } catch { /* no body is fine */ }
 
-    if (!fs.existsSync(backupPath)) {
+    // Validate location is one of the known backup directories
+    const [setting] = await db.select().from(storeSettings)
+      .where(eq(storeSettings.key, 'backup_dir'));
+    const customDir = setting?.value?.trim() || null;
+    const knownDirs: string[] = [];
+    if (customDir) knownDirs.push(path.resolve(customDir));
+    knownDirs.push(path.resolve(defaultBackupDir));
+
+    if (location) {
+      const resolvedLocation = path.resolve(location);
+      if (!knownDirs.includes(resolvedLocation)) {
+        return c.json({ error: 'Invalid backup location' }, 400);
+      }
+    }
+
+    // Find the backup file
+    const searchDirs = location ? [path.resolve(location)] : knownDirs;
+    let backupPath: string | null = null;
+    for (const dir of searchDirs) {
+      const candidate = path.join(dir, filename);
+      if (fs.existsSync(candidate)) {
+        backupPath = candidate;
+        break;
+      }
+    }
+
+    if (!backupPath) {
       return c.json({ error: `Backup file not found: ${filename}` }, 404);
     }
 

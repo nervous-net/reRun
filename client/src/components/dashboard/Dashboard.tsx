@@ -279,6 +279,7 @@ export function Dashboard() {
   const [confirmUpdate, setConfirmUpdate] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [backupWarning, setBackupWarning] = useState(false);
 
   const loadDashboard = useCallback(async () => {
     const errs: string[] = [];
@@ -292,6 +293,7 @@ export function Dashboard() {
       if (s?.setup_complete !== '1') {
         setShowWelcome(true);
       }
+      setBackupWarning(s?.backup_fallback_warning === 'true');
     } catch { /* keep default */ }
     setProductsEnabled(showProducts);
 
@@ -384,6 +386,13 @@ export function Dashboard() {
     }, 2000);
   }
 
+  const dismissBackupWarning = async () => {
+    setBackupWarning(false);
+    try {
+      await api.settings.update('backup_fallback_warning', 'false');
+    } catch { /* ignore */ }
+  };
+
   // Load on mount + refresh every 30s + refetch on window focus
   useEffect(() => {
     loadDashboard();
@@ -437,6 +446,42 @@ export function Dashboard() {
       )}
 
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} initialTab="start" />
+
+      {backupWarning && (
+        <div style={{
+          backgroundColor: 'var(--bg-panel)',
+          border: '1px solid var(--crt-amber)',
+          borderRadius: 'var(--border-radius)',
+          padding: 'var(--space-sm) var(--space-md)',
+          marginBottom: 'var(--space-md)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          color: 'var(--crt-amber)',
+          fontSize: 'var(--font-size-sm)',
+          fontFamily: 'var(--font-mono)',
+        }}>
+          <Link to="/settings" style={{ color: 'var(--crt-amber)', textDecoration: 'underline' }}>
+            Backup location unavailable — backups are being saved to the default location. Check your backup path in Settings.
+          </Link>
+          <button
+            type="button"
+            onClick={dismissBackupWarning}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--crt-amber)',
+              cursor: 'pointer',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 'var(--font-size-sm)',
+              padding: '0 4px',
+            }}
+            aria-label="Dismiss"
+          >
+            X
+          </button>
+        </div>
+      )}
 
       {updateStatus?.availableUpdate && !installing && (
         <div style={updateBannerStyle}>

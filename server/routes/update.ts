@@ -6,11 +6,12 @@ import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { getUpdateStatus, setUpdating, forceCheck } from '../services/update.js';
+import { resolveBackupDir } from '../lib/resolve-backup-dir.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export function createUpdateRoutes(dbPath: string, backupDir: string) {
+export function createUpdateRoutes(db: any, dbPath: string, defaultBackupDir: string) {
   const routes = new Hono();
 
   routes.get('/status', async (c) => {
@@ -35,6 +36,12 @@ export function createUpdateRoutes(dbPath: string, backupDir: string) {
     }
 
     setUpdating(true);
+
+    // Resolve backup directory dynamically from store settings
+    const { path: backupDir, fallback } = await resolveBackupDir(db, defaultBackupDir);
+    if (fallback) {
+      console.warn('[UPDATE] Custom backup path unavailable, using default for pre-update backup');
+    }
 
     // Spawn the update script as a detached process
     // Use __dirname to build an absolute path — path.resolve relies on cwd which

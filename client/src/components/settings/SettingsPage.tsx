@@ -8,6 +8,7 @@ import { Modal } from '../common/Modal';
 import { PricingRulesManager } from './PricingRulesManager';
 import { PromotionsManager } from './PromotionsManager';
 import { HelpModal } from '../help/HelpModal';
+import { DirectoryBrowser } from './DirectoryBrowser';
 
 // --- Types ---
 
@@ -173,6 +174,7 @@ interface BackupEntry {
   filename: string;
   size: number;
   createdAt: string;
+  location?: string;
 }
 
 function formatFileSize(bytes: number): string {
@@ -244,6 +246,10 @@ export function SettingsPage() {
   const [showAllBackups, setShowAllBackups] = useState(false);
   const [simulatedDate, setSimulatedDate] = useState<string | null>(null);
   const [showHelp, setShowHelp] = useState(false);
+  const [backupDirInput, setBackupDirInput] = useState('');
+  const [backupDirSaving, setBackupDirSaving] = useState(false);
+  const [backupDirError, setBackupDirError] = useState<string | null>(null);
+  const [showDirBrowser, setShowDirBrowser] = useState(false);
 
   // Tax rate is displayed as percentage but stored as basis points
   const [taxDisplay, setTaxDisplay] = useState('');
@@ -257,6 +263,7 @@ export function SettingsPage() {
       setSettings(data);
       setOriginal(data);
       setTaxDisplay(data.tax_rate ? basisPointsToPercent(data.tax_rate) : '');
+      setBackupDirInput(data.backup_dir ?? '');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load settings';
       setLoadError(message);
@@ -313,6 +320,51 @@ export function SettingsPage() {
       setSimulatedDate(null);
     }
   }, [settings.dev_mode, settings.dev_date_offset, fetchDevTime]);
+
+  const handleSaveBackupDir = useCallback(async () => {
+    setBackupDirSaving(true);
+    setBackupDirError(null);
+    try {
+      let successMsg = 'Backup location reset to default';
+      if (backupDirInput.trim()) {
+        const verifyResult = await api.backup.verify(backupDirInput.trim());
+        if (!verifyResult.valid) {
+          setBackupDirError(verifyResult.error || 'Directory is not usable for backups');
+          return;
+        }
+        successMsg = verifyResult.created ? 'Folder created and saved' : 'Backup location saved';
+        if (verifyResult.warning) {
+          successMsg += ` (${verifyResult.warning})`;
+        }
+      }
+      await api.settings.update('backup_dir', backupDirInput.trim());
+      setSettings((prev) => ({ ...prev, backup_dir: backupDirInput.trim() }));
+      setOriginal((prev) => ({ ...prev, backup_dir: backupDirInput.trim() }));
+      setFeedback({ type: 'success', message: successMsg });
+      loadBackups();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to save backup location';
+      setBackupDirError(message);
+      setFeedback({ type: 'error', message });
+    } finally {
+      setBackupDirSaving(false);
+    }
+  }, [backupDirInput, loadBackups]);
+
+  const handleClearBackupDir = useCallback(async () => {
+    setBackupDirInput('');
+    setBackupDirError(null);
+    try {
+      await api.settings.update('backup_dir', '');
+      setSettings((prev) => ({ ...prev, backup_dir: '' }));
+      setOriginal((prev) => ({ ...prev, backup_dir: '' }));
+      setFeedback({ type: 'success', message: 'Backup location reset to default' });
+      loadBackups();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to reset backup location';
+      setFeedback({ type: 'error', message });
+    }
+  }, [loadBackups]);
 
   function updateSetting(key: SettingsKey, value: string) {
     setSettings(prev => ({ ...prev, [key]: value }));
@@ -383,7 +435,8 @@ export function SettingsPage() {
     setBackupAction(true);
     setFeedback(null);
     try {
-      await api.backup.restore(filename);
+      const targetBackup = backups.find(b => b.filename === filename);
+      await api.backup.restore(filename, targetBackup?.location);
       setFeedback({ type: 'success', message: 'Backup restored. A restart is required for changes to take effect.' });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to restore backup';
@@ -709,6 +762,105 @@ export function SettingsPage() {
 
       {/* Backup */}
       <div style={styles.sectionHeader}>Backup &amp; Restore</div>
+
+      {/* Backup Location */}
+      {settings.backup_fallback_warning === 'true' && (
+        <div style={{
+          border: '1px solid var(--crt-amber)',
+          borderRadius: 'var(--border-radius)',
+          padding: 'var(--space-xs) var(--space-sm)',
+          marginBottom: 'var(--space-sm)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          color: 'var(--crt-amber)',
+          fontSize: 'var(--font-size-sm)',
+          fontFamily: 'var(--font-mono)',
+        }}>
+          <span>Backup location unavailable — using default location.</span>
+          <button
+            type="button"
+            onClick={async () => {
+              await api.settings.update('backup_fallback_warning', 'false');
+              setSettings((prev) => ({ ...prev, backup_fallback_warning: 'false' }));
+            }}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--crt-amber)',
+              cursor: 'pointer',
+              fontFamily: 'var(--font-mono)',
+              padding: '0 4px',
+            }}
+            aria-label="Dismiss"
+          >
+            X
+          </button>
+        </div>
+      )}
+
+      <div style={{ marginBottom: 'var(--space-md)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-xs)', marginBottom: 'var(--space-xs)' }}>
+          <input
+            type="text"
+            value={backupDirInput}
+            onChange={(e) => { setBackupDirInput(e.target.value); setBackupDirError(null); }}
+            placeholder="Default (./data/backups)"
+            disabled={backupDirSaving}
+            style={{
+              ...styles.input,
+              flex: 1,
+              fontFamily: 'var(--font-mono)',
+              fontSize: 'var(--font-size-sm)',
+            }}
+          />
+          <button
+            type="button"
+            style={{ ...styles.toggleButton, whiteSpace: 'nowrap' }}
+            onClick={() => setShowDirBrowser(true)}
+            disabled={backupDirSaving}
+          >
+            Browse
+          </button>
+          <button
+            type="button"
+            style={{
+              ...styles.toggleButton,
+              whiteSpace: 'nowrap',
+              ...(backupDirSaving ? { opacity: 0.4, cursor: 'not-allowed' } : {}),
+            }}
+            onClick={handleSaveBackupDir}
+            disabled={backupDirSaving}
+          >
+            {backupDirSaving ? 'Saving...' : 'Save'}
+          </button>
+          {backupDirInput && (
+            <button
+              type="button"
+              style={{ ...styles.toggleButton, whiteSpace: 'nowrap', color: 'var(--text-secondary)', borderColor: 'var(--text-secondary)' }}
+              onClick={handleClearBackupDir}
+              disabled={backupDirSaving}
+            >
+              Clear
+            </button>
+          )}
+        </div>
+        {backupDirError && (
+          <div style={{ color: 'var(--crt-red)', fontSize: 'var(--font-size-sm)', marginBottom: 'var(--space-xs)' }}>
+            {backupDirError}
+          </div>
+        )}
+        <div style={styles.hint}>
+          Choose a folder for backups. Leave empty to use the default location.
+        </div>
+      </div>
+
+      <DirectoryBrowser
+        isOpen={showDirBrowser}
+        onClose={() => setShowDirBrowser(false)}
+        onSelect={(p) => setBackupDirInput(p)}
+        initialPath={backupDirInput || undefined}
+      />
 
       <div style={{ marginBottom: 'var(--space-md)' }}>
         <button

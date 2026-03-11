@@ -21,6 +21,7 @@ import { createSettingsRoutes } from './routes/settings.js';
 import { createBackupRoutes } from './routes/backup.js';
 import { createTmdbRoutes } from './routes/tmdb.js';
 import { createUpdateRoutes } from './routes/update.js';
+import { createFilesystemRoutes } from './routes/filesystem.js';
 import { startUpdateChecker } from './services/update.js';
 import { createAutoBackupMiddleware } from './middleware/auto-backup.js';
 import { DB_PATH } from './db/index.js';
@@ -43,8 +44,8 @@ const pkg = JSON.parse(fs.readFileSync(path.resolve('package.json'), 'utf-8'));
 app.get('/api/health', (c) => c.json({ status: 'ok', name: 'reRun', version: pkg.version }));
 
 // Auto daily backup middleware
-const backupDir = path.join(path.dirname(DB_PATH), 'backups');
-app.use('/api/*', createAutoBackupMiddleware(db, DB_PATH, backupDir));
+const defaultBackupDir = path.join(path.dirname(DB_PATH), 'backups');
+app.use('/api/*', createAutoBackupMiddleware(db, DB_PATH, defaultBackupDir));
 
 // API routes
 app.route('/api/titles', createTitlesRoutes(db));
@@ -62,11 +63,12 @@ app.route('/api/promotions', createPromotionsRoutes(db));
 app.route('/api/alerts', createAlertsRoutes(db));
 app.route('/api/dashboard', createDashboardRoutes(db));
 app.route('/api/settings', createSettingsRoutes(db));
+app.route('/api/filesystem', createFilesystemRoutes());
 app.route('/api/backup', createBackupRoutes(db, {
   dbPath: DB_PATH,
-  backupDir,
+  defaultBackupDir,
 }));
-app.route('/api/update', createUpdateRoutes(DB_PATH, backupDir));
+app.route('/api/update', createUpdateRoutes(db, DB_PATH, defaultBackupDir));
 
 // Start update checker
 startUpdateChecker(pkg.version);
