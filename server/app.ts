@@ -66,7 +66,7 @@ app.route('/api/backup', createBackupRoutes(db, {
   dbPath: DB_PATH,
   defaultBackupDir,
 }));
-app.route('/api/update', createUpdateRoutes(DB_PATH, defaultBackupDir));
+app.route('/api/update', createUpdateRoutes(db, DB_PATH, defaultBackupDir));
 
 // Start update checker
 startUpdateChecker(pkg.version);
