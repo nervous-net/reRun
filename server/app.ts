@@ -21,6 +21,7 @@ import { createSettingsRoutes } from './routes/settings.js';
 import { createBackupRoutes } from './routes/backup.js';
 import { createTmdbRoutes } from './routes/tmdb.js';
 import { createUpdateRoutes } from './routes/update.js';
+import { createFilesystemRoutes } from './routes/filesystem.js';
 import { startUpdateChecker } from './services/update.js';
 import { createAutoBackupMiddleware } from './middleware/auto-backup.js';
 import { DB_PATH } from './db/index.js';
@@ -62,6 +63,7 @@ app.route('/api/promotions', createPromotionsRoutes(db));
 app.route('/api/alerts', createAlertsRoutes(db));
 app.route('/api/dashboard', createDashboardRoutes(db));
 app.route('/api/settings', createSettingsRoutes(db));
+app.route('/api/filesystem', createFilesystemRoutes());
 app.route('/api/backup', createBackupRoutes(db, {
   dbPath: DB_PATH,
   defaultBackupDir,
