@@ -325,17 +325,22 @@ export function SettingsPage() {
     setBackupDirSaving(true);
     setBackupDirError(null);
     try {
+      let successMsg = 'Backup location reset to default';
       if (backupDirInput.trim()) {
         const verifyResult = await api.backup.verify(backupDirInput.trim());
         if (!verifyResult.valid) {
           setBackupDirError(verifyResult.error || 'Directory is not usable for backups');
           return;
         }
+        successMsg = verifyResult.created ? 'Folder created and saved' : 'Backup location saved';
+        if (verifyResult.warning) {
+          successMsg += ` (${verifyResult.warning})`;
+        }
       }
       await api.settings.update('backup_dir', backupDirInput.trim());
       setSettings((prev) => ({ ...prev, backup_dir: backupDirInput.trim() }));
       setOriginal((prev) => ({ ...prev, backup_dir: backupDirInput.trim() }));
-      setFeedback({ type: 'success', message: backupDirInput.trim() ? 'Backup location saved' : 'Backup location reset to default' });
+      setFeedback({ type: 'success', message: successMsg });
       loadBackups();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to save backup location';

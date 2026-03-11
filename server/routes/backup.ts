@@ -161,8 +161,9 @@ export function createBackupRoutes(db: any, options: BackupOptions) {
     const [setting] = await db.select().from(storeSettings)
       .where(eq(storeSettings.key, 'backup_dir'));
     const customDir = setting?.value?.trim() || null;
-    const knownDirs = [path.resolve(defaultBackupDir)];
+    const knownDirs: string[] = [];
     if (customDir) knownDirs.push(path.resolve(customDir));
+    knownDirs.push(path.resolve(defaultBackupDir));
 
     if (location) {
       const resolvedLocation = path.resolve(location);
