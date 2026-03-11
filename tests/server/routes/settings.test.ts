@@ -1,5 +1,5 @@
-// ABOUTME: Tests for the store settings API routes (get all, get by key, upsert)
-// ABOUTME: Validates all settings endpoints using in-memory SQLite test database
+// ABOUTME: Tests for store settings API routes including backup-dir verification
+// ABOUTME: Covers get/upsert settings, backup directory validation, and fallback warning clearing
 
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
 import { Hono } from 'hono';

@@ -1,5 +1,5 @@
 // ABOUTME: Store settings API routes for global configuration key-value pairs
-// ABOUTME: Supports retrieving all settings as an object and updating individual keys
+// ABOUTME: Supports get/upsert settings, backup directory verification, and backup_dir validation
 
 import { Hono } from 'hono';
 import { eq } from 'drizzle-orm';
@@ -65,19 +65,10 @@ function validateBackupPath(dirPath: string): {
 }
 
 async function clearFallbackWarning(db: any) {
-  const [existing] = await db
-    .select()
-    .from(storeSettings)
-    .where(eq(storeSettings.key, 'backup_fallback_warning'));
-
-  if (existing) {
-    await db
-      .update(storeSettings)
-      .set({ value: 'false' })
-      .where(eq(storeSettings.key, 'backup_fallback_warning'));
-  } else {
-    await db.insert(storeSettings).values({ key: 'backup_fallback_warning', value: 'false' });
-  }
+  await db
+    .insert(storeSettings)
+    .values({ key: 'backup_fallback_warning', value: 'false' })
+    .onConflictDoUpdate({ target: storeSettings.key, set: { value: 'false' } });
 }
 
 export function createSettingsRoutes(db: any) {
@@ -107,7 +98,7 @@ export function createSettingsRoutes(db: any) {
   routes.post('/backup-dir/verify', async (c) => {
     const body = await c.req.json();
 
-    if (!body.path) {
+    if (!body.path || typeof body.path !== 'string' || body.path.trim() === '') {
       return c.json({ error: 'Missing required field: path' }, 400);
     }
 
