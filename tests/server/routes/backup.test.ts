@@ -6,6 +6,7 @@ import { Hono } from 'hono';
 import { nanoid } from 'nanoid';
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { eq } from 'drizzle-orm';
 import * as schema from '../../../server/db/schema.js';
 import { createBackupRoutes } from '../../../server/routes/backup.js';
 import fs from 'fs';
@@ -563,5 +564,50 @@ describe('backup with custom backup_dir setting', () => {
     sqlite = new Database(':memory:');
     exitSpy.mockRestore();
     vi.useRealTimers();
+  });
+});
+
+describe('full backup cycle with custom backup_dir', () => {
+  it('set custom path → create backup → list shows backup at custom location → restore from custom', async () => {
+    const customDir = path.join(tmpDir, 'integration-custom');
+    fs.mkdirSync(customDir, { recursive: true });
+
+    // Set custom backup_dir in store_settings
+    await db.insert(schema.storeSettings).values({ key: 'backup_dir', value: customDir });
+
+    // Create a backup
+    const createRes = await app.request('/api/backup', { method: 'POST' });
+    expect(createRes.status).toBe(201);
+    const { filename } = await createRes.json();
+
+    // List should include it with location
+    const listRes = await app.request('/api/backup/list');
+    const { backups } = await listRes.json();
+    const found = backups.find((b: any) => b.filename === filename);
+    expect(found).toBeDefined();
+    expect(found.location).toBe(path.resolve(customDir));
+
+    // File should exist at custom path
+    expect(fs.existsSync(path.join(customDir, filename))).toBe(true);
+    // File should NOT exist at default path
+    expect(fs.existsSync(path.join(backupDir, filename))).toBe(false);
+  });
+
+  it('unavailable custom path → backup falls back → warning flag set', async () => {
+    // Set invalid custom dir
+    await db.insert(schema.storeSettings).values({ key: 'backup_dir', value: '/nonexistent/bad/path' });
+
+    // Create a backup (should fall back silently)
+    const createRes = await app.request('/api/backup', { method: 'POST' });
+    expect(createRes.status).toBe(201);
+
+    // File should be in default dir
+    const files = fs.readdirSync(backupDir).filter((f: string) => f.endsWith('.db'));
+    expect(files.length).toBeGreaterThan(0);
+
+    // Warning flag should be set
+    const [warning] = await db.select().from(schema.storeSettings)
+      .where(eq(schema.storeSettings.key, 'backup_fallback_warning'));
+    expect(warning?.value).toBe('true');
   });
 });
