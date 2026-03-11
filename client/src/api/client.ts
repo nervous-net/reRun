@@ -143,10 +143,17 @@ export const api = {
     stats: () => get<any>('/api/dashboard/stats'),
     recent: (limit?: number) => get<any>('/api/dashboard/recent', limit ? { limit: String(limit) } : undefined),
   },
+  filesystem: {
+    browse: (dirPath?: string) =>
+      get<any>('/api/filesystem/browse', dirPath ? { path: dirPath } : undefined),
+  },
   backup: {
     create: () => post<any>('/api/backup'),
     list: () => get<any>('/api/backup/list'),
-    restore: (filename: string) => post<any>(`/api/backup/restore/${encodeURIComponent(filename)}`),
+    restore: (filename: string, location?: string) =>
+      post<any>(`/api/backup/restore/${encodeURIComponent(filename)}`, location ? { location } : undefined),
+    verify: (dirPath: string) =>
+      post<any>('/api/settings/backup-dir/verify', { path: dirPath }),
     exportTable: (table: string) => `/api/backup/export/${encodeURIComponent(table)}`,
   },
   update: {
