@@ -55,6 +55,8 @@ export const api = {
     update: (id: string, data: any) => put<any>(`/api/titles/${id}`, data),
     addCopies: (id: string, data: any) => post<any>(`/api/titles/${id}/copies`, data),
     delete: (id: string) => del<any>(`/api/titles/${id}`),
+    bulkDelete: (ids: string[]) => post<any>('/api/titles/bulk-delete', { ids }),
+    nuke: (confirm: string) => post<any>('/api/titles/nuke', { confirm }),
   },
   copies: {
     update: (id: string, data: any) => put<any>(`/api/copies/${id}`, data),
