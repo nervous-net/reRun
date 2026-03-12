@@ -48,7 +48,7 @@ const defaultBackupDir = path.join(path.dirname(DB_PATH), 'backups');
 app.use('/api/*', createAutoBackupMiddleware(db, DB_PATH, defaultBackupDir));
 
 // API routes
-app.route('/api/titles', createTitlesRoutes(db));
+app.route('/api/titles', createTitlesRoutes({ db, dbPath: DB_PATH, defaultBackupDir }));
 app.route('/api/copies', createCopiesRoutes(db));
 app.route('/api/customers', createCustomersRoutes(db));
 app.route('/api/products', createProductsRoutes(db));
