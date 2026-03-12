@@ -1,10 +1,10 @@
 // ABOUTME: Hono route handlers for title CRUD and copy creation
-// ABOUTME: Provides paginated listing with available copy counts, detail view, and batch copy creation
+// ABOUTME: Provides paginated listing with available copy counts, detail view, batch copy creation, and bulk hard-delete
 
 import { Hono } from 'hono';
-import { eq, and, sql, count } from 'drizzle-orm';
+import { eq, and, sql, count, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { titles, copies, rentals } from '../db/schema.js';
+import { titles, copies, rentals, transactionItems, reservations } from '../db/schema.js';
 import { generateBarcode, generateBarcodes } from '../services/barcode.js';
 
 export function createTitlesRoutes(db: any) {
@@ -247,6 +247,86 @@ export function createTitlesRoutes(db: any) {
       .where(eq(titles.id, id));
 
     return c.json({ success: true });
+  });
+
+  // POST /bulk-delete — hard-delete multiple titles and all related data
+  routes.post('/bulk-delete', async (c) => {
+    const body = await c.req.json();
+    const ids: string[] = body.ids;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return c.json({ error: 'ids array is required and must not be empty' }, 400);
+    }
+    if (ids.length > 500) {
+      return c.json({ error: 'Maximum 500 IDs per request' }, 400);
+    }
+
+    // Find which titles actually exist
+    const existingTitles = await db
+      .select({ id: titles.id, name: titles.name })
+      .from(titles)
+      .where(inArray(titles.id, ids));
+
+    // Check for active rentals per title
+    const deleted: string[] = [];
+    const skipped: Array<{ id: string; name: string; reason: string }> = [];
+
+    for (const title of existingTitles) {
+      const titleCopies = await db
+        .select({ id: copies.id })
+        .from(copies)
+        .where(eq(copies.titleId, title.id));
+
+      let hasActiveRental = false;
+      for (const copy of titleCopies) {
+        const [activeRental] = await db
+          .select({ count: count() })
+          .from(rentals)
+          .where(and(eq(rentals.copyId, copy.id), eq(rentals.status, 'out')));
+        if (activeRental.count > 0) {
+          hasActiveRental = true;
+          break;
+        }
+      }
+
+      if (hasActiveRental) {
+        skipped.push({ id: title.id, name: title.name, reason: 'active rental' });
+      } else {
+        deleted.push(title.id);
+      }
+    }
+
+    if (deleted.length > 0) {
+      // Get all copy IDs for titles being deleted
+      const copyRows = await db
+        .select({ id: copies.id })
+        .from(copies)
+        .where(inArray(copies.titleId, deleted));
+      const copyIds = copyRows.map((c: { id: string }) => c.id);
+
+      // Get all rental IDs for copies being deleted
+      const rentalRows = copyIds.length > 0
+        ? await db.select({ id: rentals.id }).from(rentals).where(inArray(rentals.copyId, copyIds))
+        : [];
+      const rentalIds = rentalRows.map((r: { id: string }) => r.id);
+
+      const rawDb = (db as any).session.client;
+      rawDb.transaction(() => {
+        // Delete in FK-safe order
+        if (rentalIds.length > 0) {
+          db.delete(transactionItems).where(inArray(transactionItems.rentalId, rentalIds)).run();
+        }
+        if (copyIds.length > 0) {
+          db.delete(transactionItems).where(inArray(transactionItems.copyId, copyIds)).run();
+          db.delete(rentals).where(inArray(rentals.copyId, copyIds)).run();
+        }
+        db.delete(reservations).where(inArray(reservations.titleId, deleted)).run();
+        db.delete(copies).where(inArray(copies.titleId, deleted)).run();
+        db.delete(titles).where(inArray(titles.id, deleted)).run();
+      })();
+    }
+
+    return c.json({ deleted, skipped });
   });
 
   return routes;
