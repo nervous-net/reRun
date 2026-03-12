@@ -9,6 +9,7 @@ import { PricingRulesManager } from './PricingRulesManager';
 import { PromotionsManager } from './PromotionsManager';
 import { HelpModal } from '../help/HelpModal';
 import { DirectoryBrowser } from './DirectoryBrowser';
+import { DangerZone } from './DangerZone';
 
 // --- Types ---
 
@@ -1023,6 +1024,8 @@ export function SettingsPage() {
           )}
         </>
       )}
+
+      <DangerZone />
 
       {/* Save Button */}
       <button
