@@ -82,6 +82,7 @@ if (process.env.NODE_ENV === 'production') {
   // SPA fallback for client-side routing
   app.get('*', (c) => {
     const html = fs.readFileSync('./dist/client/index.html', 'utf-8');
+    c.header('Cache-Control', 'no-cache, no-store, must-revalidate');
     return c.html(html);
   });
 }
