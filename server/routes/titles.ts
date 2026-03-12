@@ -1,13 +1,24 @@
 // ABOUTME: Hono route handlers for title CRUD and copy creation
-// ABOUTME: Provides paginated listing with available copy counts, detail view, batch copy creation, and bulk hard-delete
+// ABOUTME: Provides paginated listing with available copy counts, detail view, batch copy creation, bulk hard-delete, and nuke
 
 import { Hono } from 'hono';
 import { eq, and, sql, count, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { titles, copies, rentals, transactionItems, reservations } from '../db/schema.js';
+import { titles, copies, rentals, transactionItems, reservations, transactions } from '../db/schema.js';
 import { generateBarcode, generateBarcodes } from '../services/barcode.js';
+import { createBackup } from '../lib/create-backup.js';
 
-export function createTitlesRoutes(db: any) {
+interface TitlesRouteOptions {
+  db: any;
+  dbPath?: string;
+  defaultBackupDir?: string;
+}
+
+export function createTitlesRoutes(options: TitlesRouteOptions | any) {
+  // Support both old signature (just db) and new options object
+  const db = options.db ?? options;
+  const dbPath = options.dbPath;
+  const defaultBackupDir = options.defaultBackupDir;
   const routes = new Hono();
 
   // GET / — List titles (paginated), include availableCopies count
@@ -327,6 +338,51 @@ export function createTitlesRoutes(db: any) {
     }
 
     return c.json({ deleted, skipped });
+  });
+
+  // POST /nuke — hard-delete ALL inventory data after creating a backup
+  routes.post('/nuke', async (c) => {
+    const body = await c.req.json();
+
+    if (body.confirm !== 'DELETE ALL') {
+      return c.json({ error: 'Must send { confirm: "DELETE ALL" } to proceed' }, 400);
+    }
+
+    // Create backup first (if backup options provided)
+    let backupFile = '';
+    if (dbPath && defaultBackupDir) {
+      try {
+        const result = await createBackup({ db, dbPath, defaultBackupDir });
+        backupFile = result.filename;
+      } catch (err: any) {
+        return c.json({ error: `Backup failed, aborting nuke: ${err.message}` }, 500);
+      }
+    }
+
+    // Count before deleting
+    const [tiCount] = await db.select({ count: count() }).from(transactionItems);
+    const [rCount] = await db.select({ count: count() }).from(rentals);
+    const [resCount] = await db.select({ count: count() }).from(reservations);
+    const [cCount] = await db.select({ count: count() }).from(copies);
+    const [tCount] = await db.select({ count: count() }).from(titles);
+
+    const rawDb = (db as any).session.client;
+    rawDb.transaction(() => {
+      db.delete(transactionItems).run();
+      db.delete(rentals).run();
+      db.delete(reservations).run();
+      db.delete(copies).run();
+      db.delete(titles).run();
+    })();
+
+    return c.json({
+      titlesDeleted: tCount.count,
+      copiesDeleted: cCount.count,
+      rentalsDeleted: rCount.count,
+      reservationsDeleted: resCount.count,
+      transactionItemsDeleted: tiCount.count,
+      backupFile,
+    });
   });
 
   return routes;

@@ -4,6 +4,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Hono } from 'hono';
 import { nanoid } from 'nanoid';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 import { createTestDb, migrateTestDb } from '../../setup.js';
 import { createTitlesRoutes } from '../../../server/routes/titles.js';
 import { titles, copies, rentals, reservations, transactionItems, transactions, customers } from '../../../server/db/schema.js';
@@ -11,6 +14,7 @@ import { titles, copies, rentals, reservations, transactionItems, transactions, 
 let db: ReturnType<typeof createTestDb>['db'];
 let sqlite: ReturnType<typeof createTestDb>['sqlite'];
 let app: Hono;
+let tempBackupDir: string;
 
 beforeEach(() => {
   const testDb = createTestDb();
@@ -18,7 +22,18 @@ beforeEach(() => {
   sqlite = testDb.sqlite;
   migrateTestDb(sqlite);
 
-  const titlesRoutes = createTitlesRoutes(db);
+  // Create a temp dir for backup tests
+  tempBackupDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rerun-test-'));
+
+  // Write a minimal DB file so createBackup has something to copy
+  const tempDbPath = path.join(tempBackupDir, 'test.db');
+  fs.writeFileSync(tempDbPath, '');
+
+  const titlesRoutes = createTitlesRoutes({
+    db,
+    dbPath: tempDbPath,
+    defaultBackupDir: tempBackupDir,
+  });
   app = new Hono();
   app.route('/api/titles', titlesRoutes);
 });
@@ -205,5 +220,88 @@ describe('POST /api/titles/bulk-delete', () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.deleted).toContain(t1);
+  });
+});
+
+describe('POST /api/titles/nuke', () => {
+  it('rejects without confirm string', async () => {
+    const res = await app.request('/api/titles/nuke', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('rejects wrong confirm string', async () => {
+    const res = await app.request('/api/titles/nuke', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirm: 'delete all' }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('deletes all inventory data and returns counts', async () => {
+    const cust = await seedCustomer();
+    const t1 = await seedTitle('Die Hard', 1988);
+    const t2 = await seedTitle('Aliens', 1986);
+    const c1 = await seedCopy(t1);
+    const c2 = await seedCopy(t2);
+    const r1 = await seedRental(c1, cust, 'returned');
+    const tx = await seedTransaction(cust);
+    await seedTransactionItem(tx, c1, r1);
+    await seedReservation(cust, t1);
+
+    const res = await app.request('/api/titles/nuke', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirm: 'DELETE ALL' }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.titlesDeleted).toBe(2);
+    expect(body.copiesDeleted).toBe(2);
+    expect(body.rentalsDeleted).toBe(1);
+    expect(body.reservationsDeleted).toBe(1);
+    expect(body.transactionItemsDeleted).toBe(1);
+    expect(body.backupFile).toMatch(/^rerun-.*\.db$/);
+
+    const remainingTitles = await db.select().from(titles);
+    const remainingCopies = await db.select().from(copies);
+    expect(remainingTitles).toHaveLength(0);
+    expect(remainingCopies).toHaveLength(0);
+  });
+
+  it('preserves transactions table', async () => {
+    const cust = await seedCustomer();
+    const t1 = await seedTitle('Die Hard', 1988);
+    const c1 = await seedCopy(t1);
+    const r1 = await seedRental(c1, cust, 'returned');
+    const tx = await seedTransaction(cust);
+    await seedTransactionItem(tx, c1, r1);
+
+    await app.request('/api/titles/nuke', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirm: 'DELETE ALL' }),
+    });
+
+    const remainingTx = await db.select().from(transactions);
+    expect(remainingTx).toHaveLength(1);
+  });
+
+  it('works on empty database', async () => {
+    const res = await app.request('/api/titles/nuke', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirm: 'DELETE ALL' }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.titlesDeleted).toBe(0);
+    expect(body.copiesDeleted).toBe(0);
   });
 });
