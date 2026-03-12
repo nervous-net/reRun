@@ -7,6 +7,7 @@ import path from 'path';
 import { storeSettings } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { resolveBackupDir } from '../lib/resolve-backup-dir.js';
+import { createBackup } from '../lib/create-backup.js';
 
 const VALID_TABLES = [
   'titles', 'copies', 'customers', 'family_members',
@@ -69,44 +70,8 @@ export function createBackupRoutes(db: any, options: BackupOptions) {
   // POST / — Create a backup of the SQLite database
   routes.post('/', async (c) => {
     try {
-      const sqlite = getSqlite();
-
-      // Resolve effective backup directory (respects custom backup_dir setting)
-      const { path: effectiveBackupDir } = await resolveBackupDir(db, defaultBackupDir);
-
-      // Ensure backups directory exists
-      if (!fs.existsSync(effectiveBackupDir)) {
-        fs.mkdirSync(effectiveBackupDir, { recursive: true });
-      }
-
-      // Flush WAL to ensure the DB file is self-contained
-      sqlite.pragma('wal_checkpoint(TRUNCATE)');
-
-      // Generate timestamped filename
-      const now = new Date();
-      const timestamp = now.toISOString()
-        .replace(/[-:]/g, (m: string) => m === '-' ? '-' : '')
-        .replace(/:/g, '')
-        .replace(/\.\d+Z$/, '')
-        .split('T')
-        .join('T');
-      const filename = `rerun-${timestamp}.db`;
-      const backupPath = path.join(effectiveBackupDir, filename);
-
-      // Copy the database file
-      fs.copyFileSync(dbPath, backupPath);
-
-      // Store last_backup_at in store_settings
-      const backupTime = now.toISOString();
-      await db
-        .insert(storeSettings)
-        .values({ key: 'last_backup_at', value: backupTime })
-        .onConflictDoUpdate({
-          target: storeSettings.key,
-          set: { value: backupTime },
-        });
-
-      return c.json({ filename, createdAt: backupTime }, 201);
+      const result = await createBackup({ db, dbPath, defaultBackupDir });
+      return c.json(result, 201);
     } catch (err: any) {
       return c.json({ error: `Backup failed: ${err.message}` }, 500);
     }
