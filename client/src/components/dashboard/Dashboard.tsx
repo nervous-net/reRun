@@ -7,6 +7,7 @@ import { api } from '../../api/client';
 import { Badge } from '../common/Badge';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
+import { UpdateModal } from '../common/UpdateModal';
 import { HelpModal } from '../help/HelpModal';
 
 // --- Grid layout ---
@@ -242,20 +243,6 @@ const updateButtonStyle: CSSProperties = {
   letterSpacing: '1px',
 };
 
-const updatingBannerStyle: CSSProperties = {
-  padding: 'var(--space-sm) var(--space-md)',
-  marginBottom: 'var(--space-md)',
-  backgroundColor: 'var(--warning-08)',
-  border: '1px solid var(--crt-amber)',
-  borderRadius: 'var(--border-radius)',
-  color: 'var(--crt-amber)',
-  textShadow: 'var(--glow-amber)',
-  fontFamily: 'var(--font-mono)',
-  fontSize: 'var(--font-size-md)',
-  letterSpacing: '1px',
-  textAlign: 'center',
-};
-
 // --- Component ---
 
 export function Dashboard() {
@@ -369,21 +356,13 @@ export function Dashboard() {
   }, []);
 
   async function handleInstallUpdate() {
+    setConfirmUpdate(false);
     setInstalling(true);
-    const currentVersion = updateStatus?.currentVersion;
-    await api.update.install();
-    // Poll update status until the version changes
-    const poll = setInterval(async () => {
-      try {
-        const status = await api.update.status();
-        if (status.currentVersion && status.currentVersion !== currentVersion) {
-          clearInterval(poll);
-          window.location.reload();
-        }
-      } catch {
-        // Server restarting, keep polling
-      }
-    }, 2000);
+    try {
+      await api.update.install();
+    } catch {
+      setInstalling(false);
+    }
   }
 
   const dismissBackupWarning = async () => {
@@ -491,12 +470,6 @@ export function Dashboard() {
           </button>
         </div>
       )}
-      {installing && (
-        <div style={updatingBannerStyle}>
-          Updating... please wait. The page will refresh automatically.
-        </div>
-      )}
-
       <div style={gridStyle}>
         {/* Row 1, Left: Today's Activity */}
         <div style={panelStyle}>
@@ -813,9 +786,15 @@ export function Dashboard() {
         </p>
         <div style={{ display: 'flex', gap: 'var(--space-sm)', justifyContent: 'flex-end', marginTop: 'var(--space-md)' }}>
           <Button variant="secondary" onClick={() => setConfirmUpdate(false)}>Cancel</Button>
-          <Button variant="danger" onClick={() => { handleInstallUpdate(); setConfirmUpdate(false); }}>Install Update</Button>
+          <Button variant="danger" onClick={handleInstallUpdate}>Install Update</Button>
         </div>
       </Modal>
+
+      <UpdateModal
+        isOpen={installing}
+        version={updateStatus?.availableUpdate?.version ?? ''}
+        previousVersion={updateStatus?.currentVersion ?? ''}
+      />
     </div>
   );
 }

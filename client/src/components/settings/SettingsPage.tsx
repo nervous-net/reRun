@@ -5,6 +5,7 @@ import { type CSSProperties, useEffect, useState, useCallback } from 'react';
 import { api } from '../../api/client';
 import { Button } from '../common/Button';
 import { Modal } from '../common/Modal';
+import { UpdateModal } from '../common/UpdateModal';
 import { PricingRulesManager } from './PricingRulesManager';
 import { PromotionsManager } from './PromotionsManager';
 import { HelpModal } from '../help/HelpModal';
@@ -457,22 +458,10 @@ export function SettingsPage() {
   }
 
   async function handleInstallUpdate() {
+    setConfirmUpdate(false);
     setInstallingUpdate(true);
     try {
-      const currentVersion = updateStatus?.currentVersion;
       await api.update.install();
-      // Poll update status until the version changes
-      const poll = setInterval(async () => {
-        try {
-          const status = await api.update.status();
-          if (status.currentVersion && status.currentVersion !== currentVersion) {
-            clearInterval(poll);
-            window.location.reload();
-          }
-        } catch {
-          // Server restarting, keep polling
-        }
-      }, 2000);
     } catch {
       setInstallingUpdate(false);
     }
@@ -1072,9 +1061,15 @@ export function SettingsPage() {
         </p>
         <div style={{ display: 'flex', gap: 'var(--space-sm)', justifyContent: 'flex-end', marginTop: 'var(--space-md)' }}>
           <Button variant="secondary" onClick={() => setConfirmUpdate(false)}>Cancel</Button>
-          <Button variant="danger" onClick={() => { handleInstallUpdate(); setConfirmUpdate(false); }}>Install Update</Button>
+          <Button variant="danger" onClick={handleInstallUpdate}>Install Update</Button>
         </div>
       </Modal>
+
+      <UpdateModal
+        isOpen={installingUpdate}
+        version={updateStatus?.availableUpdate?.version ?? ''}
+        previousVersion={updateStatus?.currentVersion ?? ''}
+      />
 
       {/* Restore Backup Confirmation */}
       <Modal isOpen={confirmRestore} onClose={() => setConfirmRestore(false)} title="Confirm Action">
