@@ -38,6 +38,7 @@ beforeEach(() => {
     availableUpdate: { version: '0.3.6', tagName: 'v0.3.6', downloadUrl: 'https://example.com/release.zip' },
     updating: false,
     lastChecked: null,
+    lastError: null,
   });
   vi.spyOn(updateService, 'setUpdating').mockImplementation(() => {});
 });
