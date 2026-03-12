@@ -223,6 +223,12 @@ export function InventoryBrowser() {
   const [showForm, setShowForm] = useState(false);
   const [editTitleId, setEditTitleId] = useState<string | null>(null);
 
+  // Select mode
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkResult, setBulkResult] = useState<{ deleted: string[]; skipped: any[] } | null>(null);
+
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const buildParams = useCallback(() => {
@@ -324,6 +330,48 @@ export function InventoryBrowser() {
     setShowForm(true);
   };
 
+  // Select mode helpers
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.size === titles.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(titles.map((t) => t.id)));
+    }
+  }
+
+  function exitSelectMode() {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+    setBulkResult(null);
+  }
+
+  async function handleBulkDelete() {
+    if (selectedIds.size === 0) return;
+    const count = selectedIds.size;
+    if (!window.confirm(`Permanently delete ${count} title${count !== 1 ? 's' : ''} and all their copies? This cannot be undone.`)) return;
+
+    setBulkDeleting(true);
+    try {
+      const result = await api.titles.bulkDelete(Array.from(selectedIds));
+      setBulkResult(result);
+      setSelectedIds(new Set());
+      fetchTitles();
+    } catch (err: any) {
+      setError(err.message || 'Bulk delete failed');
+    } finally {
+      setBulkDeleting(false);
+    }
+  }
+
   // Build list-view data
   const listData = titles.map((t) => ({
     id: t.id,
@@ -372,9 +420,21 @@ export function InventoryBrowser() {
           </button>
         </div>
 
-        <Button variant="primary" onClick={() => setShowForm(true)}>
-          + Add Title
-        </Button>
+        {!selectMode && (
+          <Button variant="primary" onClick={() => setShowForm(true)}>
+            + Add Title
+          </Button>
+        )}
+
+        {!selectMode ? (
+          <Button variant="secondary" onClick={() => setSelectMode(true)}>
+            Select
+          </Button>
+        ) : (
+          <Button variant="secondary" onClick={exitSelectMode}>
+            Cancel
+          </Button>
+        )}
       </div>
 
       {/* Body: Sidebar + Main Content */}
@@ -463,16 +523,48 @@ export function InventoryBrowser() {
           {titles.length > 0 && viewMode === 'grid' && (
             <div style={gridStyle}>
               {titles.map((title) => (
-                <TitleCard key={title.id} title={title} onClick={handleTitleClick} />
+                <div key={title.id} style={{ position: 'relative' }}>
+                  {selectMode && (
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(title.id)}
+                      onChange={() => toggleSelect(title.id)}
+                      style={{
+                        position: 'absolute', top: '8px', left: '8px', zIndex: 2,
+                        accentColor: 'var(--crt-green)', width: '18px', height: '18px', cursor: 'pointer',
+                      }}
+                    />
+                  )}
+                  <TitleCard
+                    title={title}
+                    onClick={selectMode ? () => toggleSelect(title.id) : handleTitleClick}
+                  />
+                </div>
               ))}
             </div>
           )}
 
           {titles.length > 0 && viewMode === 'list' && (
             <Table
-              columns={listColumns}
-              data={listData}
-              onRowClick={(row) => handleTitleClick(row.id as string)}
+              columns={selectMode ? [{ key: 'checkbox', label: '', width: '36px' }, ...listColumns] : listColumns}
+              data={selectMode
+                ? listData.map((row) => ({
+                    checkbox: (
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(row.id as string)}
+                        onChange={(e) => { e.stopPropagation(); toggleSelect(row.id as string); }}
+                        style={{ accentColor: 'var(--crt-green)', cursor: 'pointer' }}
+                      />
+                    ),
+                    ...row,
+                  }))
+                : listData
+              }
+              onRowClick={selectMode
+                ? (row) => toggleSelect(row.id as string)
+                : (row) => handleTitleClick(row.id as string)
+              }
               emptyMessage="No titles found"
             />
           )}
@@ -482,6 +574,56 @@ export function InventoryBrowser() {
               <Button variant="secondary" onClick={fetchMore} disabled={loadingMore}>
                 {loadingMore ? 'Loading...' : `Load More (${total - titles.length} remaining)`}
               </Button>
+            </div>
+          )}
+
+          {selectMode && (
+            <div style={{
+              position: 'sticky', bottom: 0,
+              display: 'flex', alignItems: 'center', gap: 'var(--space-md)',
+              padding: 'var(--space-sm) var(--space-md)',
+              borderTop: '1px solid var(--border-color)',
+              backgroundColor: 'var(--bg-secondary)',
+            }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-xs)', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={titles.length > 0 && selectedIds.size === titles.length}
+                  onChange={toggleSelectAll}
+                  style={{ accentColor: 'var(--crt-green)' }}
+                />
+                Select All on Page
+              </label>
+              <span style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)' }}>
+                {selectedIds.size} selected
+              </span>
+              <div style={{ flex: 1 }} />
+              <Button
+                variant="danger"
+                onClick={handleBulkDelete}
+                disabled={selectedIds.size === 0 || bulkDeleting}
+              >
+                {bulkDeleting ? 'Deleting...' : 'Delete Selected'}
+              </Button>
+            </div>
+          )}
+
+          {bulkResult && (
+            <div style={{
+              padding: 'var(--space-sm) var(--space-md)',
+              backgroundColor: 'var(--bg-secondary)',
+              borderTop: '1px solid var(--border-color)',
+              color: 'var(--crt-green)', fontSize: 'var(--font-size-sm)',
+            }}>
+              Deleted {bulkResult.deleted.length} title{bulkResult.deleted.length !== 1 ? 's' : ''}.
+              {bulkResult.skipped.length > 0 && (
+                <> Skipped {bulkResult.skipped.length} with active rentals: {bulkResult.skipped.map((s: any) => s.name).join(', ')}.</>
+              )}
+              <span style={{ marginLeft: 'var(--space-sm)' }}>
+                <Button variant="secondary" onClick={() => setBulkResult(null)}>
+                  Dismiss
+                </Button>
+              </span>
             </div>
           )}
         </div>
