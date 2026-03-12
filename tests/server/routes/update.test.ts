@@ -10,6 +10,7 @@ vi.mock('../../../server/services/update.js', () => {
     availableUpdate: null as any,
     lastChecked: '2026-03-05T10:00:00.000Z',
     updating: false,
+    lastError: null as string | null,
   };
   return {
     getUpdateStatus: vi.fn(() => ({ ...status })),
@@ -37,6 +38,7 @@ describe('Update routes', () => {
       availableUpdate: null,
       lastChecked: '2026-03-05T10:00:00.000Z',
       updating: false,
+      lastError: null,
     });
     app = new Hono();
     app.route('/api/update', createUpdateRoutes({} as any, '/tmp/test.db', '/tmp/backups'));
@@ -73,10 +75,24 @@ describe('Update routes', () => {
       availableUpdate: { version: '0.2.0', downloadUrl: 'https://example.com/v0.2.0.zip', tagName: 'v0.2.0' },
       lastChecked: '2026-03-05T10:00:00.000Z',
       updating: true,
+      lastError: null,
     });
     const res = await app.request('/api/update/install', { method: 'POST' });
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toBe('Update already in progress');
+  });
+
+  it('GET /api/update/status includes lastError field', async () => {
+    setMockStatus({
+      currentVersion: '0.1.0',
+      availableUpdate: null,
+      lastChecked: '2026-03-05T10:00:00.000Z',
+      updating: false,
+      lastError: 'UPDATE FAILED: Download failed: 404',
+    });
+    const res = await app.request('/api/update/status');
+    const body = await res.json();
+    expect(body.lastError).toBe('UPDATE FAILED: Download failed: 404');
   });
 });

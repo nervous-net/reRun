@@ -1,6 +1,9 @@
 // ABOUTME: Service for checking GitHub releases for app updates
 // ABOUTME: Polls periodically, compares semver, caches update status in memory
 
+import fs from 'fs';
+import path from 'path';
+
 const GITHUB_REPO = 'nervous-net/reRun';
 const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
 
@@ -15,6 +18,7 @@ interface UpdateStatus {
   availableUpdate: UpdateInfo | null;
   lastChecked: string | null;
   updating: boolean;
+  lastError: string | null;
 }
 
 let cachedStatus: UpdateStatus = {
@@ -22,9 +26,11 @@ let cachedStatus: UpdateStatus = {
   availableUpdate: null,
   lastChecked: null,
   updating: false,
+  lastError: null,
 };
 
 let checkTimer: ReturnType<typeof setInterval> | null = null;
+let logFilePath: string | null = null;
 
 export function isNewerVersion(current: string, remote: string): boolean {
   const clean = (v: string) => v.replace(/^v/, '');
@@ -84,16 +90,41 @@ export async function forceCheck(): Promise<UpdateStatus> {
   return { ...cachedStatus };
 }
 
+export function readLastError(logPath: string): string | null {
+  try {
+    if (!fs.existsSync(logPath)) return null;
+    const content = fs.readFileSync(logPath, 'utf-8').trimEnd();
+    const lastLine = content.split('\n').pop() ?? '';
+    const match = lastLine.match(/\] (UPDATE FAILED: .+)$/);
+    return match ? match[1] : null;
+  } catch {
+    return null;
+  }
+}
+
 export function getUpdateStatus(): UpdateStatus {
+  if (cachedStatus.updating && logFilePath) {
+    const error = readLastError(logFilePath);
+    if (error) {
+      cachedStatus.lastError = error;
+      cachedStatus.updating = false;
+    }
+  }
   return { ...cachedStatus };
 }
 
 export function setUpdating(updating: boolean): void {
   cachedStatus.updating = updating;
+  if (updating) {
+    cachedStatus.lastError = null;
+  }
 }
 
-export function startUpdateChecker(currentVersion: string): void {
+export function startUpdateChecker(currentVersion: string, dataDir?: string): void {
   cachedStatus.currentVersion = currentVersion;
+  if (dataDir) {
+    logFilePath = path.join(dataDir, 'update.log');
+  }
 
   async function check() {
     const update = await checkForUpdates(currentVersion);

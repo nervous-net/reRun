@@ -71,7 +71,7 @@ app.route('/api/backup', createBackupRoutes(db, {
 app.route('/api/update', createUpdateRoutes(db, DB_PATH, defaultBackupDir));
 
 // Start update checker
-startUpdateChecker(pkg.version);
+startUpdateChecker(pkg.version, path.dirname(DB_PATH));
 
 // Purge records that have been soft-deleted for 30+ days
 purgeInactiveRecords(db);
