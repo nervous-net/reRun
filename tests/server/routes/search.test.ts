@@ -318,3 +318,58 @@ describe('GET /api/search', () => {
     expect(body.titles[0].name).toBe('Blade Runner');
   });
 });
+
+describe('GET /api/search adult content exclusion', () => {
+  let adultId: string;
+
+  beforeEach(() => {
+    // Add an adult title to the already-seeded data
+    adultId = nanoid();
+    sqlite.exec(`
+      INSERT INTO titles (id, name, year, genre, rating, is_adult)
+      VALUES ('${adultId}', 'Forbidden Reels', 1987, 'Adult', 'NC-17', 1);
+    `);
+    sqlite.exec(`
+      INSERT INTO copies (id, title_id, barcode, format, status)
+      VALUES ('${nanoid()}', '${adultId}', 'DVD-ADULT-001', 'DVD', 'in');
+    `);
+  });
+
+  it('staff search (default) still includes adult titles', async () => {
+    const res = await app.request('/api/search');
+    expect(res.status).toBe(200);
+
+    const body = await res.json();
+    const names = body.titles.map((t: any) => t.name);
+    expect(names).toContain('Forbidden Reels');
+    expect(body.total).toBe(6);
+  });
+
+  it('public search excludes adult titles', async () => {
+    const res = await app.request('/api/search?public=1');
+    expect(res.status).toBe(200);
+
+    const body = await res.json();
+    const names = body.titles.map((t: any) => t.name);
+    expect(names).not.toContain('Forbidden Reels');
+    expect(body.total).toBe(5);
+  });
+
+  it('public search excludes adult titles even when the query text matches them', async () => {
+    const res = await app.request('/api/search?public=1&q=Forbidden');
+    expect(res.status).toBe(200);
+
+    const body = await res.json();
+    expect(body.titles).toHaveLength(0);
+    expect(body.total).toBe(0);
+  });
+
+  it('public search still returns non-adult titles', async () => {
+    const res = await app.request('/api/search?public=1&q=Matrix');
+    expect(res.status).toBe(200);
+
+    const body = await res.json();
+    expect(body.titles).toHaveLength(1);
+    expect(body.titles[0].name).toBe('The Matrix');
+  });
+});

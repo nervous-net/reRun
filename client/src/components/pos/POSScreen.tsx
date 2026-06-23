@@ -48,11 +48,13 @@ export function POSScreen() {
   const [referenceCode, setReferenceCode] = useState<string | null>(null);
   const [completedTotal, setCompletedTotal] = useState<number | null>(null);
   const [pricingRules, setPricingRules] = useState<PricingRule[]>([]);
-  const [pendingScan, setPendingScan] = useState<{ copyId: string; titleId: string; titleName: string; format: string; rating?: string } | null>(null);
+  const [pendingScan, setPendingScan] = useState<{ copyId: string; titleId: string; titleName: string; format: string; rating?: string; isAdult?: boolean } | null>(null);
   const [taxRate, setTaxRate] = useState(0);
   const [processing, setProcessing] = useState(false);
   const [ageWarning, setAgeWarning] = useState<{ rating: string; message: string; restrictedTitles?: string[] } | null>(null);
   const [parentApproved, setParentApproved] = useState(false);
+  const [showAdultIdCheck, setShowAdultIdCheck] = useState(false);
+  const [adultIdVerified, setAdultIdVerified] = useState(false);
   const checkedOutCopyIds = useRef<Set<string>>(new Set());
   const [familyMembers, setFamilyMembers] = useState<any[]>([]);
   const [selectedFamilyMember, setSelectedFamilyMember] = useState<any | null>(null);
@@ -86,6 +88,13 @@ export function POSScreen() {
       handleConfirmCheckout();
     }
   }, [parentApproved]);
+
+  // When 18+ ID is verified, resume the checkout automatically
+  useEffect(() => {
+    if (adultIdVerified && showConfirmation) {
+      handleConfirmCheckout();
+    }
+  }, [adultIdVerified]);
 
   // Fetch family members when a customer is selected
   async function handleCustomerSelected(cust: Customer) {
@@ -232,6 +241,7 @@ export function POSScreen() {
           titleName,
           format,
           rating: copyResult.title?.rating ?? copyResult.rating,
+          isAdult: Boolean(copyResult.title?.isAdult ?? copyResult.isAdult),
         });
         return;
       }
@@ -285,6 +295,7 @@ export function POSScreen() {
         titleId: pendingScan.titleId,
         pricingRuleId: rule.id,
         rating: pendingScan.rating,
+        isAdult: pendingScan.isAdult,
       },
     ]);
     setPendingScan(null);
@@ -311,6 +322,7 @@ export function POSScreen() {
           titleName: title.name,
           format: copies[0].format,
           rating: title.rating,
+          isAdult: Boolean(title.isAdult ?? titleData.isAdult),
         });
         setShowSearchResults(false);
         setSearchResults([]);
@@ -334,6 +346,7 @@ export function POSScreen() {
       titleName: selectedSearchTitle.name,
       format: copy.format,
       rating: selectedSearchTitle.rating,
+      isAdult: Boolean(selectedSearchTitle.isAdult),
     });
     setShowSearchResults(false);
     setSearchResults([]);
@@ -412,6 +425,14 @@ export function POSScreen() {
   }
 
   async function handleConfirmCheckout() {
+    // Blocking 18+ ID check: if any item is an adult title and the clerk has not
+    // yet acknowledged verifying the customer's ID, halt and prompt first.
+    const hasAdultItem = lineItems.some((item) => item.isAdult);
+    if (hasAdultItem && !adultIdVerified) {
+      setShowAdultIdCheck(true);
+      return;
+    }
+
     setProcessing(true);
     setError(null);
     try {
@@ -451,6 +472,7 @@ export function POSScreen() {
       const transaction = await api.transactions.create({
         customerId: customer?.id ?? null,
         type: txnType,
+        adultIdVerified,
         items: lineItems.map((item) => ({
           type: item.type,
           description: item.description,
@@ -466,6 +488,8 @@ export function POSScreen() {
       setShowConfirmation(false);
       setAgeWarning(null);
       setParentApproved(false);
+      setShowAdultIdCheck(false);
+      setAdultIdVerified(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Checkout failed');
     } finally {
@@ -491,6 +515,8 @@ export function POSScreen() {
     setShowSearchResults(false);
     setSelectedSearchTitle(null);
     setTitleCopies([]);
+    setShowAdultIdCheck(false);
+    setAdultIdVerified(false);
     checkedOutCopyIds.current.clear();
     focusScanInput();
   }
@@ -727,7 +753,7 @@ export function POSScreen() {
       )}
 
       {/* Confirmation Modal */}
-      {showConfirmation && !ageWarning && (
+      {showConfirmation && !ageWarning && !showAdultIdCheck && (
         <ConfirmationModal
           lineItems={lineItems}
           total={total}
@@ -809,6 +835,70 @@ export function POSScreen() {
             )}
             <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: 'var(--font-size-sm)' }}>
               Proceed with transaction?
+            </p>
+          </div>
+        </Modal>
+      )}
+
+      {/* Adult Content 18+ ID Verification (blocking) */}
+      {showAdultIdCheck && (
+        <Modal
+          isOpen
+          onClose={() => {
+            setShowAdultIdCheck(false);
+            setProcessing(false);
+            focusScanInput();
+          }}
+          title="Adult Content"
+          footer={
+            <>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setShowAdultIdCheck(false);
+                  setProcessing(false);
+                  focusScanInput();
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setShowAdultIdCheck(false);
+                  setAdultIdVerified(true);
+                }}
+              >
+                Customer's 18+ ID Verified
+              </Button>
+            </>
+          }
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+            <div style={{
+              padding: '12px 16px',
+              backgroundColor: 'var(--bg-primary)',
+              border: '1px solid var(--crt-amber, var(--crt-red))',
+              borderRadius: 'var(--border-radius)',
+              color: 'var(--crt-amber, var(--crt-red))',
+              textAlign: 'center',
+              fontSize: 'var(--font-size-lg)',
+              letterSpacing: '1px',
+            }}>
+              ADULT — 18+ ONLY
+            </div>
+            <div style={{ margin: 0 }}>
+              <p style={{ color: 'var(--text-secondary)', margin: '0 0 4px', fontSize: 'var(--font-size-sm)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                This transaction includes adult titles:
+              </p>
+              {lineItems.filter((item) => item.isAdult).map((item) => (
+                <p key={item.id} style={{ color: 'var(--crt-amber, var(--crt-green))', margin: '2px 0', fontSize: 'var(--font-size-md)' }}>
+                  {item.description}
+                </p>
+              ))}
+            </div>
+            <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: 'var(--font-size-sm)' }}>
+              Confirm you have verified the customer is 18 or older with a valid photo ID before completing this rental.
             </p>
           </div>
         </Modal>

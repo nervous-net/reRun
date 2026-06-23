@@ -1,5 +1,5 @@
 // ABOUTME: Hono route handler for searching titles with multi-field filtering and pagination
-// ABOUTME: Supports text search, genre/format/rating/year filters, availability check, and sorting
+// ABOUTME: Supports text search, genre/format/rating/year filters, availability check, sorting, and public/adult exclusion
 
 import { Hono } from 'hono';
 
@@ -15,6 +15,10 @@ export function createSearchRoutes(db: any) {
     const rating = c.req.query('rating');
     const year = c.req.query('year');
     const showInactive = c.req.query('showInactive');
+    // Public-facing search (e.g. the store website). Adult titles must never
+    // surface to the public web or minors, so they are always excluded here.
+    // Staff/in-store search omits this flag and continues to see everything.
+    const isPublic = c.req.query('public') === '1';
     const sort = c.req.query('sort') || 'name';
     const page = Math.max(1, Number(c.req.query('page') || '1'));
     const limit = Math.max(1, Math.min(100, Number(c.req.query('limit') || '20')));
@@ -26,6 +30,12 @@ export function createSearchRoutes(db: any) {
 
     // Filter out inactive titles by default
     if (showInactive !== '1') {
+      conditions.push(`(t.active = 1 OR t.active IS NULL)`);
+    }
+
+    // Public search never exposes adult titles (and never inactive ones)
+    if (isPublic) {
+      conditions.push(`(t.is_adult = 0 OR t.is_adult IS NULL)`);
       conditions.push(`(t.active = 1 OR t.active IS NULL)`);
     }
 
@@ -91,6 +101,7 @@ export function createSearchRoutes(db: any) {
         t.year,
         t.genre,
         t.rating,
+        t.is_adult AS "isAdult",
         t.cover_url AS "coverUrl",
         (SELECT count(*) FROM copies c WHERE c.title_id = t.id AND c.status = 'in') AS "availableCopies",
         (SELECT count(*) FROM copies c WHERE c.title_id = t.id) AS "totalCopies"

@@ -5,7 +5,10 @@ import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import * as schema from '../server/db/schema.js';
 
-export function createTestDb() {
+export function createTestDb(): {
+  db: ReturnType<typeof drizzle<typeof schema>>;
+  sqlite: Database.Database;
+} {
   const sqlite = new Database(':memory:');
   sqlite.pragma('journal_mode = WAL');
   sqlite.pragma('foreign_keys = ON');
@@ -29,6 +32,7 @@ export function migrateTestDb(sqlite: Database.Database) {
       cover_url TEXT,
       media_type TEXT DEFAULT 'movie',
       number_of_seasons INTEGER,
+      is_adult INTEGER DEFAULT 0,
       active INTEGER DEFAULT 1,
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now'))
