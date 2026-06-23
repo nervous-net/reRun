@@ -406,4 +406,98 @@ describe('Transaction Service', () => {
       recallTransaction(db, 'h2');
     });
   });
+
+  describe('adult-content checkout block', () => {
+    async function seedAdultCopy(db: any) {
+      const titleId = nanoid();
+      await db.insert(titles).values({
+        id: titleId,
+        name: 'Forbidden Reels',
+        year: 1987,
+        isAdult: 1,
+      });
+      const copyId = nanoid();
+      await db.insert(copies).values({
+        id: copyId,
+        titleId,
+        barcode: `BC-${nanoid(6)}`,
+        format: 'DVD',
+        status: 'out',
+      });
+      return { titleId, copyId };
+    }
+
+    it('blocks a rental of an adult title when 18+ ID is not verified', async () => {
+      const { db } = buildTestDb();
+      const customerId = await seedCustomer(db);
+      const { copyId } = await seedAdultCopy(db);
+
+      await expect(
+        createTransaction(db, {
+          customerId,
+          type: 'rental',
+          paymentMethod: 'cash',
+          items: [
+            { type: 'rental', copyId, description: 'Forbidden Reels', amount: 299 },
+          ],
+        })
+      ).rejects.toThrow(/18\+ ID/i);
+    });
+
+    it('does not persist the transaction when blocked', async () => {
+      const { db } = buildTestDb();
+      const customerId = await seedCustomer(db);
+      const { copyId } = await seedAdultCopy(db);
+
+      await expect(
+        createTransaction(db, {
+          customerId,
+          type: 'rental',
+          paymentMethod: 'cash',
+          items: [
+            { type: 'rental', copyId, description: 'Forbidden Reels', amount: 299 },
+          ],
+        })
+      ).rejects.toThrow();
+
+      const all = await db.select().from(transactions);
+      expect(all).toHaveLength(0);
+    });
+
+    it('allows the rental when adultIdVerified is true', async () => {
+      const { db } = buildTestDb();
+      const customerId = await seedCustomer(db);
+      const { copyId } = await seedAdultCopy(db);
+
+      const result = await createTransaction(db, {
+        customerId,
+        type: 'rental',
+        paymentMethod: 'cash',
+        adultIdVerified: true,
+        items: [
+          { type: 'rental', copyId, description: 'Forbidden Reels', amount: 299 },
+        ],
+      });
+
+      expect(result.id).toBeDefined();
+      expect(result.subtotal).toBe(299);
+    });
+
+    it('does not require verification for non-adult rentals', async () => {
+      const { db } = buildTestDb();
+      const customerId = await seedCustomer(db);
+      const { copyId } = await seedCopyWithTitle(db);
+
+      const result = await createTransaction(db, {
+        customerId,
+        type: 'rental',
+        paymentMethod: 'cash',
+        items: [
+          { type: 'rental', copyId, description: 'Die Hard', amount: 299 },
+        ],
+      });
+
+      expect(result.id).toBeDefined();
+    });
+  });
 });

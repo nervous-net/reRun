@@ -12,6 +12,7 @@ export interface LineItem {
   productId?: string;
   pricingRuleId?: string;
   rating?: string;
+  isAdult?: boolean;
 }
 
 interface TransactionPanelProps {

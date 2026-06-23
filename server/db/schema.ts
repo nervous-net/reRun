@@ -19,6 +19,7 @@ export const titles = sqliteTable('titles', {
   coverUrl: text('cover_url'),
   mediaType: text('media_type').default('movie'),
   numberOfSeasons: integer('number_of_seasons'),
+  isAdult: integer('is_adult').default(0),
   active: integer('active').default(1),
   createdAt: text('created_at').default(sql`(datetime('now'))`),
   updatedAt: text('updated_at').default(sql`(datetime('now'))`),

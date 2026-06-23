@@ -3,12 +3,13 @@
 
 import { nanoid } from 'nanoid';
 import { generateReferenceCode } from './reference-code.js';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, inArray, sql } from 'drizzle-orm';
 import {
   transactions,
   transactionItems,
   products,
   copies,
+  titles,
   rentals,
   storeSettings,
   heldTransactions as heldTransactionsTable,
@@ -32,6 +33,9 @@ export interface CreateTransactionInput {
   paymentMethod?: string;
   amountTendered?: number;
   notes?: string;
+  // Staff acknowledgement that the customer's 18+ ID was verified. Required
+  // before an adult title can be rented; the checkout is blocked otherwise.
+  adultIdVerified?: boolean;
   items: TransactionItemInput[];
 }
 
@@ -101,6 +105,28 @@ function calculateTax(subtotal: number, taxRateBasisPoints: number): number {
 // ─── Create Transaction ─────────────────────────────────────────────
 
 export async function createTransaction(db: any, data: CreateTransactionInput) {
+  // Block adult-title rentals unless staff has verified the customer's 18+ ID.
+  // This is the final, blocking checkpoint before a rental is persisted.
+  if (!data.adultIdVerified) {
+    const rentalCopyIds = data.items
+      .filter((item) => item.type === 'rental' && item.copyId)
+      .map((item) => item.copyId as string);
+
+    if (rentalCopyIds.length > 0) {
+      const adultRows = await db
+        .select({ copyId: copies.id })
+        .from(copies)
+        .innerJoin(titles, eq(copies.titleId, titles.id))
+        .where(and(inArray(copies.id, rentalCopyIds), eq(titles.isAdult, 1)));
+
+      if (adultRows.length > 0) {
+        throw new Error(
+          'Adult title requires 18+ ID verification before checkout can complete'
+        );
+      }
+    }
+  }
+
   const taxRate = await getTaxRate(db);
 
   const subtotal = data.items.reduce((sum, item) => sum + item.amount, 0);

@@ -76,7 +76,7 @@ export function createTransactionsRoutes(db: any) {
       return c.json(result, 201);
     } catch (err: any) {
       const msg = err.message || '';
-      const isBusinessError = /out of stock|not available|not found/i.test(msg);
+      const isBusinessError = /out of stock|not available|not found|18\+ ID/i.test(msg);
       return c.json({ error: msg }, isBusinessError ? 400 : 500);
     }
   });

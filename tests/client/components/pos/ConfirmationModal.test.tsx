@@ -7,8 +7,8 @@ import { ConfirmationModal } from '../../../../client/src/components/pos/Confirm
 import type { LineItem } from '../../../../client/src/components/pos/TransactionPanel';
 
 const lineItems: LineItem[] = [
-  { type: 'rental', description: 'The Matrix (DVD) - 3 Day', amount: 499 },
-  { type: 'rental', description: 'Blade Runner (Blu-ray) - 7 Day', amount: 699 },
+  { id: '1', type: 'rental', description: 'The Matrix (DVD) - 3 Day', amount: 499 },
+  { id: '2', type: 'rental', description: 'Blade Runner (Blu-ray) - 7 Day', amount: 699 },
 ];
 
 const defaultProps = {

@@ -24,10 +24,11 @@ vi.mock('../../../server/services/update.js', () => {
 });
 
 import { createUpdateRoutes } from '../../../server/routes/update.js';
-import { __setMockStatus } from '../../../server/services/update.js';
+import * as updateService from '../../../server/services/update.js';
 
-// Type assertion for the test helper
-const setMockStatus = __setMockStatus as (s: any) => void;
+// __setMockStatus exists only on the mocked module (see vi.mock factory above),
+// not on the real service, so reach it through the namespace with a cast.
+const setMockStatus = (updateService as unknown as { __setMockStatus: (s: any) => void }).__setMockStatus;
 
 describe('Update routes', () => {
   let app: Hono;
