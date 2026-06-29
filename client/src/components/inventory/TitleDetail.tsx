@@ -3,6 +3,7 @@
 
 import { type CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 import { Badge } from '../common/Badge';
+import { Barcode } from '../common/Barcode';
 import { Button } from '../common/Button';
 import { Input } from '../common/Input';
 import { Table } from '../common/Table';
@@ -268,7 +269,7 @@ export function TitleDetail({ titleId, onClose, onEdit, onDeleted }: TitleDetail
   };
 
   const copiesData = (title?.copies ?? []).map((copy) => ({
-    barcode: copy.barcode,
+    barcode: <Barcode value={copy.barcode} height={28} width={1} />,
     format: copy.format,
     condition: copy.condition,
     status: <Badge variant={getStatusVariant(copy.status)}>{copy.status}</Badge>,
