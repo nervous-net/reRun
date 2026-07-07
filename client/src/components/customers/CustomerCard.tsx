@@ -4,6 +4,7 @@
 import { type CSSProperties, useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '../common/Badge';
+import { Barcode } from '../common/Barcode';
 import { Button } from '../common/Button';
 import { Modal } from '../common/Modal';
 import { Input } from '../common/Input';
@@ -252,7 +253,9 @@ export function CustomerCard({ customerId }: CustomerCardProps) {
           <h2 style={styles.name}>
             {customer.firstName} {customer.lastName}
           </h2>
-          <div style={styles.barcode}>{customer.memberBarcode}</div>
+          <div style={styles.barcode}>
+            <Barcode value={customer.memberBarcode} height={36} width={1.4} />
+          </div>
         </div>
         <Badge variant={customer.active ? 'success' : 'danger'}>
           {customer.active ? 'Active' : 'Inactive'}
